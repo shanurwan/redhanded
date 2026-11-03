@@ -1,0 +1,30 @@
+# secrets: never commit
+.env
+*.env
+!.env.example
+*.pem
+*.key
+secrets/
+
+# terraform state holds resource IDs and can hold secrets
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/
+
+# node
+node_modules/
+
+# local scan output
+runs/
