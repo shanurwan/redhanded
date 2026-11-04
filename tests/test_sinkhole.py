@@ -116,3 +116,37 @@ def test_raw_tcp_bytes_recorded():
 
     [rec] = run(_with_sinkhole(client))
     assert rec.kind == "raw" and rec.data == b"\x01\x02plain bytes"
+
+
+def test_dns_answers_are_recorded_and_rebuild_the_pool():
+    async def client(dns_port, _):
+        loop = asyncio.get_running_loop()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setblocking(False)
+        await loop.sock_sendto(sock, dns_query("one.example.invalid"), ("127.0.0.1", dns_port))
+        await asyncio.wait_for(loop.sock_recv(sock, 512), 2)
+        sock.close()
+
+    recs = run(_with_sinkhole(client))
+    pool = NamePool.from_records(recs)
+    assert pool.name_of(recs[0].headers["answer"]) == "one.example.invalid"
+
+
+def test_metadata_address_serves_decoy_credentials():
+    async def go():
+        cap = Capture()
+        sink = Sinkhole(cap, metadata={"AccessKeyId": "ASIADECOY"})
+        _, port = await sink.start("127.0.0.1", 0, [0])
+        out = []
+        for path in ("/latest/meta-data/iam/security-credentials/", "/latest/meta-data/iam/security-credentials/r"):
+            reader, writer = await asyncio.open_connection("127.0.0.1", port)
+            writer.write(f"GET {path} HTTP/1.1\r\nHost: 169.254.169.254\r\n\r\n".encode())
+            await writer.drain()
+            out.append(await asyncio.wait_for(reader.read(), 2))
+            writer.close()
+        await sink.stop()
+        return out
+
+    role, creds = run(go())
+    assert role.endswith(b"redhanded-scan-role")
+    assert creds.endswith(b'{"AccessKeyId": "ASIADECOY"}')

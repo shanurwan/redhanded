@@ -84,6 +84,30 @@ def cmd_guard(client: VultrClient, policy: GuardPolicy, state: StateFile, interv
         time.sleep(interval)
 
 
+def cmd_scan(spec: str, deadline: float, as_json: bool) -> int:
+    import json
+    from dataclasses import asdict
+
+    from .runner import ScanConfig, ScanError, scan
+
+    name, sep, version = spec.rpartition("@")
+    if not sep or not name or not version:
+        print("redhanded: give the package as name@version", file=sys.stderr)
+        return 2
+    try:
+        report = scan(name, version, ScanConfig(deadline_s=deadline))
+    except ScanError as e:
+        print(f"redhanded: {e}", file=sys.stderr)
+        return 2
+    if as_json:
+        print(json.dumps(asdict(report), indent=1))
+    else:
+        print(f"{report.package}@{report.version}  {report.verdict}  ({report.seconds:.1f}s, scan {report.scan_id})")
+        for r in report.reasons:
+            print(f"  {r}")
+    return {"CLEAN": 0, "REVIEW": 1}.get(report.verdict, 3)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="redhanded")
     parser.add_argument("--env", default=".env", help="env file to read (default .env)")
@@ -93,8 +117,14 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--state", default=os.environ.get("RH_GUARD_STATE", "guard-state.json"))
     g.add_argument("--interval", type=float, default=600.0)
     g.add_argument("--once", action="store_true")
+    sc = sub.add_parser("scan", help="detonate one npm package in a baited gVisor sandbox")
+    sc.add_argument("package", help="name@version, e.g. left-pad@1.3.0 or @scope/pkg@2.0.0")
+    sc.add_argument("--deadline", type=float, default=120.0)
+    sc.add_argument("--json", action="store_true", help="print the full report as JSON")
     args = parser.parse_args(argv)
 
+    if args.cmd == "scan":
+        return cmd_scan(args.package, args.deadline, args.json)
     load_env(Path(args.env))
     try:
         client = VultrClient(os.environ.get("VULTR_API_KEY", ""))

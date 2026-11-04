@@ -43,6 +43,17 @@ class NamePool:
     def name_of(self, ip: str) -> str | None:
         return self._by_ip.get(ip)
 
+    @classmethod
+    def from_records(cls, records: list["Record"]) -> "NamePool":
+        """Rebuild the name map from DNS answers the sinkhole recorded."""
+        pool = cls()
+        for r in records:
+            ip = r.headers.get("answer") if r.kind == "dns" else None
+            if ip:
+                pool._by_name.setdefault(r.host, ip)
+                pool._by_ip.setdefault(ip, r.host)
+        return pool
+
 
 @dataclass
 class Record:
@@ -129,7 +140,8 @@ class _DnsProtocol(asyncio.DatagramProtocol):
         except (ValueError, struct.error, IndexError):
             self.capture.add(Record("dns", time.time(), addr[0], detail="malformed", data=data[:512]))
             return
-        self.capture.add(Record("dns", time.time(), addr[0], host=qname, detail=qtype))
+        answer = {"answer": self.pool.address(qname)} if qtype == "A" and qname else {}
+        self.capture.add(Record("dns", time.time(), addr[0], host=qname, detail=qtype, headers=answer))
         self.transport.sendto(reply, addr)
 
 
@@ -186,11 +198,22 @@ async def _read_http(first: bytes, reader: asyncio.StreamReader) -> tuple[str, d
     return request_line, headers, body[:MAX_CAPTURE]
 
 
+METADATA_IP = "169.254.169.254"
+
+
 class Sinkhole:
-    def __init__(self, capture: Capture, pool: NamePool | None = None):
+    def __init__(self, capture: Capture, pool: NamePool | None = None, metadata: dict | None = None):
         self.capture = capture
         self.pool = pool or NamePool()
+        self.metadata = metadata      # decoy cloud credentials served at the metadata address
         self._servers: list = []
+
+    def _http_body(self, host: str, line: str) -> bytes:
+        if self.metadata and host.split(":", 1)[0] == METADATA_IP and "/security-credentials" in line:
+            if line.rstrip("/").endswith("/security-credentials"):
+                return b"redhanded-scan-role"
+            return json.dumps(self.metadata).encode()
+        return b"{}"
 
     async def _on_tcp(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         peer = writer.get_extra_info("peername")[0]
@@ -199,9 +222,11 @@ class Sinkhole:
             first = await asyncio.wait_for(reader.read(65536), READ_TIMEOUT)
             if first.startswith(_HTTP_METHODS):
                 line, headers, body = await _read_http(first, reader)
-                self.capture.add(Record("http", time.time(), peer, headers.get("host", ""), line, headers, body))
-                writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
-                             b"Content-Length: 2\r\nConnection: close\r\n\r\n{}")
+                host = headers.get("host", "")
+                self.capture.add(Record("http", time.time(), peer, host, line, headers, body))
+                reply = self._http_body(host, line)
+                writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                             + str(len(reply)).encode() + b"\r\nConnection: close\r\n\r\n" + reply)
                 await writer.drain()
             elif first[:1] == b"\x16":
                 self.capture.add(Record("tls", time.time(), peer, tls_server_name(first) or "", port, data=first))
@@ -237,3 +262,46 @@ class Sinkhole:
         for s in self._servers:
             s.close()
         self._servers.clear()
+
+
+DEFAULT_TCP_PORTS = [21, 22, 25, 80, 443, 1080, 3000, 4444, 5000, 8000, 8080, 8443, 8888, 9000, 9999]
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run a sinkhole until SIGTERM. The runner starts this inside the sinkhole netns."""
+    import argparse
+    import signal
+
+    p = argparse.ArgumentParser(prog="redhanded.sinkhole")
+    p.add_argument("--capture", required=True)
+    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--dns-host", default="10.66.0.1")
+    p.add_argument("--metadata", help="JSON file with decoy cloud credentials")
+    p.add_argument("--ready", help="file to create once listening")
+    args = p.parse_args(argv)
+
+    metadata = None
+    if args.metadata:
+        with open(args.metadata, encoding="utf-8") as f:
+            metadata = json.load(f)
+
+    async def run() -> None:
+        capture = Capture(args.capture)
+        sink = Sinkhole(capture, metadata=metadata)
+        await sink.start(args.host, 53, DEFAULT_TCP_PORTS, dns_host=args.dns_host)
+        stop = asyncio.Event()
+        loop = asyncio.get_running_loop()
+        loop.add_signal_handler(signal.SIGTERM, stop.set)
+        loop.add_signal_handler(signal.SIGINT, stop.set)
+        if args.ready:
+            open(args.ready, "w").close()
+        await stop.wait()
+        await sink.stop()
+        capture.close()
+
+    asyncio.run(run())
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
