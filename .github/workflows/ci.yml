@@ -3,9 +3,20 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      benign:
+        description: "Also run the benign set (downloads 42 real packages)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+
+env:
+  GVISOR_RELEASE: "20261012.0"
+  # node:24-alpine as of 2026-10-28, pinned by digest so every run detonates in the same image.
+  SANDBOX_IMAGE: "node@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85"
 
 jobs:
   test:
@@ -17,3 +28,60 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
+
+  # The eval gate: every Zoo sample is detonated in gVisor and must get the
+  # verdict its expect.json demands, or this job fails and the PR cannot merge.
+  zoo-gate:
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[dev]"
+      - name: Install gVisor (pinned release, checksum verified)
+        run: |
+          U="https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "$U/gvisor.tar.bz2"
+          curl -fsSLO "$U/gvisor.tar.bz2.sha512"
+          sha512sum -c gvisor.tar.bz2.sha512
+          mkdir -p gv "$HOME/bin/gvisor-bin"
+          tar xjf gvisor.tar.bz2 -C gv
+          install -m 755 gv/runsc "$HOME/bin/runsc"
+          install -m 755 gv/gvisor-bin/* "$HOME/bin/gvisor-bin/"
+          "$HOME/bin/runsc" --version
+      - name: Allow unprivileged user namespaces
+        # Ubuntu 24.04 restricts them through AppArmor; the runner builds its
+        # sandbox and sinkhole namespaces as an ordinary user, without root.
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Build the sandbox root filesystem
+        run: |
+          mkdir -p "$RUNNER_TEMP/rootfs"
+          cid=$(docker create "$SANDBOX_IMAGE")
+          docker export "$cid" | tar -x -C "$RUNNER_TEMP/rootfs" --no-same-owner
+          docker rm "$cid"
+      - name: Run the Zoo gate
+        env:
+          RH_ROOTFS: ${{ runner.temp }}/rootfs
+          RH_SCANS: ${{ runner.temp }}/scans
+        run: |
+          export RH_RUNSC="$HOME/bin/runsc"
+          redhanded eval --only zoo --out "$RUNNER_TEMP/eval-zoo.json"
+      - name: Run the benign set
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.benign }}
+        env:
+          RH_ROOTFS: ${{ runner.temp }}/rootfs
+          RH_SCANS: ${{ runner.temp }}/scans
+        run: |
+          export RH_RUNSC="$HOME/bin/runsc"
+          redhanded eval --only benign --out "$RUNNER_TEMP/eval-benign.json"
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: ${{ runner.temp }}/eval-*.json
+          if-no-files-found: ignore

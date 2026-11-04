@@ -65,11 +65,15 @@ class ScanError(RuntimeError):
     pass
 
 
+def _env_path(var: str, default: str) -> str:
+    return os.path.expanduser(os.environ.get(var, default))
+
+
 @dataclass
 class ScanConfig:
-    runsc: str = os.path.expanduser("~/bin/runsc")
-    rootfs: str = os.path.expanduser("~/rh-dev/rootfs")
-    scans_dir: str = os.path.expanduser("~/rh-dev/scans")
+    runsc: str = field(default_factory=lambda: _env_path("RH_RUNSC", "~/bin/runsc"))
+    rootfs: str = field(default_factory=lambda: _env_path("RH_ROOTFS", "~/rh-dev/rootfs"))
+    scans_dir: str = field(default_factory=lambda: _env_path("RH_SCANS", "~/rh-dev/scans"))
     registry: str = "https://registry.npmjs.org"
     deadline_s: float = 120.0
 
