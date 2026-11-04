@@ -216,11 +216,15 @@ class Sinkhole:
         finally:
             writer.close()
 
-    async def start(self, host: str, dns_port: int, tcp_ports: list[int]) -> list[int]:
-        """Start listening. Returns the bound ports, DNS first (useful with port 0)."""
+    async def start(self, host: str, dns_port: int, tcp_ports: list[int], dns_host: str | None = None) -> list[int]:
+        """Start listening. Returns the bound ports, DNS first (useful with port 0).
+
+        Bind DNS to the resolver's own address: a UDP socket on 0.0.0.0 replies
+        from the interface address, and resolvers drop replies from the wrong server.
+        """
         loop = asyncio.get_running_loop()
         transport, _ = await loop.create_datagram_endpoint(
-            lambda: _DnsProtocol(self.pool, self.capture), local_addr=(host, dns_port))
+            lambda: _DnsProtocol(self.pool, self.capture), local_addr=(dns_host or host, dns_port))
         self._servers.append(transport)
         bound = [transport.get_extra_info("sockname")[1]]
         for port in tcp_ports:
