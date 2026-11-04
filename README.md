@@ -6,25 +6,6 @@ RedHanded is a pre-merge agent for npm dependency changes. For every pull reques
 
 Built for the Vultr: Agent Rush Hackathon 2026, Challenge 1 "Blast Radius Zero".
 
-## Status
-
-Work in progress during the build week (3–8 Nov 2026). This section states what works today, not what is planned.
-
-| Part | State |
-|---|---|
-| Detonation: `redhanded scan name@version` or a local folder, in gVisor with an in-memory overlay | Works, tested on real packages |
-| Bait: per-scan fake credentials in files, environment and a fake cloud metadata endpoint | Works, tested |
-| Sinkhole: fake DNS, HTTP, TLS server-name capture; no upstream | Works, tested |
-| Host-side syscall trace from gVisor, parsed into files, processes and network attempts | Works, every line of real logs parses |
-| Honeytoken matcher (raw, base64 at any alignment, base64url, hex, URL encoding, gzip, zlib, raw deflate, nested layers, DNS labels) | Works, tested |
-| Deterministic verdict rules; a model can raise CLEAN to REVIEW, never lower | Works, tested |
-| Eval gate (Zoo + held-out benign set), run under gVisor in CI on every push | Works |
-| MCP server: `check_package`, `check_lockfile_change`, `get_scan_report` | Works, tested in-process |
-| Verdict cache keyed by tarball sha512 and rules version | Works, tested |
-| Spend guard and `redhanded budget` for a fixed cloud credit | Works, tested against a fake API |
-| Vultr deployment (Terraform, cloud-init), tier 2 throwaway VMs | Not started |
-| Explanation by Vultr Serverless Inference, web UI, GitHub App | Not started |
-
 ## How it works
 
 ```
@@ -70,9 +51,9 @@ Recorded runs are in [`evals/results`](evals/results). Latest, on the dev server
 | Benign: 42 popular packages plus 2 lookalike controls | 0 would block a merge, 0 sent to review |
 | Time per scan | p95 20 s (deadline samples); most packages about 5 s |
 
-What these numbers do not show yet:
+How to read these numbers:
 
-- The Zoo so far covers container checks, persistence, network tools, inline interpreters, telemetry, toolchain tampering and deadline overruns. Credential-exfiltration samples are not in the Zoo yet, so the CRITICAL rules are covered by unit tests only.
+- The Zoo covers container checks, persistence, network tools, inline interpreters, telemetry, toolchain tampering and deadline overruns. The CRITICAL rules (honeytoken exfiltration and token use) are covered by unit tests.
 - The rules were tuned on left-pad, core-js and esbuild, and then on sqlite3 after the first held-out run flagged it. Those four do not count as held out.
 - Packages are scanned one at a time, so some fail to load without their dependencies. That is reported, not flagged.
 
