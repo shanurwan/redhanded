@@ -57,15 +57,48 @@ def _x(pid, comm, call, args, ret="0 (0x0) (3µs)"):
     return f"I1104 14:15:09.215381       1 strace.go:607] [{pid:>4}:{pid:>4}] {comm} X {call}({args}) = {ret}"
 
 
-def test_lifecycle_runner_detected_from_parent_comm():
+def test_lifecycle_runner_is_the_process_running_npm_cli():
+    # npm retitles itself, so the task name has spaces and cannot identify it.
     lines = [
-        _x(1, "node", "clone", "CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|0x11, 0x0, 0x0, 0x7ed1, 0x0", "9 (0x9) (5µs)"),
+        _x(1, "sh", "execve", '0x55 /usr/local/bin/node, 0x56 ["node", "/usr/local/bin/npm", "rebuild", "x"], 0x57 []'),
+        _x(1, "npm rebuild x", "clone", "CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|0x11, 0x0, 0x0, 0x7ed1, 0x0", "9 (0x9) (5µs)"),
         _x(9, "node", "execve", '0x55 /bin/sh, 0x56 ["sh", "-c", "node build.js"], 0x57 []'),
         _x(9, "sh", "clone", "CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|0x11, 0x0, 0x0, 0x7ed1, 0x0", "10 (0xa) (5µs)"),
         _x(10, "sh", "execve", '0x55 /usr/bin/node, 0x56 ["node", "build.js"], 0x57 []'),
     ]
+    lines += [   # what the declared script starts is judged on its own
+        _x(10, "node", "clone", "CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|0x11, 0x0, 0x0, 0x7ed1, 0x0", "11 (0xb) (5µs)"),
+        _x(11, "node", "execve", '0x55 /usr/local/bin/node, 0x56 ["node", "-e", "1"], 0x57 []'),
+    ]
     f = parse(lines)
-    assert f.execs == [(["sh", "-c", "node build.js"], True), (["node", "build.js"], False)]
+    assert f.execs[1:] == [(["sh", "-c", "node build.js"], True), (["node", "build.js"], True),
+                           (["node", "-e", "1"], False)]
+    assert f.unparsed == 0
+
+
+def test_in_place_exec_of_the_declared_command_is_declared():
+    # busybox `sh -c "node -e ..."` replaces itself with node in the same pid (core-js does this).
+    lines = [
+        _x(1, "sh", "execve", '0x55 /usr/local/bin/node, 0x56 ["node", "/usr/local/bin/npm", "rebuild", "x"], 0x57 []'),
+        _x(1, "npm rebuild x", "clone", "CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|0x11, 0x0, 0x0, 0x7ed1, 0x0", "5 (0x5) (5µs)"),
+        _x(5, "node", "execve", '0x55 /bin/sh, 0x56 ["sh", "-c", "node -e \\"require(\'./p\')\\""], 0x57 []'),
+        _x(5, "sh", "execve", '0x55 /usr/local/bin/node, 0x56 ["node", "-e", "require(\'./p\')"], 0x57 []'),
+    ]
+    assert parse(lines).execs[-1] == (["node", "-e", "require('./p')"], True)
+
+
+def test_shell_spawned_by_plain_node_is_not_the_runner():
+    lines = [
+        _x(1, "sh", "execve", '0x55 /usr/local/bin/node, 0x56 ["node", "/work/.rh/load.js", "x"], 0x57 []'),
+        _x(1, "node", "clone", "CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|0x11, 0x0, 0x0, 0x7ed1, 0x0", "4 (0x4) (5µs)"),
+        _x(4, "node", "execve", '0x55 /bin/sh, 0x56 ["/bin/sh", "-c", "id"], 0x57 []'),
+    ]
+    assert parse(lines).execs[-1] == (["/bin/sh", "-c", "id"], False)
+
+
+def test_path_before_closing_paren_is_clean():
+    line = _x(2, "node", "open", "0x7e /proc/meminfo)", "18 (0x12) (3µs)")
+    assert parse([line]).opened == ["/proc/meminfo"]
 
 
 def test_failed_exec_not_counted():

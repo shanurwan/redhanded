@@ -5,6 +5,7 @@ sinkhole's records, and the honeytokens planted for this scan.
 """
 from __future__ import annotations
 
+import ipaddress
 import posixpath
 
 from .honeytokens import HoneytokenSet
@@ -24,6 +25,13 @@ TOKEN_SERVICES = {
 AUTH_HEADERS = ("authorization", "x-amz-security-token", "x-npm-auth", "private-token")
 # Writes here are an install doing its job, not persistence.
 _SCRATCH_PREFIXES = ("/tmp/", "/var/tmp/", "/dev/", "/proc/")
+
+
+def _loopback(ip: str) -> bool:
+    try:
+        return ipaddress.ip_address(ip).is_loopback
+    except ValueError:
+        return False
 
 
 def _payload(rec: Record) -> bytes:
@@ -54,7 +62,7 @@ def build(trace: TraceFacts, records: list[Record], pool: NamePool, tokens: Hone
             ev.exfil_matches.extend(m.token for m in matcher.find(rec.data))
 
     for ip, port in trace.connects:
-        if ip == resolver_ip and port == 53:
+        if (ip == resolver_ip and port == 53) or _loopback(ip):
             continue
         ev.connects.append(pool.name_of(ip) or ip)
 

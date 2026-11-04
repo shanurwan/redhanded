@@ -33,7 +33,12 @@ PERSISTENCE_SUFFIXES = (
     ".bashrc", ".bash_profile", ".profile", ".zshrc", ".zprofile",
     "/.github/workflows", "/.git/hooks", "/crontab", "/.config/autostart",
 )
-CONTAINER_CHECKS = frozenset({"/.dockerenv", "/run/.containerenv", "/proc/1/cgroup", "/proc/self/cgroup"})
+# Files that only tell you something about the box you run in. A runtime reading its
+# own /proc/<pid>/cgroup to size its heap is normal (node does), so only PID 1 counts.
+CONTAINER_CHECKS = frozenset({
+    "/.dockerenv", "/run/.containerenv", "/proc/1/cgroup", "/proc/1/sched",
+    "/proc/1/mountinfo", "/proc/1/environ", "/proc/vz", "/proc/xen",
+})
 
 
 @dataclass
@@ -43,7 +48,7 @@ class Evidence:
     token_uses: list[str] = field(default_factory=list)         # stolen token used against fake npm/GitHub APIs
     bait_reads: list[str] = field(default_factory=list)         # bait file paths opened
     connects: list[str] = field(default_factory=list)           # destination hosts or IPs contacted
-    execs: list[tuple[list[str], bool]] = field(default_factory=list)  # (argv, spawned directly by the lifecycle runner)
+    execs: list[tuple[list[str], bool]] = field(default_factory=list)  # (argv, part of a declared lifecycle command)
     writes: list[str] = field(default_factory=list)             # paths written outside the package
     stats: list[str] = field(default_factory=list)              # paths stat-ed or opened that look like environment checks
     incomplete: list[str] = field(default_factory=list)         # reasons the scan could not finish
@@ -69,12 +74,12 @@ def _suspicious_exec(argv: list[str], by_runner: bool) -> str | None:
     if exe in NET_TOOLS:
         return f"spawned {exe}"
     if by_runner:
-        return None   # npm itself runs every lifecycle script through `sh -c`
+        return None   # the command the package declares in package.json, visible to any reviewer
     flags = INLINE_FLAGS.get(exe)
     if flags and any(a in flags for a in argv[1:]):
         return f"ran inline code with {exe}"
-    if exe in {"sh", "bash", "dash", "zsh"} and "-c" in argv[1:]:
-        return f"ran a nested {exe} -c"
+    # A plain nested `sh -c` is not flagged: packages such as esbuild fall back to
+    # `sh -c "npm install <platform binary>"`. What the shell then does is still judged.
     return None
 
 

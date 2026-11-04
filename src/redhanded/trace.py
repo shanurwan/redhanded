@@ -12,12 +12,13 @@ import re
 from dataclasses import dataclass, field
 
 # I1104 14:14:56.540322  1 strace.go:610] [   1:   1] sh X openat(AT_FDCWD /tmp/rt, 0x7efa /etc/ld.so.cache, O_RDONLY|O_CLOEXEC, 0o0) = 3 (0x3) (30µs)
-# A failed call ends "= -1 errno=2 (no such file or directory) (5µs)".
+# A failed call ends "= -1 errno=2 (no such file or directory) (5µs)". The task name can
+# contain spaces: npm retitles itself "npm rebuild lef" (15 characters).
 _LINE = re.compile(
-    r"\]\s*\[\s*(?P<pid>\d+):\s*(?P<tid>\d+)\]\s+(?P<comm>\S+)\s+X\s+"
+    r"\]\s*\[\s*(?P<pid>\d+):\s*(?P<tid>\d+)\]\s+(?P<comm>.{1,16}?)\s+X\s+"
     r"(?P<call>\w+)\((?P<args>.*)\) = (?P<ret>-?\d+)(?P<rest>.*)$"
 )
-_PATH_ARG = re.compile(r"0x[0-9a-f]+ ([^,\s\[\]{}]+)")
+_PATH_ARG = re.compile(r"0x[0-9a-f]+ ([^,\s\[\]{}()]+)")
 _DIRFD = re.compile(r"^(?:AT_FDCWD|0x[0-9a-f]+) (/[^,\s]*),")
 _ARGV = re.compile(r"0x[0-9a-f]+ \[(.*?)\]")
 _QUOTED = re.compile(r'"((?:[^"\\]|\\.)*)"')
@@ -29,8 +30,8 @@ _STAT_CALLS = {"stat", "lstat", "newfstatat", "fstatat", "statx", "access", "fac
 _RENAME_CALLS = {"rename", "renameat", "renameat2", "link", "linkat", "symlink", "symlinkat"}
 _FORK_CALLS = {"clone", "clone3", "fork", "vfork"}
 _WRITE_FLAGS = ("O_WRONLY", "O_RDWR", "O_CREAT", "O_TRUNC", "O_APPEND")
-# npm runs each lifecycle script as `sh -c <script>`, spawned from node.
-_RUNNERS = {"node", "npm"}
+# npm runs each lifecycle script as `sh -c <script>`, spawned by the node process running npm's CLI.
+_NPM_CLI = ("/npm", "/npm-cli.js")
 
 
 @dataclass(frozen=True)
@@ -49,7 +50,7 @@ class TraceFacts:
     writes: list[str] = field(default_factory=list)       # paths created, written or renamed onto
     probes: list[str] = field(default_factory=list)       # paths stat-ed, accessed or opened, any result
     connects: list[tuple[str, int]] = field(default_factory=list)   # attempted, whatever the result
-    execs: list[tuple[list[str], bool]] = field(default_factory=list)  # (argv, spawned by the lifecycle runner)
+    execs: list[tuple[list[str], bool]] = field(default_factory=list)  # (argv, part of a declared lifecycle command)
     lines: int = 0
     unparsed: int = 0
 
@@ -85,7 +86,8 @@ def _argv(args: str) -> list[str]:
 def parse(lines) -> TraceFacts:
     facts = TraceFacts()
     parent: dict[int, int] = {}
-    comm: dict[int, str] = {}
+    npm_pids: set[int] = set()
+    lifecycle_pids: set[int] = set()     # the `sh -c` npm started, and its direct children
 
     for line in lines:
         if "strace.go" not in line or " X " not in line:
@@ -95,21 +97,26 @@ def parse(lines) -> TraceFacts:
         if ev is None:
             facts.unparsed += 1
             continue
-        comm.setdefault(ev.pid, ev.comm)
         call = ev.call
 
         if call in _FORK_CALLS:
             if not ev.failed and ev.ret > 0:
                 parent[ev.ret] = ev.pid
-                comm[ev.ret] = comm[ev.pid]
         elif call in ("execve", "execveat"):
             argv = _argv(ev.args)
             if not ev.failed and argv:
                 exe = posixpath.basename(argv[0])
-                by_runner = (exe == "sh" and argv[1:2] == ["-c"]
-                             and comm.get(parent.get(ev.pid, -1), "") in _RUNNERS)
-                facts.execs.append((argv, by_runner))
-                comm[ev.pid] = exe
+                runner_shell = exe == "sh" and argv[1:2] == ["-c"] and parent.get(ev.pid) in npm_pids
+                # busybox `sh -c "node -e ..."` execs node in place, so the declared command
+                # can appear in the shell's own pid as well as in its children.
+                declared = runner_shell or ev.pid in lifecycle_pids or parent.get(ev.pid) in lifecycle_pids
+                if runner_shell:
+                    lifecycle_pids.add(ev.pid)
+                if (argv, declared) not in facts.execs:
+                    facts.execs.append((argv, declared))
+                npm_pids.discard(ev.pid)
+                if exe == "node" and len(argv) > 1 and argv[1].endswith(_NPM_CLI):
+                    npm_pids.add(ev.pid)
         elif call in _OPEN_CALLS:
             path = _target_path(ev.args)
             if path:
