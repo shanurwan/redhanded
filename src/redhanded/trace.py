@@ -32,6 +32,10 @@ _FORK_CALLS = {"clone", "clone3", "fork", "vfork"}
 _WRITE_FLAGS = ("O_WRONLY", "O_RDWR", "O_CREAT", "O_TRUNC", "O_APPEND")
 # npm runs each lifecycle script as `sh -c <script>`, spawned by the node process running npm's CLI.
 _NPM_CLI = ("/npm", "/npm-cli.js")
+# npm's own install in the image (bundled node-gyp, run-script). Processes started
+# from here, and their children, are build tooling. A package that writes here is
+# caught separately (verdict.TOOLCHAIN_PREFIXES).
+TOOLCHAIN_PREFIX = "/usr/local/lib/node_modules/npm/"
 
 
 @dataclass(frozen=True)
@@ -88,6 +92,7 @@ def parse(lines) -> TraceFacts:
     parent: dict[int, int] = {}
     npm_pids: set[int] = set()
     lifecycle_pids: set[int] = set()     # the `sh -c` npm started, and its direct children
+    toolchain_pids: set[int] = set()     # npm's bundled tooling and everything it starts
 
     for line in lines:
         if "strace.go" not in line or " X " not in line:
@@ -102,6 +107,8 @@ def parse(lines) -> TraceFacts:
         if call in _FORK_CALLS:
             if not ev.failed and ev.ret > 0:
                 parent[ev.ret] = ev.pid
+                if ev.pid in toolchain_pids:
+                    toolchain_pids.add(ev.ret)
         elif call in ("execve", "execveat"):
             argv = _argv(ev.args)
             if not ev.failed and argv:
@@ -112,6 +119,9 @@ def parse(lines) -> TraceFacts:
                 declared = runner_shell or ev.pid in lifecycle_pids or parent.get(ev.pid) in lifecycle_pids
                 if runner_shell:
                     lifecycle_pids.add(ev.pid)
+                if any(a.startswith(TOOLCHAIN_PREFIX) for a in argv[:2]):
+                    toolchain_pids.add(ev.pid)
+                declared = declared or ev.pid in toolchain_pids
                 if (argv, declared) not in facts.execs:
                     facts.execs.append((argv, declared))
                 npm_pids.discard(ev.pid)

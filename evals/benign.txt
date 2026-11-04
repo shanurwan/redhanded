@@ -40,7 +40,7 @@ nodemon@3.1.14
 protobufjs@8.8.1
 @swc/core@1.16.21   # postinstall
 bcrypt@6.0.0        # install
-sqlite3@6.0.1       # install
+sqlite3@6.0.1       # install. Found a false positive in run 1 (node-gyp probing for Python); rules were fixed on it, so it is no longer held out.
 puppeteer@25.16.0   # postinstall
 electron@45.2.2
 sharp@0.35.5

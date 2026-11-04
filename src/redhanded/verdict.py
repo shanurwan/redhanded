@@ -11,6 +11,11 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 
 
+# Bump whenever a rule changes: cached verdicts are keyed by it, so an old
+# verdict is never served under new rules.
+RULES_VERSION = "2026-11-04.2"
+
+
 class Verdict(IntEnum):
     CLEAN = 0
     REVIEW = 1
@@ -35,6 +40,9 @@ PERSISTENCE_SUFFIXES = (
 )
 # Files that only tell you something about the box you run in. A runtime reading its
 # own /proc/<pid>/cgroup to size its heap is normal (node does), so only PID 1 counts.
+# The image's runtime and npm toolchain. Build tooling run from here is trusted
+# (trace.TOOLCHAIN_PREFIX), so writing here is tampering.
+TOOLCHAIN_PREFIXES = ("/usr/local/lib/node_modules/", "/usr/local/bin/", "/usr/local/include/node/")
 CONTAINER_CHECKS = frozenset({
     "/.dockerenv", "/run/.containerenv", "/proc/1/cgroup", "/proc/1/sched",
     "/proc/1/mountinfo", "/proc/1/environ", "/proc/vz", "/proc/xen",
@@ -107,6 +115,8 @@ def decide(ev: Evidence) -> Decision:
     for path in sorted(set(ev.writes)):
         if any(path.endswith(s) or s + "/" in path for s in PERSISTENCE_SUFFIXES):
             hit(Verdict.HIGH, f"wrote persistence path {path}")
+        elif path.startswith(TOOLCHAIN_PREFIXES):
+            hit(Verdict.HIGH, f"modified the runtime toolchain at {path}")
 
     if risky_connects and not ev.bait_reads:
         hit(Verdict.REVIEW, f"network attempts to {', '.join(risky_connects)}")

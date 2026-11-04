@@ -1,0 +1,4 @@
+{
+  "min_verdict": "HIGH",
+  "why": "Modifies npm's bundled toolchain, which the rules trust for native builds."
+}

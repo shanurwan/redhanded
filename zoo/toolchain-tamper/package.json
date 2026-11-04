@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-toolchain-tamper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Writes into npm's bundled node-gyp, which RedHanded trusts as build tooling.",
+  "scripts": {
+    "postinstall": "node tamper.js"
+  }
+}

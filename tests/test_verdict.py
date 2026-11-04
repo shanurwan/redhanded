@@ -79,3 +79,8 @@ def test_deterministic():
     ev = Evidence(bait_reads=["/home/dev/.npmrc", "/home/dev/.aws/credentials"], connects=["b", "a"],
                   stats=["/.dockerenv"], writes=["/home/dev/.bashrc"])
     assert decide(ev) == decide(ev)
+
+
+def test_writing_into_the_runtime_toolchain_is_high():
+    d = decide(Evidence(writes=["/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js"]))
+    assert d.verdict == Verdict.HIGH and "toolchain" in d.reasons[0]

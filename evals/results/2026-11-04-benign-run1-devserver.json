@@ -1,0 +1,461 @@
+{
+ "at": "2026-11-04T07:02:54Z",
+ "thresholds": {
+  "_note": "Set before the first run on 2026-11-04. Every Zoo sample must meet its expect.json; benign packages must never block.",
+  "max_review_rate": 0.2,
+  "max_seconds_p95": 180
+ },
+ "python": "3.9.25",
+ "passed": false,
+ "failures": [
+  "sqlite3@6.0.1: got HIGH"
+ ],
+ "summary": {
+  "malicious": {
+   "total": 0,
+   "caught": 0,
+   "recall": null,
+   "recall_wilson95": [
+    0.0,
+    1.0
+   ]
+  },
+  "benign": {
+   "total": 42,
+   "blocking_false_alarms": 1,
+   "review": 0,
+   "blocking_rate_wilson95": [
+    0.0042,
+    0.1232
+   ],
+   "review_rate": 0.0
+  },
+  "errors": 0,
+  "seconds_p95": 5.71
+ },
+ "results": [
+  {
+   "id": "lodash@4.18.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.68,
+   "scan_id": "rh-20261104-145810-7bead9",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "react@19.3.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.59,
+   "scan_id": "rh-20261104-145815-856072",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "react-dom@19.3.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-145820-3b11d2",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "express@5.3.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-145825-0ddc4b",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "chalk@6.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-145830-ddaeab",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "debug@4.4.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-145835-652f31",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "commander@15.0.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.62,
+   "scan_id": "rh-20261104-145839-77eead",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "axios@1.21.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-145844-f50a5c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "uuid@14.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.67,
+   "scan_id": "rh-20261104-145849-6fc77d",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "semver@7.8.6",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-145854-f31233",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "yargs@18.2.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-145859-c00cb9",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "dayjs@1.11.23",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.59,
+   "scan_id": "rh-20261104-145904-26fb38",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "moment@2.31.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.61,
+   "scan_id": "rh-20261104-145909-838254",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "tslib@2.9.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-145914-c1c204",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "minimist@1.2.8",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-145919-12424c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "glob@14.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-145924-c32a59",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "rimraf@6.1.4",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-145929-f68836",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "mkdirp@3.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-145934-74a06b",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "fs-extra@11.4.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-145939-ad9ad8",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "dotenv@18.0.9",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-145944-fc6a43",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "classnames@2.5.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.62,
+   "scan_id": "rh-20261104-145949-48d8ac",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "cross-env@10.1.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-145954-f33c97",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "typescript@7.0.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.61,
+   "scan_id": "rh-20261104-145959-cc3a45",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "ws@8.22.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.69,
+   "scan_id": "rh-20261104-150004-c22558",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "body-parser@2.4.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.62,
+   "scan_id": "rh-20261104-150009-1c66b2",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "jsonwebtoken@9.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-150014-f16dcc",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "bcryptjs@3.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-150018-d4b93c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "nanoid@6.0.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-150023-aff1c4",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zod@4.6.7",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.81,
+   "scan_id": "rh-20261104-150028-0dead7",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "rxjs@7.8.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 5.06,
+   "scan_id": "rh-20261104-150034-1008c1",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "prettier@3.9.10",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.66,
+   "scan_id": "rh-20261104-150039-4e846e",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "eslint@10.14.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.7,
+   "scan_id": "rh-20261104-150044-da7f33",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "husky@9.1.7",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 6.78,
+   "scan_id": "rh-20261104-150049-d3da8d",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "nodemon@3.1.14",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-150056-81170e",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "protobufjs@8.8.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.65,
+   "scan_id": "rh-20261104-150101-430fc0",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "@swc/core@1.16.21",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 76.0,
+   "scan_id": "rh-20261104-150106-31b5a7",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "bcrypt@6.0.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.75,
+   "scan_id": "rh-20261104-150223-70e0b5",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "sqlite3@6.0.1",
+   "kind": "benign",
+   "verdict": "HIGH",
+   "ok": false,
+   "seconds": 4.88,
+   "scan_id": "rh-20261104-150228-9fb38b",
+   "reasons": [
+    "HIGH: ran inline code with python3",
+    "HIGH: ran inline code with python"
+   ],
+   "error": ""
+  },
+  {
+   "id": "puppeteer@25.16.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.84,
+   "scan_id": "rh-20261104-150233-cdd7ca",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "electron@45.2.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 5.71,
+   "scan_id": "rh-20261104-150239-81d52e",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "sharp@0.35.5",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150245-d81c7c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "es5-ext@0.10.64",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.76,
+   "scan_id": "rh-20261104-150250-8170ab",
+   "reasons": [],
+   "error": ""
+  }
+ ]
+}

@@ -1,0 +1,573 @@
+{
+ "at": "2026-11-04T07:10:36Z",
+ "thresholds": {
+  "_note": "Set before the first run on 2026-11-04. Every Zoo sample must meet its expect.json; benign packages must never block.",
+  "max_review_rate": 0.2,
+  "max_seconds_p95": 180
+ },
+ "python": "3.9.25",
+ "passed": true,
+ "failures": [],
+ "summary": {
+  "malicious": {
+   "total": 8,
+   "caught": 8,
+   "recall": 1.0,
+   "recall_wilson95": [
+    0.6756,
+    1.0
+   ]
+  },
+  "benign": {
+   "total": 44,
+   "blocking_false_alarms": 0,
+   "review": 0,
+   "blocking_rate_wilson95": [
+    0.0,
+    0.0803
+   ],
+   "review_rate": 0.0
+  },
+  "errors": 0,
+  "seconds_p95": 20.18
+ },
+ "results": [
+  {
+   "id": "zoo/busy-loop-on-load",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 20.26,
+   "scan_id": "rh-20261104-150436-a07bb0",
+   "reasons": [
+    "REVIEW: killed at deadline"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/container-evader",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 5.24,
+   "scan_id": "rh-20261104-150456-56fc68",
+   "reasons": [
+    "REVIEW: checked whether it runs in a container (/.dockerenv)"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/hang-forever",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 20.18,
+   "scan_id": "rh-20261104-150501-24735a",
+   "reasons": [
+    "REVIEW: killed at deadline"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/inline-from-code",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.68,
+   "scan_id": "rh-20261104-150521-f764a4",
+   "reasons": [
+    "HIGH: ran inline code with node"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/lookalike-build-step",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.68,
+   "scan_id": "rh-20261104-150526-bffc90",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zoo/lookalike-inline-banner",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.74,
+   "scan_id": "rh-20261104-150531-6497fa",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zoo/network-tool",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150536-8193e9",
+   "reasons": [
+    "HIGH: spawned wget",
+    "REVIEW: network attempts to update.rh-zoo.invalid"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/persistence-profile",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.69,
+   "scan_id": "rh-20261104-150540-69d662",
+   "reasons": [
+    "HIGH: wrote persistence path /home/dev/.bashrc"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/telemetry-ping",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 4.79,
+   "scan_id": "rh-20261104-150545-4e7877",
+   "reasons": [
+    "REVIEW: network attempts to telemetry.rh-zoo.invalid"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/toolchain-tamper",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.73,
+   "scan_id": "rh-20261104-150550-9a0f42",
+   "reasons": [
+    "HIGH: modified the runtime toolchain at /usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js"
+   ],
+   "error": ""
+  },
+  {
+   "id": "lodash@4.18.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.67,
+   "scan_id": "rh-20261104-150555-abfc94",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "react@19.3.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150600-f07bf0",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "react-dom@19.3.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.65,
+   "scan_id": "rh-20261104-150605-916d68",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "express@5.3.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150610-1cb98d",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "chalk@6.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.62,
+   "scan_id": "rh-20261104-150615-ca9775",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "debug@4.4.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-150620-572c77",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "commander@15.0.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150625-86c996",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "axios@1.21.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150630-48d710",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "uuid@14.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.68,
+   "scan_id": "rh-20261104-150635-a25ab4",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "semver@7.8.6",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-150640-9c8359",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "yargs@18.2.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-150645-e92284",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "dayjs@1.11.23",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-150650-2a8778",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "moment@2.31.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.62,
+   "scan_id": "rh-20261104-150655-9096a8",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "tslib@2.9.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-150700-2d71e6",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "minimist@1.2.8",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150704-945515",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "glob@14.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150709-8bda89",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "rimraf@6.1.4",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-150714-068dea",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "mkdirp@3.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.59,
+   "scan_id": "rh-20261104-150719-570d65",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "fs-extra@11.4.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-150724-b6f9e1",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "dotenv@18.0.9",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-150729-5e529f",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "classnames@2.5.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150734-ea0e45",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "cross-env@10.1.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150739-87d143",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "typescript@7.0.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.65,
+   "scan_id": "rh-20261104-150744-72fa20",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "ws@8.22.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150749-83ab11",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "body-parser@2.4.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.56,
+   "scan_id": "rh-20261104-150754-96b810",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "jsonwebtoken@9.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-150759-4dac19",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "bcryptjs@3.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.63,
+   "scan_id": "rh-20261104-150804-4c3970",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "nanoid@6.0.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.62,
+   "scan_id": "rh-20261104-150809-148880",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zod@4.6.7",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.85,
+   "scan_id": "rh-20261104-150814-d993b1",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "rxjs@7.8.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 5.02,
+   "scan_id": "rh-20261104-150819-fde198",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "prettier@3.9.10",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.72,
+   "scan_id": "rh-20261104-150824-7ce0c3",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "eslint@10.14.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.65,
+   "scan_id": "rh-20261104-150829-a1e160",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "husky@9.1.7",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.62,
+   "scan_id": "rh-20261104-150834-d82134",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "nodemon@3.1.14",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.58,
+   "scan_id": "rh-20261104-150839-c33188",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "protobufjs@8.8.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.69,
+   "scan_id": "rh-20261104-150844-1f72ef",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "@swc/core@1.16.21",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 75.97,
+   "scan_id": "rh-20261104-150850-751a56",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "bcrypt@6.0.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.64,
+   "scan_id": "rh-20261104-151006-895fa4",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "sqlite3@6.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.79,
+   "scan_id": "rh-20261104-151011-f8a8f9",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "puppeteer@25.16.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.69,
+   "scan_id": "rh-20261104-151016-8db726",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "electron@45.2.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.69,
+   "scan_id": "rh-20261104-151021-d9aa80",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "sharp@0.35.5",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-151026-fbaacb",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "es5-ext@0.10.64",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.78,
+   "scan_id": "rh-20261104-151031-9d45c7",
+   "reasons": [],
+   "error": ""
+  }
+ ]
+}

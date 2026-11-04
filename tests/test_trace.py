@@ -110,3 +110,14 @@ def test_failed_exec_not_counted():
 def test_entry_lines_and_other_logs_ignored():
     assert parse_line("I1104 14:14:56.540322 1 strace.go:575] [   1:   1] sh E openat(AT_FDCWD /, 0x7e /x, O_RDONLY, 0o0)") is None
     assert parse(["I1104 14:14:56.540322 1 boot.go:10] booting"]).lines == 0
+
+
+def test_npm_bundled_toolchain_and_its_children_are_trusted():
+    # node-gyp probes for Python with `python3 -c` before compiling a native addon (sqlite3).
+    gyp = "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js"
+    lines = [
+        _x(7, "sh", "execve", f'0x55 /usr/local/bin/node, 0x56 ["node", "{gyp}", "rebuild"], 0x57 []'),
+        _x(7, "node", "clone", "CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|0x11, 0x0, 0x0, 0x7ed1, 0x0", "8 (0x8) (5µs)"),
+        _x(8, "node", "execve", '0x55 /usr/bin/python3, 0x56 ["python3", "-c", "import sys"], 0x57 []'),
+    ]
+    assert parse(lines).execs[-1] == (["python3", "-c", "import sys"], True)

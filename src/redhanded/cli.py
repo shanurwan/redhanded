@@ -165,7 +165,14 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--gate", default="evals/gate.json")
     e.add_argument("--out", default="evals/results/latest.json")
     e.add_argument("--only", choices=["zoo", "benign"])
+    m = sub.add_parser("mcp", help="serve the MCP tools (needs the mcp extra)")
+    m.add_argument("--transport", choices=["stdio", "streamable-http"], default="stdio")
     args = parser.parse_args(argv)
+
+    if args.cmd == "mcp":
+        from .mcp_server import main as mcp_main
+        mcp_main(args.transport)
+        return 0
 
     if args.cmd == "scan":
         return cmd_scan(args.package, args.deadline, args.json)
