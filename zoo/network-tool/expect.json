@@ -1,0 +1,4 @@
+{
+  "min_verdict": "HIGH",
+  "why": "Install script spawns wget to an unknown host."
+}

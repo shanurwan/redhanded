@@ -1,0 +1,7 @@
+{
+  "name": "rh-zoo-busy-loop-on-load",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CPU spin at load; must be killed at the deadline.",
+  "main": "index.js"
+}

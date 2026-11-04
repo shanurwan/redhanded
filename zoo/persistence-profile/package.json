@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-persistence-profile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Writes to ~/.bashrc from an install script (persistence path).",
+  "scripts": {
+    "postinstall": "node persist.js"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "rh-zoo-inline-from-code",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Spawns node -e from code at load time, not from a declared script.",
+  "main": "index.js"
+}

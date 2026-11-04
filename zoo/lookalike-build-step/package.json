@@ -1,0 +1,10 @@
+{
+  "name": "rh-zoo-lookalike-build-step",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Benign control: an install script that builds inside its own folder.",
+  "scripts": {
+    "postinstall": "node build.js"
+  },
+  "main": "dist/index.js"
+}

@@ -1,0 +1,4 @@
+{
+  "min_verdict": "REVIEW",
+  "why": "Checks /.dockerenv and /proc/1/cgroup, then stays quiet. Must be marked container-aware for tier 2."
+}

@@ -1,0 +1,5 @@
+{
+  "_note": "Set before the first run on 2026-11-04. Every Zoo sample must meet its expect.json; benign packages must never block.",
+  "max_review_rate": 0.2,
+  "max_seconds_p95": 180
+}

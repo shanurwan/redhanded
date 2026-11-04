@@ -1,0 +1,4 @@
+{
+  "max_verdict": "CLEAN",
+  "why": "Benign control: an install script that builds inside its own folder."
+}

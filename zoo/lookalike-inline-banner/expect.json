@@ -1,0 +1,4 @@
+{
+  "max_verdict": "CLEAN",
+  "why": "Benign control: declared inline postinstall, the core-js pattern."
+}

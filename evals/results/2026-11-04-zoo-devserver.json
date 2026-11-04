@@ -1,0 +1,141 @@
+{
+ "at": "2026-11-04T06:57:09Z",
+ "thresholds": {
+  "_note": "Set before the first run on 2026-11-04. Every Zoo sample must meet its expect.json; benign packages must never block.",
+  "max_review_rate": 0.2,
+  "max_seconds_p95": 180
+ },
+ "python": "3.9.25",
+ "passed": true,
+ "failures": [],
+ "summary": {
+  "malicious": {
+   "total": 7,
+   "caught": 7,
+   "recall": 1.0,
+   "recall_wilson95": [
+    0.6457,
+    1.0
+   ]
+  },
+  "benign": {
+   "total": 2,
+   "blocking_false_alarms": 0,
+   "review": 0,
+   "blocking_rate_wilson95": [
+    0.0,
+    0.6576
+   ],
+   "review_rate": 0.0
+  },
+  "errors": 0,
+  "seconds_p95": 20.28
+ },
+ "results": [
+  {
+   "id": "zoo/busy-loop-on-load",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 20.28,
+   "scan_id": "rh-20261104-145555-64cf30",
+   "reasons": [
+    "REVIEW: killed at deadline"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/container-evader",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 5.19,
+   "scan_id": "rh-20261104-145615-4e2dde",
+   "reasons": [
+    "REVIEW: checked whether it runs in a container (/.dockerenv)"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/hang-forever",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 20.21,
+   "scan_id": "rh-20261104-145620-562d0f",
+   "reasons": [
+    "REVIEW: killed at deadline"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/inline-from-code",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.68,
+   "scan_id": "rh-20261104-145640-3cfd90",
+   "reasons": [
+    "HIGH: ran inline code with node"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/lookalike-build-step",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.72,
+   "scan_id": "rh-20261104-145645-a03a9e",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zoo/lookalike-inline-banner",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 4.74,
+   "scan_id": "rh-20261104-145650-3d04c3",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zoo/network-tool",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.57,
+   "scan_id": "rh-20261104-145655-1c5c29",
+   "reasons": [
+    "HIGH: spawned wget",
+    "REVIEW: network attempts to update.rh-zoo.invalid"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/persistence-profile",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.68,
+   "scan_id": "rh-20261104-145659-3c75ec",
+   "reasons": [
+    "HIGH: wrote persistence path /home/dev/.bashrc"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/telemetry-ping",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 4.74,
+   "scan_id": "rh-20261104-145704-027829",
+   "reasons": [
+    "REVIEW: network attempts to telemetry.rh-zoo.invalid"
+   ],
+   "error": ""
+  }
+ ]
+}

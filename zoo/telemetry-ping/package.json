@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-telemetry-ping",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Contacts an unknown host but carries nothing sensitive: a human should look, the merge should not be blocked.",
+  "scripts": {
+    "postinstall": "node ping.js"
+  }
+}

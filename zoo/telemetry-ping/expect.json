@@ -1,0 +1,5 @@
+{
+  "min_verdict": "REVIEW",
+  "max_verdict": "REVIEW",
+  "why": "Contacts an unknown host but carries nothing sensitive: a human should look, the merge should not be blocked."
+}

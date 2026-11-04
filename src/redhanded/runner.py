@@ -295,12 +295,33 @@ class Report:
     sandbox: dict = field(default_factory=dict)
 
 
+def pack_dir(src: Path) -> tuple[str, str, bytes]:
+    """Pack a local package folder the way `npm pack` lays it out. Returns (name, version, tarball)."""
+    manifest = json.loads((src / "package.json").read_text(encoding="utf-8"))
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        for path in sorted(src.rglob("*")):
+            if path.is_file() and not path.is_symlink() and "node_modules" not in path.parts:
+                tar.add(path, arcname="package/" + path.relative_to(src).as_posix(), recursive=False)
+    return manifest["name"], manifest["version"], buf.getvalue()
+
+
 def scan(name: str, version: str, cfg: ScanConfig | None = None, want_integrity: str | None = None) -> Report:
     cfg = cfg or ScanConfig()
+    meta, tarball = fetch(name, version, cfg.registry, want_integrity)
+    return detonate(name, version, tarball, meta["dist"]["integrity"], cfg)
+
+
+def scan_local(src: Path, cfg: ScanConfig | None = None) -> Report:
+    name, version, tarball = pack_dir(src)
+    integrity = "sha512-" + base64.b64encode(hashlib.sha512(tarball).digest()).decode()
+    return detonate(name, version, tarball, integrity, cfg or ScanConfig())
+
+
+def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanConfig) -> Report:
     started = time.monotonic()
     scan_id = f"rh-{time.strftime('%Y%m%d-%H%M%S')}-{os.urandom(3).hex()}"
     scan_dir = Path(cfg.scans_dir) / scan_id
-    meta, tarball = fetch(name, version, cfg.registry, want_integrity)
     tokens = HoneytokenSet.generate(scan_id)
     prepare(scan_dir, name, version, tarball, tokens, cfg.rootfs)
 
@@ -330,7 +351,7 @@ def scan(name: str, version: str, cfg: ScanConfig | None = None, want_integrity:
     decision = decide(ev)
 
     report = Report(
-        scan_id=scan_id, package=name, version=version, integrity=meta["dist"]["integrity"],
+        scan_id=scan_id, package=name, version=version, integrity=integrity,
         verdict=decision.label, reasons=list(decision.reasons), container_aware=decision.container_aware,
         seconds=round(time.monotonic() - started, 2),
         evidence={k: v for k, v in asdict(ev).items() if k != "stats"} | {"stats_count": len(ev.stats)},

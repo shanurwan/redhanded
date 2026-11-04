@@ -1,0 +1,5 @@
+{
+  "min_verdict": "REVIEW",
+  "deadline_s": 20,
+  "why": "CPU spin at load; must be killed at the deadline."
+}

@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-network-tool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Install script spawns wget to an unknown host.",
+  "scripts": {
+    "postinstall": "wget -q -T 3 -O /dev/null http://update.rh-zoo.invalid/ping || true"
+  }
+}

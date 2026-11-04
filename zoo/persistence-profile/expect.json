@@ -1,0 +1,4 @@
+{
+  "min_verdict": "HIGH",
+  "why": "Writes to ~/.bashrc from an install script (persistence path)."
+}

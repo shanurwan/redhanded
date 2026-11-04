@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-container-evader",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Checks /.dockerenv and /proc/1/cgroup, then stays quiet. Must be marked container-aware for tier 2.",
+  "scripts": {
+    "postinstall": "node check.js"
+  }
+}

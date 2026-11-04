@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-lookalike-inline-banner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Benign control: declared inline postinstall, the core-js pattern.",
+  "scripts": {
+    "postinstall": "node -e \"console.log('thanks for installing on ' + process.platform)\""
+  }
+}

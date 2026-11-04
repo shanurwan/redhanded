@@ -1,0 +1,5 @@
+{
+  "min_verdict": "REVIEW",
+  "deadline_s": 20,
+  "why": "Install never finishes; must be killed at the deadline and reported."
+}

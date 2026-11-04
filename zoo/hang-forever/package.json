@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-hang-forever",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Install never finishes; must be killed at the deadline and reported.",
+  "scripts": {
+    "postinstall": "node hang.js"
+  }
+}

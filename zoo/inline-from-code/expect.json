@@ -1,0 +1,4 @@
+{
+  "min_verdict": "HIGH",
+  "why": "Spawns node -e from code at load time, not from a declared script."
+}

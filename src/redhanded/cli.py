@@ -88,14 +88,17 @@ def cmd_scan(spec: str, deadline: float, as_json: bool) -> int:
     import json
     from dataclasses import asdict
 
-    from .runner import ScanConfig, ScanError, scan
+    from .runner import ScanConfig, ScanError, scan, scan_local
 
-    name, sep, version = spec.rpartition("@")
-    if not sep or not name or not version:
-        print("redhanded: give the package as name@version", file=sys.stderr)
-        return 2
     try:
-        report = scan(name, version, ScanConfig(deadline_s=deadline))
+        if Path(spec).is_dir():
+            report = scan_local(Path(spec), ScanConfig(deadline_s=deadline))
+        else:
+            name, sep, version = spec.rpartition("@")
+            if not sep or not name or not version:
+                print("redhanded: give the package as name@version or a folder", file=sys.stderr)
+                return 2
+            report = scan(name, version, ScanConfig(deadline_s=deadline))
     except ScanError as e:
         print(f"redhanded: {e}", file=sys.stderr)
         return 2
@@ -106,6 +109,41 @@ def cmd_scan(spec: str, deadline: float, as_json: bool) -> int:
         for r in report.reasons:
             print(f"  {r}")
     return {"CLEAN": 0, "REVIEW": 1}.get(report.verdict, 3)
+
+
+def cmd_eval(zoo: str, benign: str | None, gate_path: str, out: str, only: str | None) -> int:
+    import json
+
+    from . import eval as ev
+    from .runner import ScanConfig, scan, scan_local
+
+    cases = []
+    if only in (None, "zoo"):
+        cases += ev.load_zoo(Path(zoo))
+    if benign and only in (None, "benign"):
+        cases += ev.load_benign(Path(benign))
+
+    def scanner(case):
+        cfg = ScanConfig(deadline_s=case.deadline_s)
+        if case.target.startswith(("/", ".")) or Path(case.target).is_dir():
+            r = scan_local(Path(case.target), cfg)
+        else:
+            name, _, version = case.target.rpartition("@")
+            r = scan(name, version, cfg)
+        return r.verdict, r.reasons, r.seconds, r.scan_id
+
+    def progress(r):
+        mark = "ok  " if r.ok else "FAIL"
+        print(f"{mark} {r.kind:6} {r.id:44} {r.verdict:8} {r.seconds:6.1f}s {r.error}", flush=True)
+
+    results = ev.run(cases, scanner, progress)
+    summary = ev.summarize(results)
+    thresholds = json.loads(Path(gate_path).read_text()) if Path(gate_path).is_file() else {}
+    failures = ev.gate(results, summary, thresholds)
+    ev.write_report(Path(out), results, summary, failures, {"thresholds": thresholds})
+    print(json.dumps(summary, indent=1))
+    print("GATE PASSED" if not failures else "GATE FAILED:\n  " + "\n  ".join(failures))
+    return 0 if not failures else 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -121,10 +159,18 @@ def main(argv: list[str] | None = None) -> int:
     sc.add_argument("package", help="name@version, e.g. left-pad@1.3.0 or @scope/pkg@2.0.0")
     sc.add_argument("--deadline", type=float, default=120.0)
     sc.add_argument("--json", action="store_true", help="print the full report as JSON")
+    e = sub.add_parser("eval", help="run the Zoo and benign set, and apply the gate")
+    e.add_argument("--zoo", default="zoo")
+    e.add_argument("--benign", default="evals/benign.txt")
+    e.add_argument("--gate", default="evals/gate.json")
+    e.add_argument("--out", default="evals/results/latest.json")
+    e.add_argument("--only", choices=["zoo", "benign"])
     args = parser.parse_args(argv)
 
     if args.cmd == "scan":
         return cmd_scan(args.package, args.deadline, args.json)
+    if args.cmd == "eval":
+        return cmd_eval(args.zoo, args.benign, args.gate, args.out, args.only)
     load_env(Path(args.env))
     try:
         client = VultrClient(os.environ.get("VULTR_API_KEY", ""))
