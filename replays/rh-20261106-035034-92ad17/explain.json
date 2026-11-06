@@ -1,0 +1,5 @@
+{
+ "text": "The package ran its install script and attempted an npm install of @esbuild/linux-x64, with network attempts directed only at registry.npmjs.org; the sandbox answered those attempts, so nothing was downloaded or reached a real host. It also wrote /work/node_modules/.bin/esbuild outside the package directory, which was discarded after the scan. No rule fired and no bait files or tokens were observed leaving. The reviewer should treat this as clean and proceed, optionally confirming the lockfile pins the expected esbuild version.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T04:33:13Z"
+}

@@ -1,0 +1,5 @@
+{
+ "text": "The package spawned wget twice to attempt a request to update.rh-zoo.invalid/ping, discarding the response to /dev/null. That kind of outbound call from an install or runtime path is a common way to signal a live host or fetch further payloads, and it has no clear reason to exist in this package. The sandbox answered those attempts with a fake network, so nothing was downloaded and no real host was contacted. The reviewer should not merge this until the author explains the endpoint and the wget invocation, and should treat the package as untrusted in the meantime.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T04:32:58Z"
+}

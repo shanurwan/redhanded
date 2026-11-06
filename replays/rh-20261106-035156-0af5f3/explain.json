@@ -1,0 +1,5 @@
+{
+ "text": "The package's postinstall script was executed during the scan, and that was the only activity observed. It made no network attempts, read no bait files, wrote nothing outside the package, and no honeytokens or stolen credentials were seen leaving. The rule engine therefore returned a CLEAN verdict, so no action is needed beyond a normal review of the change.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T04:33:15Z"
+}

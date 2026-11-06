@@ -1,0 +1,5 @@
+{
+ "text": "The package attempted network connections to telemetry.rh-zoo.invalid when its ping.js script was run. Those attempts were answered by a fake network inside the sandbox, so no data reached a real host and nothing was downloaded. Because the destination is a telemetry endpoint, the reviewer should confirm whether this outbound reporting is expected and approved for the project before merging.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T04:33:02Z"
+}

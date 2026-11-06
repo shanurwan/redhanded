@@ -1,0 +1,5 @@
+{
+ "text": "The package ran inline JavaScript through node -e, executing a short expression rather than a script file from the package. That matters because inline execution can hide what actually runs from a reviewer reading the source, and the rule engine flags it as HIGH on that basis. No network attempts, file writes outside the package, or token access were observed in this scan. The reviewer should look at where this inline invocation comes from in the package and confirm the executed string is fixed and harmless before merging.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T04:33:10Z"
+}
