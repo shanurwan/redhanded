@@ -1,0 +1,4 @@
+{
+ "text": "The package read bait credentials (AWS keys, an Ethereum keystore, .npmrc, an SSH private key), ran gh auth token to pull a GitHub token, and attempted network access to api.github.com, github.com and git-tanstack.com, with the stolen token used against the fake GitHub endpoint. It also wrote cache files outside its own directory under /home/dev/.bun. This matters because it combines credential harvesting with token exfiltration, which is the behaviour of a supply-chain compromise rather than a search client. The reviewer should not merge this version, should treat any real credentials present on build or developer machines as exposed, and should check the published tarball against the upstream repository before proceeding.",
+ "model": "deepseek-v4.1-flash-1017"
+}

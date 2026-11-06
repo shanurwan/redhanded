@@ -1,0 +1,14 @@
+{
+ "title": "A hijacked OpenSearch client",
+ "summary": "A real hijack from May 2026. It read the fake credentials and used a stolen GitHub token.",
+ "order": 1,
+ "full_syscall_log": {
+  "sha256": "81e0af6c04fb10dc3e1b43ab57fdbe487deba18b5ef4268176ea5e41f39b20fb",
+  "lines": 110201,
+  "excerpt_lines": 485
+ },
+ "real": true,
+ "hero": true,
+ "incident": "Mini Shai-Hulud",
+ "date": "2026-05-12"
+}

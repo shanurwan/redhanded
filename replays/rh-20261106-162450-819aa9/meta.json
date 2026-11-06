@@ -1,0 +1,14 @@
+{
+ "title": "A hijacked SubQuery package",
+ "summary": "A real attack from October 2026. It read four bait files and sent the machine's name out.",
+ "order": 4,
+ "full_syscall_log": {
+  "sha256": "688f1d88f0681c73263825884719203e7936141c86b22170a341e727387777ba",
+  "lines": 105823,
+  "excerpt_lines": 345
+ },
+ "real": true,
+ "hero": false,
+ "incident": "",
+ "date": "2026-10-05"
+}

@@ -1,0 +1,4 @@
+{
+ "text": "The package read bait credential files (AWS keys, an Ethereum keystore, .npmrc, an SSH private key), spawned curl to attempt downloads of a Bun runtime from github.com, and ran gh auth token before using a stolen token against the fake GitHub endpoint. It also checked /proc/1/environ to see whether it was running in a container, which suggests it was probing its environment before acting. All of this happened in a sandbox with no real internet, so nothing was downloaded and no real host was reached, but the behaviour is that of a credential stealer. Block this version in the pull request and escalate to the maintainers or security team rather than merging.",
+ "model": "deepseek-v4.1-flash-1017"
+}

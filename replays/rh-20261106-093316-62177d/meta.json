@@ -1,10 +1,11 @@
 {
  "title": "core-js 3.38.1",
  "summary": "A real package with a postinstall banner. Clean.",
- "order": 8,
+ "order": 18,
  "full_syscall_log": {
   "sha256": "2b0f3df940a7b776d5a174cff3497a8ac9a2427bc1f50b717a65f95cb8e9b0dd",
   "lines": 58296,
   "excerpt_lines": 96
- }
+ },
+ "hero": false
 }

@@ -1,0 +1,4 @@
+{
+ "text": "The install scripts tried to launch the machine's AI coding tools (claude, gemini, q) with their permission checks disabled, instructing them to recursively search home directories, config stores and wallet paths such as .ethereum and .electrum, and it also wrote to /home/dev/.bashrc and /home/dev/.zshrc. That combination matters because it points at harvesting local secrets and establishing persistence in shell startup files, even though the sandbox cut the run off at its deadline and no network destinations were recorded. The reviewer should not merge this version, and should check whether the telemetry and post-install scripts are expected to invoke AI CLIs or touch shell profiles at all.",
+ "model": "deepseek-v4.1-flash-1017"
+}

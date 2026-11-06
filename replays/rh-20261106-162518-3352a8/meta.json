@@ -1,0 +1,14 @@
+{
+ "title": "Malware that asks your AI tools for help",
+ "summary": "The real Nx attack. It ran the machine's AI coding tools with their permission checks off. The tools here are stubs that record the call.",
+ "order": 5,
+ "full_syscall_log": {
+  "sha256": "1e9e00ff29976a13bb04e20a3eabffbd51fc0285b1801c591714873fd61088fc",
+  "lines": 64641,
+  "excerpt_lines": 453
+ },
+ "real": true,
+ "hero": false,
+ "incident": "Nx s1ngularity",
+ "date": "2025-08-26"
+}

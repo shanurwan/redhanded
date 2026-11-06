@@ -1,0 +1,4 @@
+{
+ "text": "The package read the sandbox's bait credential files, including AWS keys, an Ethereum keystore, .npmrc and an SSH private key, and attempted network access to ci-artifacts.dev while sending this machine's hostname. That combination matters because it is the shape of credential harvesting and exfiltration, even though the sandbox had no real route out and nothing left the machine. The reviewer should treat this version as untrusted, avoid running it outside a sandbox, and check whether the dependency is genuinely needed or can be pinned to a reviewed version.",
+ "model": "deepseek-v4.1-flash-1017"
+}

@@ -1,0 +1,15 @@
+{
+ "title": "A real malicious skill, used by a real agent",
+ "summary": "From the ClawHub archive, labelled malicious by human review. The agent followed it to a paste site and an unknown download.",
+ "order": 6,
+ "full_syscall_log": {
+  "sha256": "acd7609106e1ec60bca8b6eba689d8f86d3c1113ed55a4dfc49c28818ce6eadb",
+  "lines": 227628,
+  "excerpt_lines": 600
+ },
+ "real": true,
+ "hero": false,
+ "date": "",
+ "incident": "ClawHavoc-style",
+ "kind": "skill"
+}

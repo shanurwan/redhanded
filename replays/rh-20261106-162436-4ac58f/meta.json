@@ -1,0 +1,14 @@
+{
+ "title": "A logging library turned stealer",
+ "summary": "A real attack from June 2026, caught with the credentials leaving.",
+ "order": 3,
+ "full_syscall_log": {
+  "sha256": "8fe94c4cc068a2c779ca8119006b24320488a31dbf169ccb2c2adecb5eb3aa06",
+  "lines": 154222,
+  "excerpt_lines": 600
+ },
+ "real": true,
+ "hero": false,
+ "incident": "",
+ "date": "2026-06-25"
+}

@@ -1,0 +1,4 @@
+{
+ "text": "The package read credential and key files (AWS credentials, GitHub hosts, .env, npmrc, SSH key, Ethereum keystore) and attempted network access to metadata endpoints, AWS Secrets Manager regions, GitHub and npm, with a honeytoken AWS access key ID observed leaving the sandbox and stolen tokens used against the fake GitHub and npm services. It also spawned curl to attempt downloading a Bun runtime and invoked the machine's AI coding tools. This is credential theft and exfiltration behaviour, so the reviewer should block the pull request, remove the package, and rotate any credentials that were present on machines where it ran.",
+ "model": "deepseek-v4.1-flash-1017"
+}

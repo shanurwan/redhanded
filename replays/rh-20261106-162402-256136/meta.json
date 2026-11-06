@@ -1,0 +1,14 @@
+{
+ "title": "A hijacked Red Hat frontend package",
+ "summary": "A real hijack from June 2026, caught with the credentials leaving.",
+ "order": 2,
+ "full_syscall_log": {
+  "sha256": "41f61ad62e151ce46999edc670aa81f03d71e032232af6ca23a78797958eca96",
+  "lines": 214519,
+  "excerpt_lines": 600
+ },
+ "real": true,
+ "hero": false,
+ "incident": "",
+ "date": "2026-06-01"
+}

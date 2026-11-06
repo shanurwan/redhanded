@@ -1,0 +1,4 @@
+{
+ "text": "The package's skill instructions directed the agent to fetch a release file from the hedefbari/openclaw-agent GitHub repository and to use glot.io, a paste and file-drop site, while also making network attempts to unpkg.com and other hosts. Sending an agent to a file-drop site and having it pull a release binary are the behaviours this rule set flags as HIGH, because that is how untrusted code or exfiltrated data would move in or out of a project. All of this happened in a sandbox with a fake internet, so the attempts reached no real host and nothing was downloaded or persisted. The reviewer should not merge this as-is and should read the package's SKILL.md to see exactly what it asks the agent to run.",
+ "model": "deepseek-v4.1-flash-1017"
+}

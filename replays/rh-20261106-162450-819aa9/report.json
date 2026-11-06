@@ -1,0 +1,145 @@
+{
+ "scan_id": "rh-20261106-162450-819aa9",
+ "package": "@subql/common",
+ "version": "5.8.3",
+ "integrity": "sha512-Oqkuh+7ejoB6fR3nsLgjadcVKvMeEpK0xOZNmv/UD4CjLUsMSabpYIz6Ga7bQuoGOIhzw/ECwvLFDy/IIAv+DA==",
+ "verdict": "HIGH",
+ "reasons": [
+  "HIGH: sent this machine's name to an outside host",
+  "HIGH: read bait (/home/dev/.aws/credentials, /home/dev/.ethereum/keystore/wallet.json, /home/dev/.npmrc, /home/dev/.ssh/id_ed25519) and attempted network access"
+ ],
+ "container_aware": false,
+ "seconds": 8.21,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [
+   "ci-artifacts.dev"
+  ],
+  "token_uses": [],
+  "bait_reads": [
+   "/home/dev/.aws/credentials",
+   "/home/dev/.ethereum/keystore/wallet.json",
+   "/home/dev/.npmrc",
+   "/home/dev/.ssh/id_ed25519"
+  ],
+  "connects": [
+   "ci-artifacts.dev"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node ./dist/project/readers/manifest-cache.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "./dist/project/readers/manifest-cache.js"
+    ],
+    true
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/node_modules/@subql/common/dist/project/readers/manifest-cache.js",
+     "--warm"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "@subql/common"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "@subql/common"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "gh auth token"
+    ],
+    false
+   ],
+   [
+    [
+     "script",
+     "--version"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "ai_tool_calls": [],
+  "exfil_to": {},
+  "http_requests": [
+   "ci-artifacts.dev GET /router",
+   "ci-artifacts.dev GET /router?id=dev-laptop-9e62284f-22&checkin=1&hn=dev-laptop-9e62284f&user=root&plat=linux&arch=x64&pid=22"
+  ],
+  "skill_root": "",
+  "stats_count": 4613
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 4.92,
+  "syscall_lines": 51664,
+  "unparsed": 0,
+  "sinkhole_records": 10,
+  "dependencies": "9 dependencies fetched"
+ },
+ "microvm": null,
+ "manifest": {
+  "scripts": {
+   "postinstall": "node ./dist/project/readers/manifest-cache.js"
+  },
+  "dependencies": [
+   "@subql/types-core",
+   "axios",
+   "class-transformer",
+   "class-validator",
+   "form-data",
+   "js-yaml",
+   "reflect-metadata",
+   "semver",
+   "update-notifier"
+  ]
+ },
+ "agent": null
+}
