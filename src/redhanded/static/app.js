@@ -115,7 +115,7 @@ function agentRow(step) {
 }
 function showSheet(view) {
   const r = view.report, ev = r.evidence || {};
-  $("s-pkg").textContent = `${r.package}@${r.version}`;
+  $("s-pkg").textContent = r.agent ? `Skill: ${r.package}` : `${r.package}@${r.version}`;
   $("s-id").textContent = `${r.integrity.slice(0, 32)}…  ·  scan ${r.scan_id}  ·  ${r.seconds}s`;
   $("s-verdict").textContent = r.verdict;
   $("s-verdict").className = `verdict v-${r.verdict}`;
@@ -231,7 +231,7 @@ function renderIncidents(list) {
     c.type = "button";
     const top = el("div", "card-top");
     top.append(el("span", "date", r.date || (r.verdict === "CLEAN" ? "Clean control" : "")), el("span", `pill v-${r.verdict}`, r.verdict));
-    c.append(top, el("b", "", r.title), el("code", "", `${r.package}@${r.version}`), el("p", "", r.summary));
+    c.append(top, el("b", "", r.title), el("code", "", r.kind === "skill" ? `skill: ${r.package}` : `${r.package}@${r.version}`), el("p", "", r.summary));
     c.addEventListener("click", () => { location.hash = r.scan_id; });
     return c;
   }));

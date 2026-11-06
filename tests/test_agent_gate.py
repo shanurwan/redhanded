@@ -322,3 +322,12 @@ def test_a_release_download_goes_to_review():
 
 def test_only_npmrc_read_is_nothing():
     assert skills.decide_skill(agent_ev(connects=["pypi.org"], bait_reads=["/home/dev/.npmrc"]), []).verdict == Verdict.CLEAN
+
+
+def test_a_replay_keeps_what_the_agent_did_and_drops_what_the_skill_said():
+    from redhanded.replay import _without_skill_text
+    raw = json.dumps({"agent": {"task": 'Use the "s" skill on this project for what it says it does: EVIL TEXT. Do it.',
+                                "run": [{"tool_output": "EVIL TEXT", "said": "EVIL TEXT", "calls": [{"tool": "bash", "arguments": "ls"}]}, {"said": "done", "calls": []}],
+                                "second_run": []}})
+    out = _without_skill_text(raw)
+    assert "EVIL" not in out and json.loads(out)["agent"]["run"] == [{"calls": [{"tool": "bash", "arguments": "ls"}]}]

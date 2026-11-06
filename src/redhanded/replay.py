@@ -39,12 +39,23 @@ def redact(line: str, bait: dict[str, str]) -> str:
     return TOKEN_SHAPES.sub("<honeytoken>", line)
 
 
+def _without_skill_text(raw: str) -> str:
+    """What a malicious skill said to the agent stays out of a replay. What the agent did stays in."""
+    report = json.loads(raw)
+    agent = report.get("agent")
+    if agent:
+        for run in ("run", "second_run"):
+            agent[run] = [{"calls": t.get("calls", [])} for t in agent.get(run, []) if t.get("calls")]
+        agent["task"] = re.sub(r"(for what it says it does:).*", r"\1 (its description).", agent.get("task", ""))
+    return json.dumps(report, indent=1)
+
+
 def export(scan_dir: Path, out_root: Path, title: str, summary: str, order: int = 99) -> Path:
     report = json.loads((scan_dir / "report.json").read_text())
     out = out_root / report["scan_id"]
     out.mkdir(parents=True, exist_ok=True)
     # Real malware passes stolen tokens on its command line, so the report carries them too.
-    (out / "report.json").write_text(redact((scan_dir / "report.json").read_text(), _bait_values(scan_dir) | _bait_values(scan_dir / "microvm")))
+    (out / "report.json").write_text(redact(_without_skill_text((scan_dir / "report.json").read_text()), _bait_values(scan_dir) | _bait_values(scan_dir / "microvm")))
     if (scan_dir / "explain.json").is_file():
         shutil.copyfile(scan_dir / "explain.json", out / "explain.json")
     if (scan_dir / "capture.jsonl").is_file():
