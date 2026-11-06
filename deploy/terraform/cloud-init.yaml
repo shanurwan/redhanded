@@ -64,6 +64,8 @@ write_files:
 
 runcmd:
   - sysctl --system
+  # Vultr images ship ufw allowing only SSH; the Vultr firewall group is the outer layer.
+  - ufw allow 80/tcp && ufw allow 443/tcp
   - mkdir -p /etc/redhanded /opt/redhanded/app /var/lib/redhanded/scans /var/lib/redhanded/bin/gvisor-bin
   - touch /etc/redhanded/env && chown root:rh /etc/redhanded/env && chmod 640 /etc/redhanded/env
   # gVisor, pinned and checksum-verified

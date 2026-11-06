@@ -43,9 +43,9 @@ umask 077
   echo "RH_HOST_LABEL=Vultr $REGION · $PLAN"
   for k in RH_CREDIT_GRANT RH_STOP_TIER2_AT RH_PAUSE_ALL_AT RH_CREDIT_EXPIRES RH_SCANS_PER_HOUR \
            VULTR_INFERENCE_API_KEY VULTR_INFERENCE_BASE_URL VULTR_INFERENCE_MODEL; do
-    v=$(get "$k"); [ -n "$v" ] && echo "$k=$v"
+    v=$(get "$k"); if [ -n "$v" ]; then echo "$k=$v"; fi
   done
-  v=$(get VULTR_GUARD_API_KEY); [ -n "$v" ] && echo "VULTR_API_KEY=$v"
+  v=$(get VULTR_GUARD_API_KEY); if [ -n "$v" ]; then echo "VULTR_API_KEY=$v"; fi
 } | "${SSH[@]}" 'cat > /etc/redhanded/env && chown root:rh /etc/redhanded/env && chmod 640 /etc/redhanded/env'
 
 "${SSH[@]}" "

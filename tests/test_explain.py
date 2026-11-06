@@ -55,3 +55,13 @@ def test_replay_export_keeps_story_lines_and_hashes_the_full_log(tmp_path):
     assert meta["full_syscall_log"]["lines"] == 3 and meta["full_syscall_log"]["excerpt_lines"] == 2
     assert "read(" not in (out / "syscalls-excerpt.txt").read_text()
     assert (out / "report.json").read_text() == (scan / "report.json").read_text()
+
+
+def test_replay_excerpt_names_honeytokens_instead_of_carrying_them(tmp_path):
+    from redhanded.replay import redact
+    secret = "Ab3/" * 10
+    bait = {secret: "AWS_SECRET_ACCESS_KEY"}
+    line = f'execve(0x1 /bin/sh, [], ["AWS_SECRET_ACCESS_KEY={secret}", "NPM_TOKEN=npm_{"a" * 36}", "X=AKIA{"B" * 16}"])'
+    out = redact(line, bait)
+    assert secret not in out and "<honeytoken:AWS_SECRET_ACCESS_KEY>" in out
+    assert "npm_aaaa" not in out and "AKIABBBB" not in out and out.count("<honeytoken>") == 2
