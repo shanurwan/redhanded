@@ -1,0 +1,18 @@
+# RedHanded
+
+Runs an npm package in a sandbox baited with fake credentials and a fake internet, and reports what it tried to do. Fixed rules decide the verdict. Text inside a package cannot change it.
+
+Verdicts: CLEAN (allow), REVIEW (ask a human), HIGH and CRITICAL (block).
+
+## MCP
+
+POST /mcp, stateless HTTP. Tools: check_package, check_lockfile_change, get_scan_report.
+
+## HTTP
+
+POST /api/scan {"package": "name@version"} returns {"job": id}
+POST /api/lockfile {"new_lockfile": "...", "old_lockfile": "..."} returns {"job": id}
+GET /api/jobs/{id} returns state, verdict and result
+GET /api/scans/{scan_id} returns the report and evidence
+
+Limit: 12 scans an hour per address.

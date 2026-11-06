@@ -19,6 +19,7 @@ cp -a /scan/home/. /home/dev/
 . /scan/env.sh
 umount /scan
 
+rm -f /sbin/rh-init          # nothing on this machine should say what it is for
 touch /tmp/.rh-start
 mount -o remount,strictatime /
 cd /work

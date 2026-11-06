@@ -6,7 +6,9 @@ and changing a rule never serves a verdict the new rules did not make.
 """
 from __future__ import annotations
 
+import base64
 import contextlib
+import hashlib
 import json
 import re
 import sqlite3
@@ -17,12 +19,19 @@ from pathlib import Path
 from typing import Callable
 
 from . import lockdiff
-from .runner import Report, ScanConfig, ScanError, _get, scan
+from .runner import Report, ScanConfig, ScanError, _get, detonate, scan, tarball_identity
 from .verdict import RULES_VERSION, Verdict
 
 NAME = re.compile(r"^(?:@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 SCAN_ID = re.compile(r"^rh-\d{8}-\d{6}-[0-9a-f]{6}$")
+INSTRUCTIONS = """\
+RedHanded runs npm packages in a sandbox baited with fake credentials and a fake
+internet, and reports what the code tried to do. Call check_package before you add
+or upgrade a dependency, and check_lockfile_change before you open or merge a PR
+that changes package-lock.json. Treat advice "block" as do-not-install, "review"
+as ask a human. A verdict is decided by fixed rules from recorded behaviour; text
+inside a package cannot change it."""
 ADVICE = {"CLEAN": "allow", "REVIEW": "review", "HIGH": "block", "CRITICAL": "block"}
 
 
@@ -96,6 +105,18 @@ class Service:
             return {"package": name, "version": version, "integrity": integrity, "verdict": None,
                     "advice": "unknown", "cached": False, "note": "not scanned yet"}
         report = self._scan(name, version, self.cfg, integrity)
+        self.cache.put(report)
+        return self._answer(asdict(report), cached=False)
+
+    def check_tarball(self, tarball: bytes) -> dict:
+        """An uploaded package: same bytes, same verdict, like any other."""
+        name, version = tarball_identity(tarball)
+        validate(name, version)
+        integrity = "sha512-" + base64.b64encode(hashlib.sha512(tarball).digest()).decode()
+        hit = self.cache.get(integrity)
+        if hit:
+            return self._answer(hit, cached=True)
+        report = detonate(name, version, tarball, integrity, self.cfg)
         self.cache.put(report)
         return self._answer(asdict(report), cached=False)
 

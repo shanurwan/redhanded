@@ -25,12 +25,14 @@ import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Callable
 
+from .agenttext import read_package_text
 from .evidence import build
 from .honeytokens import HoneytokenSet
 from .sinkhole import Capture, NamePool, Record
 from .trace import parse
-from .verdict import combine_microvm, decide
+from .verdict import combine_microvm, decide, flag_agent_text
 
 SANDBOX_IP = "172.31.255.2"
 GATEWAY_IP = "172.31.255.1"
@@ -79,6 +81,7 @@ class ScanConfig:
     fc_bin: str = field(default_factory=lambda: _env_path("RH_FC_BIN", ""))
     fc_kernel: str = field(default_factory=lambda: _env_path("RH_FC_KERNEL", ""))
     fc_rootfs: str = field(default_factory=lambda: _env_path("RH_FC_ROOTFS", ""))
+    text_reviewer: Callable[[str], bool] | None = None
 
     def microvm_ready(self) -> bool:
         return all(p and os.path.isfile(p) for p in (self.fc_bin, self.fc_kernel, self.fc_rootfs)) \
@@ -307,6 +310,20 @@ class Report:
     microvm: dict | None = None
 
 
+def tarball_identity(data: bytes) -> tuple[str, str]:
+    """(name, version) from an npm-layout tarball, without unpacking it."""
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
+            for member in tar:
+                if member.isfile() and member.name.count("/") == 1 and member.name.endswith("/package.json") \
+                        and member.size <= 1 << 20:
+                    manifest = json.loads(tar.extractfile(member).read())
+                    return str(manifest.get("name", "")), str(manifest.get("version", ""))
+    except (tarfile.TarError, OSError, ValueError, EOFError) as e:
+        raise ScanError(f"not a package tarball: {e}") from e
+    raise ScanError("no package.json at the top of the tarball")
+
+
 def pack_dir(src: Path) -> tuple[str, str, bytes]:
     """Pack a local package folder the way `npm pack` lays it out. Returns (name, version, tarball)."""
     manifest = json.loads((src / "package.json").read_text(encoding="utf-8"))
@@ -368,6 +385,8 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         second = tier2.detonate(name, version, tarball, scan_dir / "microvm", cfg)
         decision = combine_microvm(decision, ev, second.decision, second.evidence)
         microvm = second.summary()
+    if cfg.text_reviewer and cfg.text_reviewer(read_package_text(scan_dir / "work" / "node_modules" / name)):
+        decision = flag_agent_text(decision)
 
     report = Report(
         scan_id=scan_id, package=name, version=version, integrity=integrity,

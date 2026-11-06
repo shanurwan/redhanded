@@ -1,4 +1,5 @@
-# One Vultr VM runs the demo site, the scan worker, gVisor and the sinkhole.
+# One Vultr VX1 VM runs the site, the scan worker, gVisor, Firecracker and the sinkhole.
+# VX1 exposes /dev/kvm to guests, which is what the microVM tier needs.
 # `terraform destroy` removes every billable thing this creates.
 
 terraform {
@@ -15,12 +16,12 @@ provider "vultr" {} # reads VULTR_API_KEY
 
 variable "region" {
   type    = string
-  default = "lax"
+  default = "sjc"
 }
 
 variable "plan" {
   type    = string
-  default = "vc2-2c-4gb" # 2 vCPU / 4 GB: big native packages need the memory
+  default = "vx1-g-2c-8g-120s" # 2 vCPU / 8 GB, about $0.076/h
 }
 
 variable "admin_cidr" {
@@ -41,6 +42,23 @@ variable "sandbox_image" {
   description = "node:24-alpine, pinned by digest (same image as CI)"
   type        = string
   default     = "node@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85"
+}
+
+variable "firecracker_release" {
+  type    = string
+  default = "v1.17.0"
+}
+
+variable "guest_kernel" {
+  description = "Firecracker's CI build of Linux 6.1, pinned by path and sha256"
+  type = object({
+    key    = string
+    sha256 = string
+  })
+  default = {
+    key    = "firecracker-ci/20260717-5ac3f5ffdcd7-0/x86_64/vmlinux-6.1.176"
+    sha256 = "b9a22e694939105a63b074e2de127573ab84e4d4a0b235ae4ef92bbfc5b0fcc7"
+  }
 }
 
 locals {
@@ -103,6 +121,9 @@ resource "vultr_instance" "demo" {
   user_data = templatefile("${path.module}/cloud-init.yaml", {
     gvisor_release = var.gvisor_release
     sandbox_image  = var.sandbox_image
+    fc_release     = var.firecracker_release
+    kernel_key     = var.guest_kernel.key
+    kernel_sha256  = var.guest_kernel.sha256
   })
 }
 
@@ -116,7 +137,7 @@ output "url" {
 }
 
 output "hourly_cost_note" {
-  value = "vc2-2c-4gb is about $0.027/h; run terraform destroy when judging ends"
+  value = "vx1-g-2c-8g-120s is about $0.076/h; run terraform destroy when judging ends"
 }
 
 output "plan" {

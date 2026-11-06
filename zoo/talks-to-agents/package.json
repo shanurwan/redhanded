@@ -1,0 +1,6 @@
+{
+  "name": "rh-zoo-talks-to-agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Does nothing when run. Its README tries to talk an AI reviewer into approving it."
+}

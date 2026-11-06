@@ -47,7 +47,7 @@ def diff(old: dict | None, new: dict) -> list[Change]:
     changes = []
     for path in sorted(after):
         entry = after[path]
-        if "version" not in entry:
+        if "version" not in entry or "node_modules/" not in path:
             continue
         prev = before.get(path)
         if prev and prev.get("version") == entry["version"] and prev.get("integrity") == entry.get("integrity"):

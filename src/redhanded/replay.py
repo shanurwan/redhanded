@@ -48,6 +48,13 @@ def export(scan_dir: Path, out_root: Path, title: str, summary: str, order: int 
         if (scan_dir / optional).is_file():
             shutil.copyfile(scan_dir / optional, out / optional)
 
+    micro = scan_dir / "microvm"
+    micro_bait = _bait_values(micro)
+    if (micro / "capture.jsonl").is_file():
+        shutil.copyfile(micro / "capture.jsonl", out / "microvm-capture.jsonl")
+    if (micro / "log" / "console.txt").is_file():
+        console = (micro / "log" / "console.txt").read_text(errors="replace")
+        (out / "microvm-console.txt").write_text("\n".join(redact(l, micro_bait) for l in console.splitlines()) + "\n")
     bait = _bait_values(scan_dir)
     digest, total, kept = hashlib.sha256(), 0, []
     for path in sorted(glob.glob(str(scan_dir / "log" / "*.boot.txt"))):

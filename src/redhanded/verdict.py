@@ -148,6 +148,13 @@ def combine_microvm(first: Decision, sandbox: Evidence, second: Decision, microv
     return Decision(level, tuple(reasons), first.container_aware)
 
 
+def flag_agent_text(decision: Decision) -> Decision:
+    """The package's text addresses AI agents. Raises to REVIEW at most, and never quotes it."""
+    return Decision(max(decision.verdict, Verdict.REVIEW),
+                    decision.reasons + ("REVIEW: package text gives instructions to AI agents",),
+                    decision.container_aware)
+
+
 def apply_model_opinion(decision: Decision, model_label: str | None) -> Decision:
     """Let the model raise CLEAN to REVIEW. Anything else it says is ignored."""
     if decision.verdict == Verdict.CLEAN and model_label and model_label.upper() in {"REVIEW", "HIGH", "CRITICAL"}:

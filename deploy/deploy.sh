@@ -10,8 +10,6 @@ cd "$(dirname "$0")/.."
 tf() { terraform -chdir=deploy/terraform "$@"; }
 IP=$(tf output -raw ip)
 SITE=$(tf output -raw url); SITE=${SITE#https://}
-PLAN=$(tf output -raw plan 2>/dev/null || echo vc2-2c-4gb)
-REGION=$(tf output -raw region 2>/dev/null || echo lax)
 SSH=(ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 "root@$IP")
 
 get() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2- || true; }
@@ -40,7 +38,9 @@ umask 077
   echo "RH_REPLAYS=/opt/redhanded/app/replays"
   echo "RH_ZOO=/opt/redhanded/app/zoo"
   echo "RH_TRUST_PROXY=1"
-  echo "RH_HOST_LABEL=Vultr $REGION · $PLAN"
+  echo "RH_FC_BIN=/var/lib/redhanded/bin/firecracker"
+  echo "RH_FC_KERNEL=/var/lib/redhanded/vmlinux"
+  echo "RH_FC_ROOTFS=/var/lib/redhanded/guest.ext4"
   for k in RH_CREDIT_GRANT RH_STOP_TIER2_AT RH_PAUSE_ALL_AT RH_CREDIT_EXPIRES RH_SCANS_PER_HOUR \
            VULTR_INFERENCE_API_KEY VULTR_INFERENCE_BASE_URL VULTR_INFERENCE_MODEL; do
     v=$(get "$k"); if [ -n "$v" ]; then echo "$k=$v"; fi
@@ -48,12 +48,20 @@ umask 077
   v=$(get VULTR_GUARD_API_KEY); if [ -n "$v" ]; then echo "VULTR_API_KEY=$v"; fi
 } | "${SSH[@]}" 'cat > /etc/redhanded/env && chown root:rh /etc/redhanded/env && chmod 640 /etc/redhanded/env'
 
+"${SSH[@]}" '
+  set -e
+  cd /var/lib/redhanded
+  rsync -a --delete rootfs/ guest-rootfs/
+  install -m 755 /opt/redhanded/app/deploy/guest/rh-init guest-rootfs/sbin/rh-init
+  mke2fs -q -F -t ext4 -d guest-rootfs guest.ext4 1200M
+  chown rh:rh guest.ext4'
+
 "${SSH[@]}" "
   set -e
   printf '%s {\n  encode gzip\n  reverse_proxy 127.0.0.1:8080\n  header Strict-Transport-Security \"max-age=31536000\"\n}\n' '$SITE' > /etc/caddy/Caddyfile
   systemctl restart caddy redhanded-guard redhanded-web
   sleep 2
   systemctl is-active caddy redhanded-guard redhanded-web
-  curl -fsS http://127.0.0.1:8080/api/status"
+  curl -fsS http://127.0.0.1:8080/healthz"
 echo
 echo "live at https://$SITE"

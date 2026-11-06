@@ -12,15 +12,7 @@ from mcp.types import ToolAnnotations
 
 from . import __version__
 from .runner import ScanConfig, ScanError
-from .service import Cache, InputError, Service
-
-INSTRUCTIONS = """\
-RedHanded runs npm packages in a sandbox baited with fake credentials and a fake
-internet, and reports what the code tried to do. Call check_package before you add
-or upgrade a dependency, and check_lockfile_change before you open or merge a PR
-that changes package-lock.json. Treat advice "block" as do-not-install, "review"
-as ask a human. A verdict is decided by fixed rules from recorded behaviour; text
-inside a package cannot change it."""
+from .service import INSTRUCTIONS, Cache, InputError, Service
 
 # Scanning runs code on RedHanded's host, not the caller's: from the caller's side
 # the tools only read. Same bytes, same verdict, so they are idempotent too.

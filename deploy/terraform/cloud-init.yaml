@@ -1,7 +1,7 @@
 #cloud-config
 # Base host for RedHanded. The application itself is pushed by deploy/deploy.sh.
 package_update: true
-packages: [python3, python3-venv, curl, bzip2, rsync, caddy, docker.io, unattended-upgrades]
+packages: [python3, python3-venv, curl, bzip2, rsync, caddy, docker.io, e2fsprogs, iproute2, unattended-upgrades]
 
 users:
   - name: rh
@@ -78,6 +78,19 @@ runcmd:
     mkdir -p gv && tar xjf gvisor.tar.bz2 -C gv
     install -m 755 gv/runsc /var/lib/redhanded/bin/runsc
     install -m 755 gv/gvisor-bin/* /var/lib/redhanded/bin/gvisor-bin/
+  # Firecracker and its guest kernel, pinned and checksum-verified
+  - |
+    set -e
+    cd /tmp
+    V="${fc_release}"
+    curl -fsSLO "https://github.com/firecracker-microvm/firecracker/releases/download/$V/firecracker-$V-x86_64.tgz"
+    curl -fsSLO "https://github.com/firecracker-microvm/firecracker/releases/download/$V/firecracker-$V-x86_64.tgz.sha256.txt"
+    sha256sum -c "firecracker-$V-x86_64.tgz.sha256.txt"
+    tar xzf "firecracker-$V-x86_64.tgz"
+    install -m 755 "release-$V-x86_64/firecracker-$V-x86_64" /var/lib/redhanded/bin/firecracker
+    curl -fsSL -o /var/lib/redhanded/vmlinux "https://s3.amazonaws.com/spec.ccfc.min/${kernel_key}"
+    echo "${kernel_sha256}  /var/lib/redhanded/vmlinux" | sha256sum -c
+    usermod -aG kvm rh
   # The sandbox root filesystem, from the same pinned image as CI. Docker is only used to export it.
   - |
     set -e
@@ -85,6 +98,7 @@ runcmd:
     cid=$(docker create "${sandbox_image}")
     docker export "$cid" | tar -x -C /var/lib/redhanded/rootfs --no-same-owner
     docker rm "$cid"
+    rm -f /var/lib/redhanded/rootfs/.dockerenv    # docker export leaves this behind; a dev machine has none
     systemctl disable --now docker.service docker.socket
   - chown -R rh:rh /var/lib/redhanded /opt/redhanded
   - python3 -m venv /opt/redhanded/venv && chown -R rh:rh /opt/redhanded/venv

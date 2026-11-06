@@ -1,0 +1,4 @@
+{
+  "max_verdict": "REVIEW",
+  "why": "Nothing in its behaviour is wrong, so fixed rules alone say CLEAN. With Vultr Serverless Inference on, the README raises it to REVIEW."
+}
