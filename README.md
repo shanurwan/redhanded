@@ -121,7 +121,7 @@ For every hijacked release in those two runs with an earlier release still on np
 | Blocked by default | 85 | 85 |
 | Blocked in strict mode | | 107 (75%) |
 
-On 75 ordinary consecutive releases from live npm, the comparison moved 0 verdicts and 0 added an install script. Strict mode's rule was written after seeing the hijack side, so its 107 is not a held-out figure. Legitimate packages do sometimes add install scripts, which is why it stays off by default.
+On 275 ordinary consecutive releases from live npm, none blocked on their own, the comparison sent 1 to review, blocked 0, and 1 added an install script. Strict mode's rule was written after seeing the hijack side, so its 107 is not a held-out figure. On this sample it would have stopped one ordinary release in 275, and legitimate packages do add install scripts, so it stays off by default.
 
 ### Real agent skills
 
@@ -203,6 +203,8 @@ jobs:
 ```
 
 A HIGH or CRITICAL verdict, or an answer that never arrives, fails the check. The job summary links to the evidence. Add it as a required check in branch protection to block the merge.
+
+With repair on, the repo must allow Actions to open pull requests (Settings, Actions, General). GitHub may hold the workflow on the fix PR for a person to approve, because a bot opened it. The fix PR's `redhanded` status is posted either way.
 
 ## Development
 

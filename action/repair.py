@@ -2,9 +2,9 @@
 """After a block: ask RedHanded for the version to go back to, and open the fix as a PR.
 
 Standard library plus git and npm from the runner. npm only rewrites the lockfile
-(--package-lock-only --ignore-scripts), so nothing from the package runs here. A PR opened
-with the workflow's own token starts no workflows, so the verdict for the fix branch is
-fetched here and posted on its commit. A fork's read-only token gets a comment-free no-op.
+(--package-lock-only --ignore-scripts), so nothing from the package runs here. GitHub may hold
+the workflow on a PR opened with the workflow's own token until a person approves it, so the
+verdict for the fix branch is fetched here and posted on its commit. A fork's read-only token gets a comment-free no-op.
 """
 import json
 import os
@@ -69,7 +69,7 @@ def body_for(blocked, repair, server):
     lines = [f"RedHanded blocked `{blocked['name']}@{blocked['version']}`. This goes back to `{pin['version']}`.", "", "### What the blocked version added"]
     changes = repair.get("new_in_blocked_version") or []
     lines += [f"- {c['kind'].replace('_', ' ')}: `{str(c['what']).replace('`', '')}`" for c in changes[:15]] or ["- Nothing recorded beyond the block itself."]
-    lines += ["", f"### What the agent did ({repair['decided_by']})"]
+    lines += ["", "### What the agent did" if repair["decided_by"] == "agent" else f"### What was tried ({repair['decided_by']})"]
     lines += [f"{i}. {describe_step(s)}" for i, s in enumerate(repair["steps"], 1)]
     if pin.get("scan_id"):
         lines += ["", f"Evidence for `{pin['version']}`: {server}/#{pin['scan_id']}"]

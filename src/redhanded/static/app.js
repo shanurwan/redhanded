@@ -109,7 +109,7 @@ function agentSteps(run) {
   return out;
 }
 function agentRow(step) {
-  const li = el("li", step.bad ? "bad" : "");
+  const li = el("li", step.bad ? "bad" : step.good ? "good" : "");
   li.append(el("span", "tag", step.tag), el("code", "", step.text));
   return li;
 }
