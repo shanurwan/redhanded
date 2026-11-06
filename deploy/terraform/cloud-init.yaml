@@ -89,5 +89,6 @@ runcmd:
   - chown -R rh:rh /var/lib/redhanded /opt/redhanded
   - python3 -m venv /opt/redhanded/venv && chown -R rh:rh /opt/redhanded/venv
   - systemctl daemon-reload
-  - systemctl enable redhanded-web.service redhanded-guard.service redhanded-prune.timer
+  - systemctl enable redhanded-web.service redhanded-guard.service
+  - systemctl enable --now redhanded-prune.timer
   - touch /var/lib/redhanded/cloud-init.done
