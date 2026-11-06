@@ -53,6 +53,18 @@ def _is_harness(argv: list[str]) -> bool:
     return "/work/.rh/load.js" in argv or ("rebuild" in argv and any(a == "npm" or a.endswith("/npm") for a in argv))
 
 
+def _commands(execs: list) -> list[str]:
+    """What the package ran, once each: `sh -c wget ...` and the wget it starts are one command."""
+    argvs = [argv for argv, _ in execs if not _is_harness(argv)]
+    started = {argv[0] for argv in argvs}
+
+    def is_wrapper(argv: list[str]) -> bool:
+        words = argv[2].split() if argv[:2] == ["sh", "-c"] and len(argv) > 2 else []
+        return bool(words) and words[0] in started
+
+    return [_clip(" ".join(argv)) for argv in argvs if not is_wrapper(argv)][:MAX_ITEMS]
+
+
 def evidence_digest(report: dict) -> dict:
     """The facts the model sees: the rule engine's reasons plus clipped evidence."""
     ev = report.get("evidence", {})
@@ -60,7 +72,7 @@ def evidence_digest(report: dict) -> dict:
         "package": f"{report['package']}@{report['version']}",
         "verdict": report["verdict"],
         "rule_reasons": report.get("reasons", [])[:MAX_ITEMS],
-        "commands_run": [_clip(" ".join(argv)) for argv, _ in ev.get("execs", []) if not _is_harness(argv)][:MAX_ITEMS],
+        "commands_run": _commands(ev.get("execs", [])),
         "network_destinations": [_clip(h) for h in ev.get("connects", [])][:MAX_ITEMS],
         "bait_files_read": ev.get("bait_reads", [])[:MAX_ITEMS],
         "files_written_outside_package": [_clip(p) for p in ev.get("writes", [])][:MAX_ITEMS],

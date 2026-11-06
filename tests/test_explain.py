@@ -46,6 +46,11 @@ def test_our_own_harness_commands_are_not_shown_to_the_model():
     assert digest["commands_run"] == ["sh -c wget x"]
 
 
+def test_a_shell_wrapper_and_the_command_it_starts_count_once():
+    execs = [[["sh", "-c", "wget -q http://x || true"], True], [["wget", "-q", "http://x"], True]]
+    assert evidence_digest({**REPORT, "evidence": {"execs": execs}})["commands_run"] == ["wget -q http://x"]
+
+
 def test_a_truncated_answer_is_not_shown():
     out = Explainer("k", post=lambda *a: {"choices": [{"finish_reason": "length", "message": {"content": "It ran"}}]}).explain(REPORT)
     assert out["text"] is None and out["error"] == "truncated"

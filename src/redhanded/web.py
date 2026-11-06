@@ -58,7 +58,7 @@ class WebConfig:
         os.environ.get("RH_GUARD_STATE", "~/rh-dev/web/guard-state.json")))
     host_label: str = field(default_factory=lambda: os.environ.get("RH_HOST_LABEL", "dev server"))
     trust_proxy: bool = field(default_factory=lambda: os.environ.get("RH_TRUST_PROXY") == "1")
-    scans_per_hour: int = field(default_factory=lambda: int(os.environ.get("RH_SCANS_PER_HOUR", "6")))
+    scans_per_hour: int = field(default_factory=lambda: int(os.environ.get("RH_SCANS_PER_HOUR", "12")))
     max_queue: int = 8
 
 

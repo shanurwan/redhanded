@@ -39,7 +39,7 @@ code, .mono { font-family: var(--mono); font-size: 13px; }
 .replay .t { font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
 .replay .s { color: var(--dim); font-size: 13px; margin-top: 4px; }
 
-.badge { font: 700 11px/1 var(--mono); padding: 4px 6px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; }
+.badge { font: 700 11px/1 var(--mono); padding: 4px 6px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; align-self: flex-start; }
 .v-CRITICAL, .v-HIGH { color: var(--red); } .v-REVIEW { color: var(--amber); } .v-CLEAN { color: var(--green); }
 
 .scan-form { display: flex; gap: 8px; }
