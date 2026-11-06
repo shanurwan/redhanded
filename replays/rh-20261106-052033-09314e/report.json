@@ -1,0 +1,102 @@
+{
+ "scan_id": "rh-20261106-052033-09314e",
+ "package": "rh-zoo-container-evader",
+ "version": "1.0.0",
+ "integrity": "sha512-v9PlefzfNjD6v4NwzSChZNH2tpz8CoDmdlSHdt9ZMZXkD+M00PHQCXVrort6OSSnmBLf64WeK3mkBt+Wr9N6vQ==",
+ "verdict": "REVIEW",
+ "reasons": [
+  "REVIEW: checked whether it runs in a container (/.dockerenv, /proc/1/cgroup)"
+ ],
+ "container_aware": true,
+ "seconds": 13.33,
+ "evidence": {
+  "exfil_matches": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "rh-zoo-container-evader",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "rh-zoo-container-evader",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node check.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "check.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "rh-zoo-container-evader"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "probe_flags": [],
+  "stats_count": 2829
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 4.7,
+  "syscall_lines": 40380,
+  "unparsed": 0,
+  "sinkhole_records": 0
+ },
+ "microvm": {
+  "verdict": "CLEAN",
+  "reasons": [],
+  "seconds": 4.85,
+  "evidence": {
+   "exfil_matches": [],
+   "token_uses": [],
+   "bait_reads": [],
+   "connects": [],
+   "execs": [],
+   "writes": [],
+   "incomplete": [],
+   "deadline_killed": false,
+   "probe_flags": []
+  },
+  "sandbox": {
+   "deadline_killed": false,
+   "exit_code": 0,
+   "errors": [],
+   "seconds": 4.7,
+   "sinkhole_records": 0,
+   "guest_report_finished": true
+  }
+ }
+}

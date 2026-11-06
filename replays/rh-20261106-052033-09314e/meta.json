@@ -1,0 +1,10 @@
+{
+ "title": "Checks if it is being watched",
+ "summary": "",
+ "order": 7,
+ "full_syscall_log": {
+  "sha256": "f24e1c30cf2fe94f5860dc9cf18ddb959c913ad02b90947a8f8b483263b747f1",
+  "lines": 81857,
+  "excerpt_lines": 120
+ }
+}

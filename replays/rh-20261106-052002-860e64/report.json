@@ -1,0 +1,81 @@
+{
+ "scan_id": "rh-20261106-052002-860e64",
+ "package": "rh-zoo-toolchain-tamper",
+ "version": "1.0.0",
+ "integrity": "sha512-bhv44GnT8mtNXndiaWcsnM/a9rQx+w/MNfK3aCKj+XBrcbOHChhg1O5OPwO1rDPwxAebDjEb93IJopPswzgfEQ==",
+ "verdict": "HIGH",
+ "reasons": [
+  "HIGH: modified the runtime toolchain at /usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js"
+ ],
+ "container_aware": false,
+ "seconds": 5.75,
+ "evidence": {
+  "exfil_matches": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "rh-zoo-toolchain-tamper",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "rh-zoo-toolchain-tamper",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node tamper.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "tamper.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "rh-zoo-toolchain-tamper"
+    ],
+    false
+   ]
+  ],
+  "writes": [
+   "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js"
+  ],
+  "incomplete": [],
+  "deadline_killed": false,
+  "probe_flags": [],
+  "stats_count": 2827
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 4.65,
+  "syscall_lines": 39840,
+  "unparsed": 0,
+  "sinkhole_records": 0
+ },
+ "microvm": null
+}

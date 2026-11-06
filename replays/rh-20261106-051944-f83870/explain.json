@@ -1,0 +1,5 @@
+{
+ "text": "The package spawned wget to attempt a request to update.rh-zoo.invalid, which the sandbox\u2019s fake internet answered without any real host being reached. That matters because outbound network activity during a package scan can be an attempt to fetch payloads or signal an external endpoint, even though nothing was downloaded here. The reviewer should treat this as HIGH, inspect the package for why it invokes wget, and block or remove it from the pull request until that behavior is explained.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T05:19:53Z"
+}

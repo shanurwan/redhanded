@@ -1,5 +1,0 @@
-{
- "text": "The package ran check.js, which probed for the presence of /.dockerenv to determine whether it was executing inside a container. That kind of environment check is often a precursor to behavior that changes under analysis, so it warrants a look even though this scan recorded no network attempts, no bait file reads, and no writes outside the package. Review the check.js source and the package's purpose before merging, and confirm the container detection is justified by what the package is meant to do.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T04:33:05Z"
-}

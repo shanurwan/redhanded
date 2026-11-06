@@ -1,0 +1,70 @@
+2026-11-06T05:22:34.450417813 [anonymous-instance:main] Running Firecracker v1.17.0
+2026-11-06T05:22:34.454030437 [anonymous-instance:main] Artificially kick devices
+2026-11-06T05:22:34.454133067 [anonymous-instance:fc_vcpu 0] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T05:22:34.454134650 [anonymous-instance:fc_vcpu 1] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T05:22:34.454162017 [anonymous-instance:main] Successfully started microvm that was configured from one single json
+2026-11-06T05:22:34.461922371 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0xcf8:0x4 failed: Failed to find address range.
+2026-11-06T05:22:34.461966662 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0xcfc:0x2 failed: Failed to find address range.
+[    0.012976] SELinux: CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE is non-zero.  This is deprecated and will be rejected in a future kernel release.
+[    0.012976] SELinux: https://github.com/SELinuxProject/selinux-kernel/wiki/DEPRECATE-checkreqprot
+2026-11-06T05:22:34.497901218 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T05:22:34.497934404 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+2026-11-06T05:22:34.500733648 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T05:22:34.500764520 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+[    0.017435] PCI: Fatal: No config space access function found
+2026-11-06T05:22:34.520261039 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0x87:0x1 failed: Failed to find address range.
+2026-11-06T05:22:34.536028083 [anonymous-instance:fc_vcpu 0] [Block:root] notifying queues
+2026-11-06T05:22:34.537560684 [anonymous-instance:fc_vcpu 0] [Block:scan] notifying queues
+2026-11-06T05:22:34.539807266 [anonymous-instance:fc_vcpu 0] [Net:eth0] notifying queues
+[    0.593120] EXT4-fs (vdb): write access unavailable, skipping orphan cleanup
+== lifecycle scripts
+
+> esbuild@0.24.0 postinstall
+> node install.js
+
+[esbuild] Failed to find package "@esbuild/linux-x64" on the file system
+
+This can happen if you use the "--no-optional" flag. The "optionalDependencies"
+package.json feature is used by esbuild to install the correct binary executable
+for your current platform. This install script will now attempt to work around
+this. If that fails, you need to remove the "--no-optional" flag to use esbuild.
+
+[esbuild] Trying to install package "@esbuild/linux-x64" using npm
+[esbuild] Failed to install package "@esbuild/linux-x64" using npm: Command failed: npm install --loglevel=error --prefer-offline --no-audit --progress=false @esbuild/linux-x64@0.24.0
+npm error code ECONNRESET
+npm error errno ECONNRESET
+npm error network request to https://registry.npmjs.org/@esbuild%2flinux-x64 failed, reason: Client network socket disconnected before secure TLS connection was established
+npm error network This is a problem related to network connectivity.
+npm error network In most cases you are behind a proxy or have bad network settings.
+npm error network
+npm error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
+npm error A complete log of this run can be found in: /home/dev/.npm/_logs/2026-11-06T05_22_35_961Z-debug-0.log
+
+[esbuild] Trying to download "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.24.0.tgz"
+[esbuild] Failed to download "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.24.0.tgz": Client network socket disconnected before secure TLS connection was established
+/work/node_modules/esbuild/install.js:274
+        throw new Error(`Failed to install package "${pkg}"`);
+              ^
+
+Error: Failed to install package "@esbuild/linux-x64"
+    at checkAndPreparePackage (/work/node_modules/esbuild/install.js:274:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.22.2
+[1mnpm[22m [31merror[39m [94mcode[39m [33m1[39m
+[1mnpm[22m [31merror[39m [94mpath[39m /work/node_modules/esbuild
+[1mnpm[22m [31merror[39m command failed
+[1mnpm[22m [31merror[39m [94mcommand[39m sh -c node install.js
+[1mnpm[22m [31merror[39m A complete log of this run can be found in: /home/dev/.npm/_logs/2026-11-06T05_22_35_256Z-debug-0.log
+== exit 1
+== load
+loaded
+== exit 0
+RH-WRITE /home/dev/.npm/_logs/2026-11-06T05_22_35_256Z-debug-0.log
+RH-WRITE /home/dev/.npm/_logs/2026-11-06T05_22_35_961Z-debug-0.log
+RH-REPORT-END
+[   75.123147] reboot: Restarting system
+2026-11-06T05:23:49.624963546 [anonymous-instance:main] Vmm is stopping.
+2026-11-06T05:23:49.624991165 [anonymous-instance:main] Killing vCPU threads
+2026-11-06T05:23:49.625025001 [anonymous-instance:fc_vcpu 0] Requested a vCPU run with immediate_exit enabled. The operation was skipped
+2026-11-06T05:23:49.664741305 [anonymous-instance:main] Firecracker exiting successfully. exit_code=0

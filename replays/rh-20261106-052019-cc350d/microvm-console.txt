@@ -1,0 +1,31 @@
+2026-11-06T05:20:24.812854063 [anonymous-instance:main] Running Firecracker v1.17.0
+2026-11-06T05:20:24.816638353 [anonymous-instance:main] Artificially kick devices
+2026-11-06T05:20:24.816780058 [anonymous-instance:fc_vcpu 1] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T05:20:24.816786507 [anonymous-instance:fc_vcpu 0] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T05:20:24.816804972 [anonymous-instance:main] Successfully started microvm that was configured from one single json
+2026-11-06T05:20:24.824919092 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0xcf8:0x4 failed: Failed to find address range.
+2026-11-06T05:20:24.824971194 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0xcfc:0x2 failed: Failed to find address range.
+[    0.013095] SELinux: CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE is non-zero.  This is deprecated and will be rejected in a future kernel release.
+[    0.013095] SELinux: https://github.com/SELinuxProject/selinux-kernel/wiki/DEPRECATE-checkreqprot
+2026-11-06T05:20:24.861271350 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T05:20:24.861308701 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+2026-11-06T05:20:24.864110468 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T05:20:24.864166835 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+[    0.017955] PCI: Fatal: No config space access function found
+2026-11-06T05:20:24.883921912 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0x87:0x1 failed: Failed to find address range.
+2026-11-06T05:20:24.899870560 [anonymous-instance:fc_vcpu 0] [Block:root] notifying queues
+2026-11-06T05:20:24.901492802 [anonymous-instance:fc_vcpu 0] [Block:scan] notifying queues
+2026-11-06T05:20:24.903698449 [anonymous-instance:fc_vcpu 0] [Net:eth0] notifying queues
+[    0.597789] EXT4-fs (vdb): write access unavailable, skipping orphan cleanup
+== lifecycle scripts
+rebuilt dependencies successfully
+== exit 0
+== load
+loaded
+== exit 0
+RH-WRITE /home/dev/.npm/_logs/2026-11-06T05_20_25_632Z-debug-0.log
+RH-REPORT-END
+[    4.463054] reboot: Restarting system
+2026-11-06T05:20:29.328402876 [anonymous-instance:main] Vmm is stopping.
+2026-11-06T05:20:29.328418787 [anonymous-instance:main] Killing vCPU threads
+2026-11-06T05:20:29.360626438 [anonymous-instance:main] Firecracker exiting successfully. exit_code=0

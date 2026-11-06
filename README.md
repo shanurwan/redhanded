@@ -78,19 +78,22 @@ A package's declared lifecycle command, and npm's own build tooling (such as bun
 
 `redhanded eval` scans every sample in [`zoo/`](zoo) and every pinned package in [`evals/benign.txt`](evals/benign.txt), then applies [`evals/gate.json`](evals/gate.json). Verdicts are deterministic, so the gate is exact: a sample below the verdict its `expect.json` demands fails the run, and a benign package that would block a merge fails it.
 
-Recorded runs are in [`evals/results`](evals/results). Latest, on the dev server (rules `2026-11-04.2`):
+Recorded runs are in [`evals/results`](evals/results). Latest, on the VX1 host with both tiers on (rules `2026-11-06.1`):
 
 | Set | Result |
 |---|---|
-| Zoo samples (must be caught) | 8 of 8 at or above the expected verdict (Wilson 95%: 0.68 to 1.0) |
-| Benign: 42 popular packages plus 2 lookalike controls | 0 would block a merge, 0 sent to review |
-| Time per scan | p95 20 s (deadline samples); most packages about 5 s |
+| Zoo samples (must be caught) | 9 of 9 at or above the expected verdict (Wilson 95%: 0.70 to 1.0) |
+| Benign: 42 popular packages plus 3 controls | 0 would block a merge, 0 sent to review |
+| Time per scan | About 10 s for most packages; p95 20 s. Large native builds take longer: esbuild took 154 s |
+| Agent-text check on 42 real package READMEs | 0 flagged |
 
 How to read these numbers:
 
-- The Zoo covers container checks, persistence, network tools, inline interpreters, telemetry, toolchain tampering and deadline overruns. The CRITICAL rules (honeytoken exfiltration and token use) are covered by unit tests.
+- The Zoo covers sandbox evasion, container checks, persistence, network tools, inline interpreters, telemetry, toolchain tampering and deadline overruns. The CRITICAL rules (honeytoken exfiltration and token use) are covered by unit tests.
 - The rules were tuned on left-pad, core-js and esbuild, and then on sqlite3 after the first held-out run flagged it. Those four do not count as held out.
 - Packages are scanned one at a time, so some fail to load without their dependencies. That is reported, not flagged.
+- CI runs the Zoo under gVisor alone, without the model. The microVM tier and the agent-text check run on the VX1 host.
+- The agent-text check has been measured for false alarms much more than for catches: one Zoo sample and three hand-written strings. A package can also word its text to slip past it, so a miss means nothing was flagged, not that nothing is there.
 
 ## Use it
 

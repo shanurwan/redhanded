@@ -1,0 +1,10 @@
+{
+ "title": "Plants itself in ~/.bashrc",
+ "summary": "",
+ "order": 3,
+ "full_syscall_log": {
+  "sha256": "0ddaa89c879404a14ccf3e138f449e7b51c79972458eadfbc0d666456773b968",
+  "lines": 82137,
+  "excerpt_lines": 112
+ }
+}

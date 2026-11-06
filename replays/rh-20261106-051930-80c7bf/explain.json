@@ -1,0 +1,5 @@
+{
+ "text": "The package checked for container indicators (/.dockerenv and /proc/1/cgroup) and attempted to contact c2.rh-zoo.invalid; the microVM run exposed that destination while the sandbox run did not, which is consistent with sandbox evasion. That matters because an attempted command-and-control contact combined with hiding from the sandbox is high-risk behavior, even though the fake network contained it. The reviewer should not merge this package, should quarantine or remove it, and should escalate for further investigation.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T05:19:44Z"
+}

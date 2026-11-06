@@ -1,0 +1,109 @@
+{
+ "scan_id": "rh-20261106-053203-476fec",
+ "package": "rh-zoo-telemetry-ping",
+ "version": "1.0.0",
+ "integrity": "sha512-cMluOUrqthl0u+A2tc0k2YZqimiO9uqmlfSNMSPcVa3YgoEfXNc6vMsB3TpuuvRHmkzpIM8kox6rqPDGbEMzAA==",
+ "verdict": "REVIEW",
+ "reasons": [
+  "REVIEW: network attempts to telemetry.rh-zoo.invalid",
+  "REVIEW: network attempts to telemetry.rh-zoo.invalid (in the microVM)"
+ ],
+ "container_aware": false,
+ "seconds": 11.07,
+ "evidence": {
+  "exfil_matches": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [
+   "telemetry.rh-zoo.invalid"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "rh-zoo-telemetry-ping",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "rh-zoo-telemetry-ping",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node ping.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "ping.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "rh-zoo-telemetry-ping"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "probe_flags": [],
+  "stats_count": 2828
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 4.7,
+  "syscall_lines": 42011,
+  "unparsed": 0,
+  "sinkhole_records": 3
+ },
+ "microvm": {
+  "verdict": "REVIEW",
+  "reasons": [
+   "REVIEW: network attempts to telemetry.rh-zoo.invalid"
+  ],
+  "seconds": 4.85,
+  "evidence": {
+   "exfil_matches": [],
+   "token_uses": [],
+   "bait_reads": [],
+   "connects": [
+    "telemetry.rh-zoo.invalid"
+   ],
+   "execs": [],
+   "writes": [],
+   "incomplete": [],
+   "deadline_killed": false,
+   "probe_flags": []
+  },
+  "sandbox": {
+   "deadline_killed": false,
+   "exit_code": 0,
+   "errors": [],
+   "seconds": 4.7,
+   "sinkhole_records": 3,
+   "guest_report_finished": true
+  }
+ }
+}

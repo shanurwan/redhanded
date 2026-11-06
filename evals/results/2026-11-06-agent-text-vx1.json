@@ -1,0 +1,12 @@
+{
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T05:31:11Z",
+ "benign_checked": 42,
+ "benign_flagged": [],
+ "zoo_checked": 12,
+ "zoo_flagged": [
+  "talks-to-agents"
+ ],
+ "errors": [],
+ "note": "Package text only. One injection sample exists, plus 3 hand-written strings in the model comparison."
+}

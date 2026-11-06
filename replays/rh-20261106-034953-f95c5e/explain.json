@@ -1,5 +1,0 @@
-{
- "text": "The package's persist.js script wrote to /home/dev/.bashrc, a shell startup file outside the package directory. Modifying a shell profile is a persistence technique: it can cause code to run automatically in future shells, which is why the rule engine rated this HIGH. No network activity was observed, and the write was discarded after the scan. The reviewer should not merge this package and should inspect persist.js to see what it tried to append to the profile.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T04:33:00Z"
-}

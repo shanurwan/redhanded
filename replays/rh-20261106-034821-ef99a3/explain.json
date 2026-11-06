@@ -1,5 +1,0 @@
-{
- "text": "The package spawned wget to attempt a request to update.rh-zoo.invalid, using a short timeout and discarding the output. That matters because a dependency reaching out to an external host at install or run time is a common way to fetch or signal with remote infrastructure, and the destination is not something the package needs to function. Nothing was downloaded and no real host was contacted, since the sandbox answered every network attempt. The reviewer should not merge this as-is and should ask the author why the package needs outbound network access at all.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T04:38:21Z"
-}

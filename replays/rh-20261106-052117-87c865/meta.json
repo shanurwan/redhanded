@@ -1,0 +1,10 @@
+{
+ "title": "esbuild 0.24.0",
+ "summary": "",
+ "order": 9,
+ "full_syscall_log": {
+  "sha256": "2a65357229bff931107b8269c33556c8ef4d3d275619f6a0ea833e0dd12932f5",
+  "lines": 155898,
+  "excerpt_lines": 258
+ }
+}

@@ -1,0 +1,10 @@
+{
+ "title": "Calls home during install",
+ "summary": "",
+ "order": 2,
+ "full_syscall_log": {
+  "sha256": "6bebaa33ca7f959923520468b7c0e382b8ffd44cd28f3de99b03d9bae3a34acb",
+  "lines": 77175,
+  "excerpt_lines": 107
+ }
+}

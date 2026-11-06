@@ -1,0 +1,10 @@
+{
+ "title": "Install telemetry",
+ "summary": "",
+ "order": 8,
+ "full_syscall_log": {
+  "sha256": "4a368e00eaa5b52bfa36aafaa22f9355ab72df0bc2984d16f0bc93dda2830017",
+  "lines": 85145,
+  "excerpt_lines": 109
+ }
+}
