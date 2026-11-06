@@ -82,6 +82,21 @@ Module._load = function (request, parent, isMain) {
     throw e;
   }
 };
+// The same for import. A named import from a stand-in still fails to link: this covers default imports.
+if (Module.registerHooks) {
+  Module.registerHooks({
+    resolve(specifier, context, next) {
+      try { return next(specifier, context); }
+      catch (e) {
+        const from = context.parentURL || "";
+        if (e && e.code === "ERR_MODULE_NOT_FOUND" && !/^[./]|^node:|^file:|^data:/.test(specifier) && from.includes("/node_modules/") && !from.includes("/usr/local/lib/node_modules/")) {
+          return { url: "data:text/javascript,const f=function(){return p};const p=new Proxy(f,{get:(t,k)=>k===Symbol.toPrimitive?()=>'':k==='then'?undefined:p,apply:()=>p,construct:()=>p});export default p;", shortCircuit: true };
+        }
+        throw e;
+      }
+    },
+  });
+}
 """
 _LOADER = """\
 // Use the package the way an application would, so code behind an import or a call runs.

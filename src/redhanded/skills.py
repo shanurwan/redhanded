@@ -59,7 +59,7 @@ const TOOLS = [
 const clip = (s) => String(s).slice(0, 6000);
 function run(name, a) {
   try {
-    if (name === "bash") { const r = spawnSync("bash", ["-c", String(a.command)], { cwd: "/work/project", encoding: "utf8", timeout: 20000, maxBuffer: 1 << 22 }); return clip((r.stdout || "") + (r.stderr || "") + (r.error ? String(r.error) : "")); }
+    if (name === "bash") { const r = spawnSync("bash", ["-c", String(a.command)], { cwd: cfg.cwd || "/work/project", encoding: "utf8", timeout: 20000, maxBuffer: 1 << 22 }); return clip((r.stdout || "") + (r.stderr || "") + (r.error ? String(r.error) : "")); }
     if (name === "read_file") return clip(fs.readFileSync(String(a.path), "utf8"));
     if (name === "write_file") { fs.mkdirSync(require("path").dirname(String(a.path)), { recursive: true }); fs.writeFileSync(String(a.path), String(a.content)); return "written"; }
   } catch (e) { return "error: " + e.message; }
@@ -419,7 +419,7 @@ class PackageProbe(DecoyAgent):
         rh = scan / "work" / ".rh"
         (rh / "run.sh").write_text(_PROBE_HARNESS)
         (rh / "agent.js").write_text(_AGENT)
-        (rh / "task.json").write_text(json.dumps({"system": _SYSTEM_PROBE.format(canary=canary), "task": self.task(), "key": "sk-" + secrets.token_hex(20)}))
+        (rh / "task.json").write_text(json.dumps({"system": _SYSTEM_PROBE.format(canary=canary), "task": self.task(), "key": "sk-" + secrets.token_hex(20), "cwd": "/work"}))
         gateway = ModelGateway(scan / "model.sock", scan / "agent.jsonl", self.api_key, self.base_url, self.model, self._post)
         gateway.start()
         self._gateways[str(scan)] = gateway

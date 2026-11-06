@@ -452,3 +452,18 @@ def test_a_replay_keeps_what_the_agent_did_and_drops_what_the_skill_said():
 def test_git_sample_hooks_are_not_persistence():
     assert decide(Evidence(writes=["/home/dev/repo/.git/hooks/pre-commit.sample"])).verdict == Verdict.CLEAN
     assert decide(Evidence(writes=["/home/dev/repo/.git/hooks/pre-commit"])).verdict == Verdict.HIGH
+
+
+def test_a_package_probe_runs_its_shell_where_the_package_is(tmp_path):
+    (tmp_path / "home").mkdir()
+    (tmp_path / "work/.rh").mkdir(parents=True)
+    (tmp_path / "work/node_modules/p").mkdir(parents=True)
+    (tmp_path / "work/node_modules/p/README.md").write_text("Calls https://api.p.dev for data.")
+    mode = skills.PackageProbe("p", "", "k")
+    mode.arm(tmp_path, HoneytokenSet.generate("t"))
+    try:
+        assert json.loads((tmp_path / "work/.rh/task.json").read_text())["cwd"] == "/work"
+        assert "cfg.cwd" in (tmp_path / "work/.rh/agent.js").read_text()
+        assert "api.p.dev" in mode.declared
+    finally:
+        mode.close(tmp_path)
