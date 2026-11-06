@@ -44,6 +44,7 @@ umask 077
   echo "RH_FC_BIN=/var/lib/redhanded/bin/firecracker"
   echo "RH_FC_KERNEL=/var/lib/redhanded/vmlinux"
   echo "RH_FC_ROOTFS=/var/lib/redhanded/guest.ext4"
+  echo "RH_MIRROR=/var/lib/redhanded/mirror"
   for k in RH_CREDIT_GRANT RH_STOP_TIER2_AT RH_PAUSE_ALL_AT RH_CREDIT_EXPIRES RH_SCANS_PER_HOUR \
            VULTR_INFERENCE_API_KEY VULTR_INFERENCE_BASE_URL VULTR_INFERENCE_MODEL; do
     v=$(get "$k"); if [ -n "$v" ]; then echo "$k=$v"; fi
@@ -67,6 +68,17 @@ umask 077
     chown -R rh:rh rootfs
     echo "$want" > rootfs.built
   fi
+  mkdir -p mirror
+  while read -r sum zip; do
+    if ! echo "$sum  mirror/$zip" | sha256sum -c --status 2>/dev/null; then
+      curl -fsSL -o "mirror/$zip" "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/$zip"
+      echo "$sum  mirror/$zip" | sha256sum -c --status
+    fi
+  done <<SUMS
+9d8a24292a7068090205daac0a5a223f5f69736f5287e37bf88d3b4031edc750 bun-linux-x64-baseline.zip
+79c0771fa8b92c33aae41e15a0e0d307ea99d0e2f00317c71c6c53237a78e25a bun-linux-x64.zip
+SUMS
+  chown -R rh:rh mirror
   rsync -a --delete rootfs/ guest-rootfs/
   install -m 755 /opt/redhanded/app/deploy/guest/rh-init guest-rootfs/sbin/rh-init
   mke2fs -q -F -t ext4 -d guest-rootfs guest.ext4 2000M

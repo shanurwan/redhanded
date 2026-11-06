@@ -93,7 +93,7 @@ def _call(name: str, args: dict, scanner, who: str) -> dict:
         if not isinstance(new, str) or not isinstance(old, (str, type(None))):
             raise InputError("new_lockfile must be the text of a package-lock.json")
         job = scanner.start("lockfile", "package-lock.json", (old, new), who)
-    scanner.wait(job)
+    scanner.wait(job, 420.0 if job.kind in ("skill", "repair") else 280.0)
     if job.state != "done":
         raise InputError(job.error or "the scan is still running; try again in a minute")
     return _with_links(job.result)

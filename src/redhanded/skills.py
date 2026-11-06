@@ -24,7 +24,7 @@ from pathlib import Path
 
 from .explain import DEFAULT_BASE_URL, DEFAULT_MODEL, Post, _post
 from .runner import ScanConfig, ScanError, detonate
-from .verdict import Decision, Evidence, Verdict, decide
+from .verdict import AI_BYPASS_FLAGS, Decision, Evidence, Verdict, decide
 
 MODEL_HOST = "api.vultrinference.com"
 MAX_FILES = 200
@@ -197,9 +197,13 @@ def read_transcript(path: Path) -> list[dict]:
 
 def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None) -> Decision:
     """The package rules, without the ones an agent trips by working normally."""
-    # npm reads .npmrc for itself on any install, and an agent checks it when npm misbehaves.
+    # An unattended agent told to set a skill up goes looking for the API key it needs, so a read
+    # alone is worth a person's look. What blocks is the credential leaving, which stays CRITICAL.
+    # npm reads .npmrc for itself on any install, so that says nothing at all.
     outside_hosts = [c for c in ev.connects if c not in PACKAGE_HOSTS]
-    base = decide(dataclasses.replace(ev, execs=[], connects=outside_hosts, bait_reads=[p for p in ev.bait_reads if not p.endswith("/.npmrc")]))
+    reads = sorted(p for p in ev.bait_reads if not p.endswith("/.npmrc"))
+    bypassed = [c for c in ev.ai_tool_calls if any(f in c for f in AI_BYPASS_FLAGS)]    # a search of the disk opens the stubs too
+    base = decide(dataclasses.replace(ev, execs=[], connects=outside_hosts, bait_reads=[], ai_tool_calls=bypassed))
     level, reasons = base.verdict, list(base.reasons)
 
     def hit(v: Verdict, why: str) -> None:
@@ -211,6 +215,8 @@ def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None
         hit(Verdict.HIGH, f"changed the agent's own instructions or memory ({path})")
     if any("/.agents/skills/" in p and not p.startswith(ev.skill_root) for p in ev.writes if ev.skill_root):
         hit(Verdict.HIGH, "installed another skill for the agent")
+    if reads:
+        hit(Verdict.REVIEW, f"the agent read credentials while using this skill ({', '.join(reads)[:160]})")
     outside = outside_hosts
     drops = sorted({h for c in ev.connects for h in DROP_HOSTS if c == h or c.endswith("." + h)})
     if drops:

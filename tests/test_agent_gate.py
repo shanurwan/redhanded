@@ -205,8 +205,18 @@ def test_installing_another_skill_blocks():
     assert skills.decide_skill(agent_ev(writes=["/home/dev/.agents/skills/other/SKILL.md"]), []).verdict == Verdict.HIGH
 
 
-def test_bait_read_and_network_still_blocks():
-    assert skills.decide_skill(agent_ev(bait_reads=["/home/dev/.aws/credentials"], connects=["x.dev"]), []).verdict == Verdict.HIGH
+def test_an_agent_reading_credentials_goes_to_a_person():
+    d = skills.decide_skill(agent_ev(bait_reads=["/home/dev/.env"], connects=["api.service.dev"]), [])
+    assert d.verdict == Verdict.REVIEW and any(".env" in r for r in d.reasons)
+
+
+def test_a_credential_leaving_is_critical():
+    assert skills.decide_skill(agent_ev(bait_reads=["/home/dev/.env"], connects=["x.dev"], exfil_matches=["github_token"]), []).verdict == Verdict.CRITICAL
+
+
+def test_a_disk_search_touching_ai_tools_is_not_a_signal():
+    assert skills.decide_skill(agent_ev(ai_tool_calls=["claude", "codex"]), []).verdict == Verdict.CLEAN
+    assert skills.decide_skill(agent_ev(ai_tool_calls=["claude --dangerously-skip-permissions -p x"]), []).verdict == Verdict.HIGH
 
 
 def test_pipe_to_shell_from_an_unknown_host_blocks():
@@ -310,6 +320,5 @@ def test_a_release_download_goes_to_review():
     assert d.verdict == Verdict.REVIEW and "someone/tool" in d.reasons[0]
 
 
-def test_a_real_credential_read_with_contact_still_blocks():
-    ev = agent_ev(connects=["pypi.org", "x.dev"], bait_reads=["/home/dev/.npmrc", "/home/dev/.aws/credentials"])
-    assert skills.decide_skill(ev, []).verdict == Verdict.HIGH
+def test_only_npmrc_read_is_nothing():
+    assert skills.decide_skill(agent_ev(connects=["pypi.org"], bait_reads=["/home/dev/.npmrc"]), []).verdict == Verdict.CLEAN
