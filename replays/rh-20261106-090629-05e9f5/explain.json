@@ -1,5 +1,12 @@
 {
- "text": "The package attempted to send honeytoken credentials \u2014 an AWS access key ID and secret, a GitHub token, and an npm token \u2014 to outside hosts, along with this machine's name, with network attempts directed at log-server-lovat.vercel.app, github.com, and nodejs.org. Those tokens were planted bait and the sandbox had no real internet route, so nothing was actually delivered, but the intent to exfiltrate credentials and host identity is exactly the behavior of a supply-chain stealer. Treat this version as compromised: do not merge or install it, and check whether any real credentials of these types were ever present in an environment where this package ran.",
+ "text": "This package attempted to send honeytoken credentials \u2014 an AWS access key ID and secret, a GitHub token, and an npm token \u2014 out of the sandbox, along with this machine's hostname, through network attempts to log-server-lovat.vercel.app, github.com, and nodejs.org. The scan's fake internet absorbed those attempts, so nothing reached a real host, but the intent to exfiltrate live credentials and host identity is exactly the behaviour of the recorded attack app-register. Treat any environment where this package ran as compromised: do not merge it, and rotate the AWS, GitHub, and npm credentials that were present there.",
  "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T09:32:48Z"
+ "similar": {
+  "package": "app-register",
+  "version": "1.0.3",
+  "incident": "",
+  "date": "2025-02-19",
+  "overlap": 1.0
+ },
+ "at": "2026-11-06T09:55:04Z"
 }

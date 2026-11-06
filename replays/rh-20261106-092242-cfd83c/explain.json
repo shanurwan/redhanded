@@ -1,5 +1,12 @@
 {
- "text": "The package read the bait AWS credentials file and then attempted to send the harvested key outward, with network attempts toward the instance metadata endpoint, AWS STS, api.github.com and registry.npmjs.org, plus spawned curl calls carrying a GitHub token against the fake GitHub API. All of that traffic went to the sandbox's fake internet, so nothing was downloaded and no real host was reached, but the behavior is credential theft and exfiltration tooling rather than anything a toastr library needs. Treat the package and its install path as compromised, do not merge or run it, and check whether this version or its dependencies were recently changed or republished. Escalate to the maintainers or security team and rotate any credentials that could have been exposed in environments where it actually ran.",
+ "text": "The package read the bait AWS credentials file and then attempted to use the harvested key against fake GitHub and npm endpoints, including spawning curl with the token in an Authorization header and probing the cloud metadata address and AWS STS. That pattern of credential theft followed by token replay is what makes this critical, and it behaves like the Shai-Hulud worm incident rather than being confirmed as the same attack. Nothing left the sandbox and no files persisted, but the code clearly intends credential exfiltration. Do not merge this dependency; remove or pin away from it and rotate any AWS or GitHub credentials exposed to the build environment.",
  "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T09:32:52Z"
+ "similar": {
+  "package": "@art-ws/ssl-info",
+  "version": "1.0.9",
+  "incident": "Shai-Hulud worm",
+  "date": "2025-09-15",
+  "overlap": 1.0
+ },
+ "at": "2026-11-06T09:55:10Z"
 }

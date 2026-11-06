@@ -1,5 +1,12 @@
 {
- "text": "The package read the bait AWS credentials file, took the honeytoken aws_access_key_id out of the sandbox, and attempted network calls to the EC2 metadata address, AWS STS, api.github.com and registry.npmjs.org. It also spawned curl to try to use a GitHub token against the GitHub API and probed npm with stolen credentials, and it wrote a commitlint shim into node_modules/.bin outside its own package. That pattern is credential theft and token abuse, which is why the verdict is CRITICAL. Do not merge or install this package; treat any real credentials present on machines that ran it as compromised and rotate them, and check whether the .bin/commitlint file was created in your tree.",
+ "text": "The package read the bait AWS credentials file, spawned curl, and attempted requests to the fake GitHub, npm, AWS STS and metadata endpoints, carrying the honeytoken AWS access key id in those attempts. It also wrote a commitlint shim outside its own package directory. This behaviour closely resembles the Shai-Hulud worm incident, so treat the package as a credential-stealing implant rather than a linter. Do not merge or install it; block the version, rotate any credentials exposed to that environment, and check whether the same bytes reached other machines.",
  "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T09:32:46Z"
+ "similar": {
+  "package": "@art-ws/ssl-info",
+  "version": "1.0.9",
+  "incident": "Shai-Hulud worm",
+  "date": "2025-09-15",
+  "overlap": 1.0
+ },
+ "at": "2026-11-06T09:55:01Z"
 }
