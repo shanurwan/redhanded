@@ -197,8 +197,77 @@ def test_an_agent_working_normally_stays_clean():
     assert skills.decide_skill(ev, []).verdict == Verdict.CLEAN
 
 
-def test_changing_the_agents_memory_blocks():
-    assert skills.decide_skill(agent_ev(writes=["/work/project/MEMORY.md"]), []).verdict == Verdict.HIGH
+def test_changing_the_agents_memory_alone_goes_to_a_person():
+    assert skills.decide_skill(agent_ev(writes=["/work/project/MEMORY.md"]), []).verdict == Verdict.REVIEW
+
+
+def test_what_survives_deleting_the_skill_blocks():
+    d = skills.decide_skill(agent_ev(writes=["/work/project/MEMORY.md"], after_removal=["contacted x.dev"]), [])
+    assert d.verdict == Verdict.HIGH and "after the skill was deleted" in " ".join(d.reasons)
+
+
+def test_after_removal_reads_only_the_second_session(tmp_path):
+    (tmp_path / "capture.jsonl").write_text("\n".join(json.dumps(r) for r in [
+        {"kind": "http", "host": "before.dev", "at": 5}, {"kind": "http", "host": "after.dev:443", "at": 20}, {"kind": "dns", "host": "dns-only.dev", "at": 20},
+        {"kind": "http", "host": skills.MODEL_HOST, "at": 20}, {"kind": "http", "host": "registry.npmjs.org", "at": 20}, {"kind": "tls", "host": "dev-laptop-1", "at": 20}]))
+    (tmp_path / "agent.jsonl").write_text("\n".join(json.dumps(t) for t in [
+        {"session": 1, "calls": [{"tool": "bash", "arguments": "cat ~/.aws/credentials"}]},
+        {"session": 2, "calls": [{"tool": "bash", "arguments": "ls src"}]}]))
+    assert skills.after_removal(tmp_path, 10) == ["contacted after.dev"]
+    with open(tmp_path / "agent.jsonl", "a") as f:
+        f.write("\n" + json.dumps({"session": 2, "calls": [{"tool": "bash", "arguments": "cat ~/.aws/credentials"}]}))
+    assert skills.after_removal(tmp_path, 10)[-1] == "went for credentials"
+
+
+def test_a_harmless_memory_note_is_not_an_after_effect(tmp_path):
+    (tmp_path / "agent.jsonl").write_text(json.dumps({"session": 2, "calls": [{"tool": "bash", "arguments": "sed -i s/a/b/ src/index.js"}]}))
+    assert skills.after_removal(tmp_path, 10) == []
+
+
+def test_an_agent_reaching_its_own_machine_name_is_not_a_leak(tmp_path):
+    ev = Evidence(connects=["dev-laptop-1a", "x.dev"], machine_leaks=["dev-laptop-1a"])
+    skills.DecoyAgent("s", "d", "k").after(ev, tmp_path)
+    assert ev.connects == ["x.dev"] and ev.machine_leaks == []
+
+
+def _report(verdict="CLEAN"):
+    from redhanded.runner import Report
+    return Report(scan_id="rh-20261107-000000-abcdef", package="p", version="1.0.0", integrity="sha512-x", verdict=verdict, reasons=[], container_aware=False, seconds=1.0)
+
+
+def test_an_agent_using_a_package_can_only_raise_the_verdict(tmp_path):
+    from redhanded.runner import ScanConfig
+    cfg = ScanConfig(scans_dir=str(tmp_path))
+    def bad(*a, **k):
+        r = _report("HIGH"); r.reasons = ["HIGH: x"]; r.agent = {"run": []}; return r
+    def fine(*a, **k):
+        r = _report("CLEAN"); r.agent = {"run": []}; return r
+    out = skills.with_agent(_report("CLEAN"), b"", cfg, api_key="k", run=bad)
+    assert out.verdict == "HIGH" and "when an agent wrote code" in out.reasons[0]
+    out = skills.with_agent(_report("REVIEW"), b"", cfg, api_key="k", run=fine)
+    assert out.verdict == "REVIEW"
+
+
+def test_a_blocked_package_or_no_model_skips_the_agent(tmp_path, monkeypatch):
+    from redhanded.runner import ScanConfig
+    monkeypatch.delenv("VULTR_INFERENCE_API_KEY", raising=False)
+    def never(*a, **k):
+        raise AssertionError("should not run")
+    cfg = ScanConfig(scans_dir=str(tmp_path))
+    assert skills.with_agent(_report("HIGH"), b"", cfg, api_key="k", run=never).verdict == "HIGH"
+    assert skills.with_agent(_report("CLEAN"), b"", cfg, run=never).verdict == "CLEAN"
+
+
+def test_a_failed_probe_keeps_the_verdict(tmp_path):
+    from redhanded.runner import ScanConfig, ScanError
+    def boom(*a, **k):
+        raise ScanError("no")
+    assert skills.with_agent(_report("CLEAN"), b"", ScanConfig(scans_dir=str(tmp_path)), api_key="k", run=boom).verdict == "CLEAN"
+
+
+def test_stand_in_covers_only_the_package_tree():
+    from redhanded.runner import STUB
+    assert "/usr/local/lib/node_modules/" in STUB and "MODULE_NOT_FOUND" in STUB
 
 
 def test_installing_another_skill_blocks():

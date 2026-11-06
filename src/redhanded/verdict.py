@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.8"
+RULES_VERSION = "2026-11-07.1"
 
 
 class Verdict(IntEnum):
@@ -70,6 +70,7 @@ class Evidence:
     ai_tool_calls: list[str] = field(default_factory=list)      # the machine's AI coding tools, as the code called them
     exfil_to: dict[str, list[str]] = field(default_factory=dict)  # honeytoken name -> hosts it was sent to
     http_requests: list[str] = field(default_factory=list)      # host and request line, for rules that need the path
+    after_removal: list[str] = field(default_factory=list)      # what a fresh agent did after the skill was deleted
     skill_root: str = ""                                        # where the skill under test lives, if it is a skill
 
 

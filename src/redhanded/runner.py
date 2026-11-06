@@ -52,12 +52,36 @@ _PLAIN_NAME = re.compile(r"^(?:@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$")
 
 _HARNESS = """\
 cd /work
+export NODE_OPTIONS=--require=/work/.rh/stub.js
 echo "== lifecycle scripts"
 npm rebuild --foreground-scripts --ignore-scripts=false
 echo "== exit $?"
 echo "== load"
 node /work/.rh/load.js "$RH_PACKAGE"
 echo "== exit $?"
+"""
+# Old malware often dies on a dependency that was since removed from npm, before it does anything.
+# Only code inside the package tree gets a stand-in, so npm's own optional requires still fail normally.
+STUB = """\
+const Module = require("module");
+const load = Module._load;
+function standIn() {
+  const fn = function () { return proxy; };
+  const proxy = new Proxy(fn, {
+    get: (t, k) => (k === Symbol.toPrimitive ? () => "" : k === "then" || k === "__esModule" ? undefined : k === "prototype" ? t.prototype : proxy),
+    apply: () => proxy,
+    construct: () => proxy,
+  });
+  return proxy;
+}
+Module._load = function (request, parent, isMain) {
+  try { return load.call(this, request, parent, isMain); }
+  catch (e) {
+    const from = (parent && parent.filename) || "";
+    if (e && e.code === "MODULE_NOT_FOUND" && !/^[./]|^node:/.test(request) && from.includes("/node_modules/") && !from.startsWith("/usr/local/lib/node_modules/")) return standIn();
+    throw e;
+  }
+};
 """
 _LOADER = """\
 // Use the package the way an application would, so code behind an import or a call runs.
@@ -309,6 +333,7 @@ def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: Honeyto
     (scan / "work" / ".rh" / "run.sh").write_text(_HARNESS)
     (scan / "work" / ".rh" / "load.js").write_text(_LOADER)
     (scan / "work" / ".rh" / "exercise.js").write_text(_EXERCISER)
+    (scan / "work" / ".rh" / "stub.js").write_text(STUB)
     if deps and (deps / "node_modules").is_dir():
         # cp, not move: the second tier uses the same tree. Never over the package under test.
         for entry in (deps / "node_modules").iterdir():

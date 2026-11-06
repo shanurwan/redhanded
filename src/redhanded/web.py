@@ -32,7 +32,7 @@ from .explain import Explainer
 from .memory import AttackMemory
 from .runner import ScanConfig, ScanError, _get, scan_local
 from .service import ADVICE, SCAN_ID, Cache, InputError, Service, validate
-from .skills import check_skill
+from .skills import check_skill, detonate_with_agent, scan_with_agent
 from .spend import GuardState, StateFile
 from .verdict import RULES_VERSION
 
@@ -475,7 +475,9 @@ def main(host: str = "127.0.0.1", port: int = 8080) -> None:
     cfg = WebConfig()
     Path(cfg.data_dir).mkdir(parents=True, exist_ok=True)
     scan_cfg = ScanConfig(text_reviewer=AgentTextCheck.from_env())
-    service = Service(Cache(os.environ.get("RH_CACHE", str(Path(cfg.data_dir) / "verdicts.sqlite3"))), scan_cfg)
+    deep = bool(os.environ.get("VULTR_INFERENCE_API_KEY"))
+    service = Service(Cache(os.environ.get("RH_CACHE", str(Path(cfg.data_dir) / "verdicts.sqlite3"))), scan_cfg,
+                      **({"scanner": scan_with_agent, "detonator": detonate_with_agent} if deep else {}))
     scanner = Scanner(cfg, service, Explainer.from_env())
     threading.Thread(target=scanner.serve_forever, name="scan-worker", daemon=True).start()
     server = ThreadingHTTPServer((host, port), make_handler(cfg, scanner))

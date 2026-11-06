@@ -93,9 +93,9 @@ def registry_integrity(name: str, version: str, registry: str) -> str:
 class Service:
     def __init__(self, cache: Cache, cfg: ScanConfig | None = None,
                  scanner: Callable[..., Report] = scan,
-                 resolve: Callable[[str, str, str], str] = registry_integrity):
+                 resolve: Callable[[str, str, str], str] = registry_integrity, detonator: Callable[..., Report] | None = None):
         self.cache, self.cfg = cache, cfg or ScanConfig()
-        self._scan, self._resolve = scanner, resolve
+        self._scan, self._resolve, self._detonate = scanner, resolve, detonator
 
     def check(self, name: str, version: str, scan_if_missing: bool = True, integrity: str | None = None) -> dict:
         validate(name, version)
@@ -118,7 +118,7 @@ class Service:
         hit = self.cache.get(integrity)
         if hit:
             return self._answer(hit, cached=True)
-        report = detonate(name, version, tarball, integrity, self.cfg)
+        report = (self._detonate or detonate)(name, version, tarball, integrity, self.cfg)
         self.cache.put(report)
         return self._answer(asdict(report), cached=False)
 
