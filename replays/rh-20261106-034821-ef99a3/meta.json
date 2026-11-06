@@ -1,0 +1,10 @@
+{
+ "title": "Calls home during install",
+ "summary": "postinstall runs wget. The DNS lookup and the request both land in the sinkhole.",
+ "order": 1,
+ "full_syscall_log": {
+  "sha256": "6b69b1c817b1b5dda2edf7eb16f0d589e3d801567eeb2705a8953f7837a797d6",
+  "lines": 69878,
+  "excerpt_lines": 107
+ }
+}

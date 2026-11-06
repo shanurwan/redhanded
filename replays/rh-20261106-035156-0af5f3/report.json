@@ -1,0 +1,77 @@
+{
+ "scan_id": "rh-20261106-035156-0af5f3",
+ "package": "core-js",
+ "version": "3.38.1",
+ "integrity": "sha512-OP35aUorbU3Zvlx7pjsFdu1rGNnD4pgw/CWoYzRY3t2EzoVT7shKHY1dlAy3f41cGIO7ZDPQimhGFTlEYkG/Hw==",
+ "verdict": "CLEAN",
+ "reasons": [],
+ "container_aware": false,
+ "seconds": 10.15,
+ "evidence": {
+  "exfil_matches": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "core-js",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "core-js",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node -e \"try{require('./postinstall')}catch(e){}\""
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "-e",
+     "try{require('./postinstall')}catch(e){}"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "core-js"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "probe_flags": [],
+  "stats_count": 4469
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 8.55,
+  "syscall_lines": 54054,
+  "unparsed": 0,
+  "sinkhole_records": 0
+ }
+}

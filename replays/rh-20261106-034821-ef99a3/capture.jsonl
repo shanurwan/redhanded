@@ -1,0 +1,3 @@
+{"kind": "dns", "at": 1793936905.3374615, "peer": "172.31.255.2", "host": "update.rh-zoo.invalid", "detail": "A", "headers": {"answer": "10.66.0.10"}, "data": ""}
+{"kind": "dns", "at": 1793936905.3377986, "peer": "172.31.255.2", "host": "update.rh-zoo.invalid", "detail": "AAAA", "headers": {}, "data": ""}
+{"kind": "http", "at": 1793936905.3431222, "peer": "172.31.255.2", "host": "update.rh-zoo.invalid", "detail": "GET /ping", "headers": {"host": "update.rh-zoo.invalid", "user-agent": "Wget", "accept": "*/*", "connection": "close"}, "data": ""}

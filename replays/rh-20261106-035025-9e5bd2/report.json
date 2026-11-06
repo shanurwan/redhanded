@@ -1,0 +1,71 @@
+{
+ "scan_id": "rh-20261106-035025-9e5bd2",
+ "package": "rh-zoo-inline-from-code",
+ "version": "1.0.0",
+ "integrity": "sha512-EndRNebZBcJqyz2KtD2i8QCorbT7s9ymsWW+JtIp0a5Hzg4NOfyKrVkCKXnVTeoT7iQkuSLvtW6K5BYoOsiPpQ==",
+ "verdict": "HIGH",
+ "reasons": [
+  "HIGH: ran inline code with node"
+ ],
+ "container_aware": false,
+ "seconds": 8.13,
+ "evidence": {
+  "exfil_matches": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "rh-zoo-inline-from-code",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "rh-zoo-inline-from-code",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "rh-zoo-inline-from-code"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "-e",
+     "1 + 1"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "probe_flags": [],
+  "stats_count": 2814
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 7.42,
+  "syscall_lines": 37178,
+  "unparsed": 0,
+  "sinkhole_records": 0
+ }
+}

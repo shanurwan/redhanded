@@ -1,0 +1,80 @@
+{
+ "scan_id": "rh-20261106-035001-ba8028",
+ "package": "rh-zoo-telemetry-ping",
+ "version": "1.0.0",
+ "integrity": "sha512-erfV0opbNmGTYjOwtVE1cZ1LGQTIO/voVo6aKMgJt8T/YZ2bJYoiiwOmxKY/HRM1iqabcudM1De4Ou0JnkN8QA==",
+ "verdict": "REVIEW",
+ "reasons": [
+  "REVIEW: network attempts to telemetry.rh-zoo.invalid"
+ ],
+ "container_aware": false,
+ "seconds": 8.4,
+ "evidence": {
+  "exfil_matches": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [
+   "telemetry.rh-zoo.invalid"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "rh-zoo-telemetry-ping",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "rh-zoo-telemetry-ping",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node ping.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "ping.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "rh-zoo-telemetry-ping"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "probe_flags": [],
+  "stats_count": 2827
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 7.67,
+  "syscall_lines": 38553,
+  "unparsed": 0,
+  "sinkhole_records": 3
+ }
+}

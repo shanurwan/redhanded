@@ -1,0 +1,10 @@
+{
+ "title": "Plants itself in ~/.bashrc",
+ "summary": "Install code appends to the shell profile so it runs on every login.",
+ "order": 2,
+ "full_syscall_log": {
+  "sha256": "30a435e4179f209ef7fbcebb960a76c5d2c8b703bdaae284951b4082bd43fc02",
+  "lines": 76803,
+  "excerpt_lines": 112
+ }
+}

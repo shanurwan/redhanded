@@ -1,0 +1,10 @@
+{
+ "title": "Hides code in an inline interpreter",
+ "summary": "Import-time code spawns node -e with a payload not in any declared script.",
+ "order": 4,
+ "full_syscall_log": {
+  "sha256": "d91e0e7a8fd9e029e4fc3ae7b2a51175bf8ff7197aae782f3c1bfe9203ccb6d7",
+  "lines": 75430,
+  "excerpt_lines": 74
+ }
+}

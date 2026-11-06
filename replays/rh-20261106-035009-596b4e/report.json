@@ -1,0 +1,78 @@
+{
+ "scan_id": "rh-20261106-035009-596b4e",
+ "package": "rh-zoo-container-evader",
+ "version": "1.0.0",
+ "integrity": "sha512-DjZitXfK2ZZSmJ2dunUrd2zP68F9abKKgHBFq5/vsfia/gS5BWkKMnfHdx3IdUyAAKO3IqoM6Tm9ALB3DAUB1A==",
+ "verdict": "REVIEW",
+ "reasons": [
+  "REVIEW: checked whether it runs in a container (/.dockerenv)"
+ ],
+ "container_aware": true,
+ "seconds": 7.8,
+ "evidence": {
+  "exfil_matches": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "rh-zoo-container-evader",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "rh-zoo-container-evader",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node check.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "check.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "rh-zoo-container-evader"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "probe_flags": [],
+  "stats_count": 2827
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 7.08,
+  "syscall_lines": 37359,
+  "unparsed": 0,
+  "sinkhole_records": 0
+ }
+}
