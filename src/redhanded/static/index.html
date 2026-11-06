@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RedHanded: catch malicious npm packages before they merge</title>
-<meta name="description" content="RedHanded runs every dependency change in a baited sandbox and blocks the merge when it catches a package stealing credentials.">
+<title>RedHanded: make new code prove itself before your agent trusts it</title>
+<meta name="description" content="Agents install packages and skills nobody reviews. RedHanded runs them on a baited machine, shows what changed, blocks the merge and opens the fix.">
 <link rel="icon" href="data:,">
 <link rel="preload" href="/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/app.css">
@@ -15,24 +15,25 @@
   <div class="wrap nav-row">
     <a class="brand" href="#top"><span class="mark" aria-hidden="true"></span>RedHanded</a>
     <nav class="nav-links" aria-label="Sections">
+      <a href="#gate">The gate</a>
       <a href="#attacks">Real attacks</a>
       <a href="#how">How it works</a>
       <a href="#results">Results</a>
       <a href="#install">Install</a>
       <a href="#vultr">Why Vultr</a>
     </nav>
-    <a class="btn btn-sm" href="#scan">Scan a package</a>
+    <a class="btn btn-sm" href="#scan">Try it</a>
   </div>
 </header>
 
 <main id="top">
   <section class="hero wrap">
     <div class="hero-copy">
-      <h1>Catch malicious packages before they merge.</h1>
-      <p class="lede">RedHanded runs every dependency change in a sandbox baited with fake credentials. When a package steals them, the merge is blocked and you get the proof.</p>
+      <h1>Make new code prove itself before your agent trusts it.</h1>
+      <p class="lede">Agents install packages and skills nobody reviews. RedHanded runs them on a baited machine, shows what changed, blocks the merge and opens the fix.</p>
       <div class="cta">
-        <a class="btn" href="#scan">Scan a package</a>
-        <a class="btn btn-ghost" href="#install">Add to GitHub</a>
+        <a class="btn" href="#scan">Try it</a>
+        <a class="btn btn-ghost" href="#install">Add to your agent</a>
       </div>
     </div>
     <figure class="replay" id="replay" aria-label="Replay of a real attack">
@@ -53,6 +54,36 @@
   </section>
 
   <section class="stats wrap" id="stats" aria-label="Measured results" hidden></section>
+
+  <section class="band" id="gate" hidden>
+    <div class="wrap">
+      <h2>Between your agent and new code</h2>
+      <p class="sub">Three questions, answered on a disposable machine, from what the code actually did.</p>
+      <div class="gate">
+        <article class="gate-card">
+          <header><span class="gate-n">1</span><h3>What changed?</h3></header>
+          <p>The new version runs next to the one before it.</p>
+          <div class="g-title mono" id="g-diff-title"></div>
+          <ul class="diff" id="g-diff"></ul>
+          <p class="g-stat" id="g-diff-stat"></p>
+        </article>
+        <article class="gate-card">
+          <header><span class="gate-n">2</span><h3>What does it make the agent do?</h3></header>
+          <p>A real agent uses the skill, with fake credentials nearby.</p>
+          <div class="g-title mono" id="g-skill-title"></div>
+          <ol class="agent-run" id="g-skill"></ol>
+          <p class="g-stat" id="g-skill-stat"></p>
+        </article>
+        <article class="gate-card">
+          <header><span class="gate-n">3</span><h3>What do we go back to?</h3></header>
+          <p>An agent tests older versions and opens the fix. Only the rules can clear one.</p>
+          <div class="g-title mono" id="g-fix-title"></div>
+          <ol class="agent-run" id="g-fix"></ol>
+          <p class="g-stat" id="g-fix-stat"></p>
+        </article>
+      </div>
+    </div>
+  </section>
 
   <section class="band" id="attacks">
     <div class="wrap">
@@ -98,12 +129,22 @@
 
   <section class="band band-alt" id="scan">
     <div class="wrap narrow">
-      <h2>Try it on any package</h2>
+      <h2>Try it</h2>
       <p class="sub">It runs now, on the Vultr host.</p>
+      <div class="modes" role="tablist" aria-label="What to check">
+        <button class="mode on" type="button" role="tab" aria-selected="true" data-mode="package">Package</button>
+        <button class="mode" type="button" role="tab" aria-selected="false" data-mode="compare">What changed</button>
+        <button class="mode" type="button" role="tab" aria-selected="false" data-mode="skill">Agent skill</button>
+      </div>
       <form id="scan-form" class="scan-form" autocomplete="off">
         <label for="pkg" class="sr">npm package</label>
         <input id="pkg" placeholder="left-pad or left-pad@1.3.0" spellcheck="false" maxlength="260">
-        <button class="btn" type="submit">Scan</button>
+        <button class="btn" type="submit">Run</button>
+      </form>
+      <form id="skill-form" class="skill-form" autocomplete="off" hidden>
+        <label for="skill-md" class="sr">SKILL.md</label>
+        <textarea id="skill-md" rows="9" spellcheck="false" maxlength="100000" placeholder="Paste a SKILL.md"></textarea>
+        <button class="btn" type="submit">Give it to the agent</button>
       </form>
       <div id="job" class="job" aria-live="polite" hidden></div>
       <div class="chips" id="samples" aria-label="Harmless test samples"></div>
@@ -116,14 +157,15 @@
       <div class="tabs">
         <div class="tab-panel">
           <h3>Pull request check</h3>
-          <p>Add to any repo. A HIGH or CRITICAL verdict fails the check.</p>
+          <p>A HIGH or CRITICAL verdict fails the check. Turn on repair and the fix arrives as a PR.</p>
 <pre><code>- uses: actions/checkout@v4
   with: { fetch-depth: 0 }
-- uses: shanurwan/redhanded@main</code></pre>
+- uses: shanurwan/redhanded@main
+  with: { repair: "true" }</code></pre>
         </div>
         <div class="tab-panel">
           <h3>Your coding agent</h3>
-          <p>Agents ask before they install. Nothing to run locally.</p>
+          <p>Six tools: check a package, a lockfile or a skill, compare versions, find a safe version, read the evidence.</p>
 <pre><code id="mcp-code"></code></pre>
           <button class="copy" id="mcp-copy" type="button">Copy</button>
         </div>
@@ -137,7 +179,7 @@
       <p class="sub">A real kernel for every scan, cheap enough to run on every pull request, with the model next door.</p>
       <div class="vgrid">
         <div><b>VX1 Cloud Compute</b><span><code>/dev/kvm</code> is there from first boot, so one small VM runs gVisor and a Firecracker microVM per scan, without root.</span><em>Median microVM run: 6.4 s</em></div>
-        <div><b>Serverless Inference</b><span>Explains each verdict and flags package text aimed at AI agents. It can raise a verdict to review, and never lower one.</span><em>Model: deepseek-v4.1-flash-1017</em></div>
+        <div><b>Serverless Inference</b><span>Drives the decoy agent and the repair agent through a gateway outside the sandbox, so the machine under attack never holds a real key. It never sets a verdict.</span><em>Model: deepseek-v4.1-flash-1017</em></div>
         <div><b>Vector Store</b><span>Attack memory: the behaviour of recorded real attacks, never their code, so a reviewer sees which one a package resembles.</span><em>71 recorded attacks</em></div>
         <div><b>Account API</b><span>Vultr has no spend alert, so a guard reads the balance with a billing-only key. If the reading goes stale or the limit is reached, scans stop.</span><em>Fails closed</em></div>
         <div><b>Firewall and Terraform</b><span>Web ports open, SSH from one address. One command builds it in any of the plan's 12 regions, and one removes everything that bills.</span><em>Your packages, your account</em></div>
@@ -165,6 +207,7 @@
     </div>
     <p class="s-like" id="s-like" hidden></p>
     <p class="s-explain" id="s-explain" hidden></p>
+    <div class="s-agent" id="s-agent" hidden></div>
     <ol class="events" id="s-events"></ol>
     <div class="s-files" id="s-files"></div>
   </div>

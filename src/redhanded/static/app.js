@@ -97,6 +97,22 @@ function behaviour(ev, capture) {
   if (ev.deadline_killed) out.push(["KILLED", "still running at the deadline"]);
   return out;
 }
+function agentSteps(run) {
+  const out = [];
+  for (const t of run || []) {
+    for (const c of t.calls || []) {
+      let args = {};
+      try { args = JSON.parse(c.arguments); } catch { /* cut off by the record limit */ }
+      out.push({ tag: c.tool === "bash" ? "RAN" : c.tool === "read_file" ? "READ" : "WROTE", text: String(args.command || args.path || c.arguments).slice(0, 220) });
+    }
+  }
+  return out;
+}
+function agentRow(step) {
+  const li = el("li", step.bad ? "bad" : "");
+  li.append(el("span", "tag", step.tag), el("code", "", step.text));
+  return li;
+}
 function showSheet(view) {
   const r = view.report, ev = r.evidence || {};
   $("s-pkg").textContent = `${r.package}@${r.version}`;
@@ -111,7 +127,7 @@ function showSheet(view) {
   if (like) $("s-like").textContent = `Behaves like ${like.package}@${like.version}${like.incident ? `, ${like.incident}` : ""}${like.date ? `, ${like.date}` : ""}. Found in Vultr Vector Store, checked against recorded behaviour.`;
   const rows = [{ head: "Rules" }, ...(r.reasons || []).map((w) => [w.split(":")[0], w.replace(/^\w+: /, ""), !w.startsWith("REVIEW")])];
   if (!(r.reasons || []).length) rows.push(["CLEAN", "No rule fired"]);
-  rows.push({ head: "In the gVisor sandbox" }, ...behaviour(ev, view.capture));
+  rows.push({ head: r.agent ? "What the agent's work did, in the gVisor sandbox" : "In the gVisor sandbox" }, ...behaviour(r.agent ? { ...ev, execs: [] } : ev, view.capture));
   if (r.microvm) rows.push({ head: "In the microVM, own kernel" }, ...behaviour(r.microvm.evidence || {}, view.microvm_capture));
   $("s-events").replaceChildren(...rows.map((row) => {
     if (row.head) return el("li", "head", row.head);
@@ -119,6 +135,15 @@ function showSheet(view) {
     li.append(el("span", "tag", row[0]), el("code", "", row[1]));
     return li;
   }));
+  const box = $("s-agent");
+  box.hidden = !r.agent;
+  box.replaceChildren();
+  if (r.agent) {
+    box.append(el("h3", "", "What the agent did"), el("p", "note", r.agent.task));
+    const list = el("ol", "agent-run");
+    for (const step of agentSteps(r.agent.run).slice(0, 14)) list.append(agentRow(step));
+    box.append(list);
+  }
   $("s-files").replaceChildren(el("span", "", "Evidence files"), ...view.files.map((f) => {
     const a = el("a", "", f);
     a.href = `/api/scans/${encodeURIComponent(r.scan_id)}/files/${encodeURIComponent(f)}`;
@@ -176,6 +201,30 @@ function renderResults(res) {
   }
   $("results").hidden = false;
 }
+function renderGate(res) {
+  const s = res && res.showcase;
+  if (!s) return;
+  if (s.diff) {
+    $("g-diff-title").textContent = `${s.diff.package}  ${s.diff.from} → ${s.diff.to}`;
+    $("g-diff").replaceChildren(...s.diff.changes.slice(0, 7).map((c) => {
+      const li = el("li");
+      li.append(el("span", "plus", "+"), el("span", "dim", c.kind.replace("_", " ")), el("code", "", c.what));
+      return li;
+    }));
+    $("g-diff-stat").textContent = s.diff.stat || "";
+  }
+  if (s.skill) {
+    $("g-skill-title").textContent = s.skill.name;
+    $("g-skill").replaceChildren(...s.skill.steps.map(agentRow));
+    $("g-skill-stat").textContent = s.skill.stat || "";
+  }
+  if (s.fix) {
+    $("g-fix-title").textContent = `${s.fix.package}  ${s.fix.blocked} → ${s.fix.pinned}`;
+    $("g-fix").replaceChildren(...s.fix.steps.map(agentRow));
+    $("g-fix-stat").textContent = s.fix.stat || "";
+  }
+  $("gate").hidden = false;
+}
 function renderIncidents(list) {
   $("incidents").replaceChildren(...list.map((r) => {
     const c = el("button", "card");
@@ -193,23 +242,40 @@ function job(text, err) {
   j.className = err ? "job err" : "job";
   j.textContent = text;
 }
-async function start(body, label) {
+function showCompare(r) {
+  const j = $("job");
+  j.hidden = false;
+  j.className = "job";
+  const head = el("div", "cmp-head");
+  head.append(el("code", "", `${r.package}  ${r.previous_version || "first release"} → ${r.version}`), el("span", `pill v-${r.verdict}`, r.verdict));
+  const list = el("ul", "diff");
+  for (const c of r.changes || []) {
+    const li = el("li");
+    li.append(el("span", "plus", "+"), el("span", "dim", c.kind.replace("_", " ")), el("code", "", String(c.what)));
+    list.append(li);
+  }
+  const box = [head, r.changes && r.changes.length ? list : el("p", "note", r.note || "Nothing new compared with the version before.")];
+  if (r.scan_id) { const a = el("a", "", "See the evidence"); a.href = `#${r.scan_id}`; box.push(a); }
+  j.replaceChildren(...box);
+}
+async function start(body, label, path = "/api/scan") {
   const btn = document.querySelector("#scan-form button");
   btn.disabled = true;
   job(`Starting ${label}…`);
   try {
-    const { job: id } = await api("/api/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const { job: id } = await api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const t0 = Date.now();
     for (;;) {
       const j = await api(`/api/jobs/${id}`);
       const secs = Math.round((Date.now() - t0) / 1000);
       if (j.state === "error") throw new Error(j.error);
       if (j.state === "done") {
+        if (j.kind === "compare") return showCompare(j.result);
         job(`${label}: ${j.verdict}${j.cached ? " (these exact bytes were scanned before)" : ""}`);
         location.hash = j.scan_id;
         return;
       }
-      job(j.state === "queued" ? `${label}: waiting for a free sandbox… ${secs}s` : `${label}: running in a fresh sandbox… ${secs}s`);
+      job(j.state === "queued" ? `${label}: waiting for a free machine… ${secs}s` : path === "/api/skill" ? `${label}: an agent is using it… ${secs}s` : `${label}: running on a fresh machine… ${secs}s`);
       await new Promise((r) => setTimeout(r, 1200));
     }
   } catch (e) { job(e.message, true); } finally { btn.disabled = false; }
@@ -219,8 +285,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("scan-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const v = $("pkg").value.trim();
-    if (v) start({ package: v }, v);
+    if (!v) return;
+    if (mode === "compare") {
+      const at = v.lastIndexOf("@");
+      if (at <= 0) return job("Give an exact version, like left-pad@1.3.0", true);
+      return start({ name: v.slice(0, at), version: v.slice(at + 1) }, v, "/api/compare");
+    }
+    start({ package: v }, v);
   });
+  $("skill-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = $("skill-md").value;
+    if (v.trim()) start({ skill_md: v }, "This skill", "/api/skill");
+  });
+  let mode = "package";
+  for (const b of document.querySelectorAll(".mode")) {
+    b.addEventListener("click", () => {
+      mode = b.dataset.mode;
+      for (const o of document.querySelectorAll(".mode")) { o.classList.toggle("on", o === b); o.setAttribute("aria-selected", String(o === b)); }
+      $("scan-form").hidden = mode === "skill";
+      $("skill-form").hidden = mode !== "skill";
+      $("samples").hidden = mode !== "package";
+      $("pkg").placeholder = mode === "compare" ? "left-pad@1.3.0" : "left-pad or left-pad@1.3.0";
+    });
+  }
   $("s-close").addEventListener("click", closeSheet);
   $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
   addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
@@ -231,7 +319,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try { await navigator.clipboard.writeText(mcp); $("mcp-copy").textContent = "Copied"; } catch { $("mcp-copy").textContent = "Select and copy"; }
   });
 
-  api("/api/results").then(renderResults).catch(() => {});
+  api("/api/results").then((res) => { renderResults(res); renderGate(res); }).catch(() => {});
   api("/api/status").then((s) => {
     $("samples").replaceChildren(...["left-pad@1.3.0", "is-odd@3.0.1"].map((p) => {
       const c = el("button", "chip", p); c.type = "button"; c.addEventListener("click", () => start({ package: p }, p)); return c;

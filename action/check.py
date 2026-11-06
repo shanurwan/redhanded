@@ -70,7 +70,7 @@ def main() -> int:
     new = Path("package-lock.json").read_text()
     old = git("show", f"origin/{base}:package-lock.json")
 
-    rows, failed = [], False
+    rows, failed, blocked = [], False, []
     for folder in changed_vendored(json.loads(new), base):
         try:
             job = call(server, "/api/scan", {"tarball": base64.b64encode(pack(folder)).decode()})["job"]
@@ -98,7 +98,11 @@ def main() -> int:
             link = f"{server}/#{r['scan_id']}" if r.get("scan_id") else ""
             rows.append((f"{r['package']}@{r['version']}", verdict, "; ".join(r.get("reasons", [])) or r.get("note", ""), link))
             failed |= verdict in BLOCK         # not scanned goes to a person, and the table says so
+            if verdict in BLOCK:
+                blocked.append({"name": r["package"], "version": r["version"], "integrity": r.get("integrity")})
 
+    if blocked:
+        Path(os.environ.get("RUNNER_TEMP", "."), "redhanded-blocked.json").write_text(json.dumps(blocked))
     lines = ["| Package | Verdict | Why | Evidence |", "|---|---|---|---|"]
     lines += [f"| {p} | {v} | {w.replace('|', '/')} | {f'[open]({u})' if u else ''} |" for p, v, w, u in rows]
     table = "\n".join(lines) if rows else "No dependency changes."
