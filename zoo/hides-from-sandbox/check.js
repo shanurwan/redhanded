@@ -4,7 +4,7 @@ const http = require("http");
 const read = (p) => { try { return fs.readFileSync(p, "utf8"); } catch (e) { return ""; } };
 const watched = fs.existsSync("/.dockerenv")
   || /docker|kubepods|containerd/.test(read("/proc/1/cgroup"))
-  || /\b4\.4\.0\b/.test(read("/proc/version"));    // the kernel version gVisor reports
+  || /gvisor/i.test(read("/proc/version"));    // gVisor names itself here
 if (watched) {
   console.log("sandbox seen: staying quiet");
 } else {

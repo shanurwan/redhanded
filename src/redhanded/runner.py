@@ -32,7 +32,7 @@ from .evidence import build
 from .honeytokens import HoneytokenSet
 from .sinkhole import Capture, NamePool, Record
 from .trace import parse
-from .verdict import combine_microvm, decide, flag_agent_text
+from .verdict import Verdict, combine_microvm, decide, flag_agent_text
 
 SANDBOX_IP = "172.31.255.2"
 GATEWAY_IP = "172.31.255.1"
@@ -380,7 +380,9 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
     decision = decide(ev)
 
     microvm = None
-    if decision.container_aware and cfg.microvm_ready():
+    # gVisor names itself in uname and dmesg, so waiting for a package to look suspicious
+    # would miss the simplest evader. Every package runs twice unless it is already blocked.
+    if decision.verdict < Verdict.HIGH and not ev.deadline_killed and cfg.microvm_ready():
         from . import microvm as tier2
         second = tier2.detonate(name, version, tarball, scan_dir / "microvm", cfg)
         decision = combine_microvm(decision, ev, second.decision, second.evidence)

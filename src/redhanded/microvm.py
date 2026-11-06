@@ -1,6 +1,7 @@
-"""Second detonation for packages that look for a sandbox: a Firecracker microVM.
+"""Second detonation of every package: a Firecracker microVM.
 
-The guest has its own kernel, so what gVisor gives away is gone. Its only network
+gVisor names itself in uname and dmesg. The guest has its own kernel, so a package
+that stays quiet under gVisor shows itself here. Its only network
 device is a tap in a namespace that holds the sinkhole and nothing else, so
 there is no route out. Runs without root, inside `unshare -rn`, on any host with
 /dev/kvm, such as a Vultr VX1 instance.

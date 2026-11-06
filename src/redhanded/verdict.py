@@ -134,9 +134,9 @@ def decide(ev: Evidence) -> Decision:
 
 
 def combine_microvm(first: Decision, sandbox: Evidence, second: Decision, microvm: Evidence) -> Decision:
-    """A package that looked for a sandbox, run again where it can't tell. Only ever raises.
+    """The same bytes, run again on a machine with its own kernel. Only ever raises.
 
-    Anything it does only in the microVM, it hid from the sandbox on purpose.
+    Anything a package does only in the microVM, it hid from the sandbox.
     """
     level = max(first.verdict, second.verdict)
     reasons = list(first.reasons) + [f"{r} (in the microVM)" for r in second.reasons]
