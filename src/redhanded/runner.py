@@ -30,7 +30,7 @@ from .evidence import build
 from .honeytokens import HoneytokenSet
 from .sinkhole import Capture, NamePool, Record
 from .trace import parse
-from .verdict import decide
+from .verdict import combine_microvm, decide
 
 SANDBOX_IP = "172.31.255.2"
 GATEWAY_IP = "172.31.255.1"
@@ -76,6 +76,13 @@ class ScanConfig:
     scans_dir: str = field(default_factory=lambda: _env_path("RH_SCANS", "~/rh-dev/scans"))
     registry: str = "https://registry.npmjs.org"
     deadline_s: float = 120.0
+    fc_bin: str = field(default_factory=lambda: _env_path("RH_FC_BIN", ""))
+    fc_kernel: str = field(default_factory=lambda: _env_path("RH_FC_KERNEL", ""))
+    fc_rootfs: str = field(default_factory=lambda: _env_path("RH_FC_ROOTFS", ""))
+
+    def microvm_ready(self) -> bool:
+        return all(p and os.path.isfile(p) for p in (self.fc_bin, self.fc_kernel, self.fc_rootfs)) \
+            and os.access("/dev/kvm", os.R_OK | os.W_OK)
 
 
 # ---------------------------------------------------------------- fetch
@@ -297,6 +304,7 @@ class Report:
     seconds: float
     evidence: dict = field(default_factory=dict)
     sandbox: dict = field(default_factory=dict)
+    microvm: dict | None = None
 
 
 def pack_dir(src: Path) -> tuple[str, str, bytes]:
@@ -354,6 +362,13 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         ev.incomplete.append("no syscall log from the sandbox")
     decision = decide(ev)
 
+    microvm = None
+    if decision.container_aware and cfg.microvm_ready():
+        from . import microvm as tier2
+        second = tier2.detonate(name, version, tarball, scan_dir / "microvm", cfg)
+        decision = combine_microvm(decision, ev, second.decision, second.evidence)
+        microvm = second.summary()
+
     report = Report(
         scan_id=scan_id, package=name, version=version, integrity=integrity,
         verdict=decision.label, reasons=list(decision.reasons), container_aware=decision.container_aware,
@@ -361,6 +376,7 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         evidence={k: v for k, v in asdict(ev).items() if k != "stats"} | {"stats_count": len(ev.stats)},
         sandbox={**inner_result, "syscall_lines": trace.lines, "unparsed": trace.unparsed,
                  "sinkhole_records": len(records)},
+        microvm=microvm,
     )
     (scan_dir / "report.json").write_text(json.dumps(asdict(report), indent=1))
     return report

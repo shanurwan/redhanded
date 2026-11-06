@@ -1,0 +1,9 @@
+{
+  "name": "rh-zoo-hides-from-sandbox",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stays quiet when it detects a sandbox, and calls out when it does not.",
+  "scripts": {
+    "postinstall": "node check.js"
+  }
+}

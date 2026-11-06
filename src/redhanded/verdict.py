@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-04.2"
+RULES_VERSION = "2026-11-06.1"
 
 
 class Verdict(IntEnum):
@@ -131,6 +131,21 @@ def decide(ev: Evidence) -> Decision:
         hit(Verdict.REVIEW, "killed at deadline")
 
     return Decision(level, tuple(reasons), container_aware=bool(checks) and level <= Verdict.REVIEW)
+
+
+def combine_microvm(first: Decision, sandbox: Evidence, second: Decision, microvm: Evidence) -> Decision:
+    """A package that looked for a sandbox, run again where it can't tell. Only ever raises.
+
+    Anything it does only in the microVM, it hid from the sandbox on purpose.
+    """
+    level = max(first.verdict, second.verdict)
+    reasons = list(first.reasons) + [f"{r} (in the microVM)" for r in second.reasons]
+    hidden = sorted(set(microvm.connects) - set(sandbox.connects) - BENIGN_HOSTS)
+    hidden += sorted(f"read {p}" for p in set(microvm.bait_reads) - set(sandbox.bait_reads))
+    if hidden:
+        level = max(level, Verdict.HIGH)
+        reasons.append(f"HIGH: hid this from the sandbox: {', '.join(hidden)}")
+    return Decision(level, tuple(reasons), first.container_aware)
 
 
 def apply_model_opinion(decision: Decision, model_label: str | None) -> Decision:

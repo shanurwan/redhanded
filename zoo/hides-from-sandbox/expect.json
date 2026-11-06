@@ -1,0 +1,4 @@
+{
+  "min_verdict": "REVIEW",
+  "why": "Looks for a sandbox and stays quiet in one. REVIEW under gVisor alone; HIGH once the microVM sees what it hid."
+}
