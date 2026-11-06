@@ -48,6 +48,11 @@ def _clip(value) -> str:
     return s if len(s) <= MAX_FIELD else s[:MAX_FIELD] + "…"
 
 
+def _is_harness(argv: list[str]) -> bool:
+    """RedHanded's own npm rebuild and loader. The model must not read them as the package's doing."""
+    return "/work/.rh/load.js" in argv or ("rebuild" in argv and any(a == "npm" or a.endswith("/npm") for a in argv))
+
+
 def evidence_digest(report: dict) -> dict:
     """The facts the model sees: the rule engine's reasons plus clipped evidence."""
     ev = report.get("evidence", {})
@@ -55,7 +60,7 @@ def evidence_digest(report: dict) -> dict:
         "package": f"{report['package']}@{report['version']}",
         "verdict": report["verdict"],
         "rule_reasons": report.get("reasons", [])[:MAX_ITEMS],
-        "commands_run": [_clip(" ".join(argv)) for argv, _ in ev.get("execs", [])][:MAX_ITEMS],
+        "commands_run": [_clip(" ".join(argv)) for argv, _ in ev.get("execs", []) if not _is_harness(argv)][:MAX_ITEMS],
         "network_destinations": [_clip(h) for h in ev.get("connects", [])][:MAX_ITEMS],
         "bait_files_read": ev.get("bait_reads", [])[:MAX_ITEMS],
         "files_written_outside_package": [_clip(p) for p in ev.get("writes", [])][:MAX_ITEMS],

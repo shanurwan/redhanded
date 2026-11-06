@@ -37,6 +37,15 @@ def test_failures_return_no_text_and_never_raise():
     assert Explainer("k", post=lambda *a: {"choices": []}).explain(REPORT)["text"] is None
 
 
+def test_our_own_harness_commands_are_not_shown_to_the_model():
+    execs = [[["npm", "rebuild", "evil", "--foreground-scripts"], False],
+             [["node", "/usr/local/bin/npm", "rebuild", "evil"], False],
+             [["sh", "-c", "wget x"], True],
+             [["node", "/work/.rh/load.js", "evil"], False]]
+    digest = evidence_digest({**REPORT, "evidence": {"execs": execs}})
+    assert digest["commands_run"] == ["sh -c wget x"]
+
+
 def test_a_truncated_answer_is_not_shown():
     out = Explainer("k", post=lambda *a: {"choices": [{"finish_reason": "length", "message": {"content": "It ran"}}]}).explain(REPORT)
     assert out["text"] is None and out["error"] == "truncated"

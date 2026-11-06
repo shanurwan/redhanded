@@ -68,7 +68,7 @@ function steps(view) {
   return out;
 }
 
-let animation = 0;
+let animation = 0, firstOpen = true;
 function show(view) {
   const r = view.report;
   $("viewer").hidden = false;
@@ -119,7 +119,8 @@ function show(view) {
   if (view.meta && view.meta.full_syscall_log) {
     files.append(el("span", "dim mono", `full log sha256 ${view.meta.full_syscall_log.sha256.slice(0, 16)}…`));
   }
-  $("viewer").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  if (!firstOpen) $("viewer").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  firstOpen = false;
 }
 
 async function open(scanId) {
