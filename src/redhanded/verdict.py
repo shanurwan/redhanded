@@ -68,6 +68,7 @@ class Evidence:
     load_hang: bool = False                                     # importing it never returned
     probe_flags: list[str] = field(default_factory=list)        # e.g. "obfuscated-eval" from probes
     ai_tool_calls: list[str] = field(default_factory=list)      # the machine's AI coding tools, as the code called them
+    http_requests: list[str] = field(default_factory=list)      # host and request line, for rules that need the path
     skill_root: str = ""                                        # where the skill under test lives, if it is a skill
 
 

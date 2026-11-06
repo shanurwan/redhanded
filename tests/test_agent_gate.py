@@ -292,3 +292,24 @@ def test_arming_builds_the_machine_and_keeps_the_key_out(tmp_path):
     finally:
         mode.close(tmp_path)
     assert not (tmp_path / "model.sock").exists()
+
+
+def test_package_hosts_and_npmrc_are_not_signals_for_an_agent():
+    ev = agent_ev(connects=["pypi.org", "registry.npmjs.org"], bait_reads=["/home/dev/.npmrc"])
+    assert skills.decide_skill(ev, []).verdict == Verdict.CLEAN
+
+
+def test_a_paste_site_blocks():
+    assert skills.decide_skill(agent_ev(connects=["glot.io"]), []).verdict == Verdict.HIGH
+    assert skills.decide_skill(agent_ev(connects=["x.pastebin.com"]), []).verdict == Verdict.HIGH
+
+
+def test_a_release_download_goes_to_review():
+    ev = agent_ev(connects=["github.com"], http_requests=["github.com GET /someone/tool/releases/download/latest/tool.zip"])
+    d = skills.decide_skill(ev, [])
+    assert d.verdict == Verdict.REVIEW and "someone/tool" in d.reasons[0]
+
+
+def test_a_real_credential_read_with_contact_still_blocks():
+    ev = agent_ev(connects=["pypi.org", "x.dev"], bait_reads=["/home/dev/.npmrc", "/home/dev/.aws/credentials"])
+    assert skills.decide_skill(ev, []).verdict == Verdict.HIGH

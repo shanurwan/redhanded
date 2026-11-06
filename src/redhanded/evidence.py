@@ -62,6 +62,7 @@ def build(trace: TraceFacts, records: list[Record], pool: NamePool, tokens: Hone
             if rec.host:
                 ev.connects.append(rec.host)
         elif rec.kind == "http":
+            ev.http_requests.append(f"{rec.host} {rec.detail}"[:300])
             service = TOKEN_SERVICES.get(rec.host.split(":", 1)[0].lower())
             auth = "\n".join(v for k, v in rec.headers.items() if k in AUTH_HEADERS).encode()
             used = {m.token for m in matcher.find(auth)} if service else set()
