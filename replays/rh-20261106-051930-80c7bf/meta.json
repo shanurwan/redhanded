@@ -1,6 +1,6 @@
 {
  "title": "Hides from the sandbox",
- "summary": "",
+ "summary": "Stays quiet under gVisor, then calls out in the microVM, where it cannot tell it is being watched.",
  "order": 1,
  "full_syscall_log": {
   "sha256": "e409e8efa170668cccf8a369aba45418fa9a6c9236f42f60119ccfa9d5b7be09",

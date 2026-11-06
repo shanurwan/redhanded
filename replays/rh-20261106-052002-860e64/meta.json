@@ -1,6 +1,6 @@
 {
  "title": "Tampers with the toolchain",
- "summary": "",
+ "summary": "Writes into the global Node install, where every later build would pick it up.",
  "order": 4,
  "full_syscall_log": {
   "sha256": "f328294bca215612c4ed1dc1e8ecfb82e222289da3bc6287dbe558d199158b1c",

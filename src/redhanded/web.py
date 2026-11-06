@@ -71,6 +71,7 @@ class WebConfig:
     data_dir: str = field(default_factory=lambda: os.path.expanduser(os.environ.get("RH_WEB_DATA", "~/rh-dev/web")))
     replays_dir: str = field(default_factory=lambda: os.environ.get("RH_REPLAYS", "replays"))
     zoo_dir: str = field(default_factory=lambda: os.environ.get("RH_ZOO", "zoo"))
+    host_label: str = field(default_factory=lambda: os.environ.get("RH_HOST_LABEL", "dev server"))
     guard_state: str = field(default_factory=lambda: os.path.expanduser(
         os.environ.get("RH_GUARD_STATE", "~/rh-dev/web/guard-state.json")))
     trust_proxy: bool = field(default_factory=lambda: os.environ.get("RH_TRUST_PROXY") == "1")
@@ -281,6 +282,7 @@ def scan_view(scan_dir: Path) -> dict:
         "capture": load_capture(_scan_file(scan_dir, "capture.jsonl")),
         "microvm_capture": load_capture(_scan_file(scan_dir, "microvm-capture.jsonl")),
         "explanation": json.loads(explain.read_text()) if explain else None,
+        "meta": json.loads((scan_dir / "meta.json").read_text()) if (scan_dir / "meta.json").is_file() else None,
         "files": files,
     }
 
@@ -292,8 +294,9 @@ def list_replays(replays_dir: str) -> list[dict]:
         report = json.loads((meta_path.parent / "report.json").read_text())
         pkg = report["package"]
         live = {"zoo": pkg[len("rh-zoo-"):]} if pkg.startswith("rh-zoo-") else {"package": f"{pkg}@{report['version']}"}
-        out.append({"scan_id": report["scan_id"], "verdict": report["verdict"],
-                    "title": meta.get("title", pkg), "order": meta.get("order", 99), "live": live})
+        out.append({"scan_id": report["scan_id"], "package": pkg, "version": report["version"],
+                    "verdict": report["verdict"], "title": meta.get("title", pkg),
+                    "summary": meta.get("summary", ""), "order": meta.get("order", 99), "live": live})
     return sorted(out, key=lambda r: (r["order"], r["scan_id"]))
 
 
@@ -348,6 +351,11 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
                 return self.send(200, body, ctype, {"Cache-Control": "no-cache"})
             if path == "/healthz":
                 return self.json(200, {"ok": True, "rules": RULES_VERSION, "scans_open": scanner.guard_allows()})
+            if path == "/api/status":
+                return self.json(200, {"version": __version__, "rules": RULES_VERSION, "host": cfg.host_label,
+                                       "scans_open": scanner.guard_allows(), "queued": scanner._queue.qsize(),
+                                       "zoo": sorted(p.parent.name for p in Path(cfg.zoo_dir).glob("*/package.json")),
+                                       "explainer": scanner.explainer.model if scanner.explainer else None})
             if path == "/api/replays":
                 return self.json(200, list_replays(cfg.replays_dir))
             if path == "/mcp":

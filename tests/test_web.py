@@ -308,3 +308,18 @@ def test_mcp_respects_the_guard(site):
     status, reply = post(base + "/mcp", msg)
     assert status == 200 and reply["result"]["isError"] is True and "spend guard" in reply["result"]["content"][0]["text"]
     assert calls == []
+
+
+def test_status_tells_the_page_what_it_needs(site):
+    base, scanner, cfg, calls = site
+    set_guard(cfg.guard_state)
+    _, _, body = get(base + "/api/status")
+    status = json.loads(body)
+    assert status["scans_open"] is True and status["zoo"] == ["network-tool"] and status["host"]
+
+
+def test_replay_cards_carry_their_summary(site):
+    base, *_ = site
+    _, _, body = get(base + "/api/replays")
+    [r] = json.loads(body)
+    assert r["summary"] == "wget in postinstall" and r["package"] == "rh-zoo-network-tool"
