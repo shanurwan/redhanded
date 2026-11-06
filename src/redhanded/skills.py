@@ -14,6 +14,7 @@ import hashlib
 import io
 import json
 import os
+import posixpath
 import re
 import secrets
 import shutil
@@ -40,7 +41,7 @@ _RAN_DOWNLOAD = re.compile(r"(?:curl|wget)\b[^|;&\n]*\|\s*(?:sudo\s+)?(?:ba|z|da
 # Where working software comes from. A skill's agent reaching these says nothing.
 PACKAGE_HOSTS = frozenset({"registry.npmjs.org", "registry.yarnpkg.com", "pypi.org", "files.pythonhosted.org", "bootstrap.pypa.io", "deb.debian.org",
                            "security.debian.org", "github.com", "api.github.com", "codeload.github.com", "raw.githubusercontent.com", "objects.githubusercontent.com",
-                           "nodejs.org", "crates.io", "static.crates.io", "proxy.golang.org", "rubygems.org", "dl-cdn.alpinelinux.org", "example.com"})
+                           "nodejs.org", "pypi.tuna.tsinghua.edu.cn", "mirrors.aliyun.com", "conda.anaconda.org", "archive.ubuntu.com", "crates.io", "static.crates.io", "proxy.golang.org", "rubygems.org", "dl-cdn.alpinelinux.org", "example.com"})
 # Places to put a file or a snippet for someone else to fetch. Nobody ships a dependency this way.
 DROP_HOSTS = ("glot.io", "pastebin.com", "paste.ee", "rentry.co", "rentry.org", "hastebin.com", "ghostbin.co", "dpaste.org", "dpaste.com", "controlc.com", "justpaste.it",
               "transfer.sh", "temp.sh", "file.io", "0x0.st", "catbox.moe", "gofile.io", "anonfiles.com", "mega.nz", "mediafire.com", "filebin.net", "bashupload.com")
@@ -287,7 +288,7 @@ def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None
     # What blocks is a credential going somewhere it does not belong, which stays CRITICAL.
     # npm reads .npmrc for itself on any install. Installing tools globally is what agents do.
     outside_hosts = [c for c in ev.connects if c not in PACKAGE_HOSTS]
-    unnamed_hosts = [c for c in outside_hosts if not _named_by_skill(c, declared)]
+    unnamed_hosts = [c for c in outside_hosts if not _named_by_skill(c, declared) and not c.endswith(".arpa")]
     reads = sorted(p for p in ev.bait_reads if not p.endswith(("/.npmrc", "/.env")))
     bypassed = [c for c in ev.ai_tool_calls if any(f in c for f in AI_BYPASS_FLAGS)]    # a search of the disk opens the stubs too
     def belongs(token: str) -> bool:
@@ -313,8 +314,11 @@ def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None
         hit(Verdict.REVIEW, f"the agent used a credential it found with {service}")
     if any("/.github/workflows" in p for p in ev.writes):
         hit(Verdict.REVIEW, "the agent changed a CI workflow")
-    if reads:
-        hit(Verdict.REVIEW, f"the agent read credentials while using this skill ({', '.join(reads)[:160]})")
+    # A search of the disk for an API key opens every credential file, and says little. Going to one
+    # by name, or reading them and also reaching somewhere the skill never mentioned, does.
+    named = [p for p in reads if any(posixpath.basename(p) in c.get("arguments", "") for t in transcript for c in t.get("calls", []))]
+    if named or (reads and unnamed_hosts):
+        hit(Verdict.REVIEW, f"the agent read credentials while using this skill ({', '.join(named or reads)[:160]})")
     outside = outside_hosts
     drops = sorted({h for c in ev.connects for h in DROP_HOSTS if c == h or c.endswith("." + h)})
     if drops:

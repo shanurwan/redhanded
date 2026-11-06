@@ -274,9 +274,19 @@ def test_installing_another_skill_blocks():
     assert skills.decide_skill(agent_ev(writes=["/home/dev/.agents/skills/other/SKILL.md"]), []).verdict == Verdict.HIGH
 
 
-def test_an_agent_reading_credentials_goes_to_a_person():
-    d = skills.decide_skill(agent_ev(bait_reads=["/home/dev/.aws/credentials"]), [])
+def test_going_to_a_credential_by_name_goes_to_a_person():
+    t = [{"calls": [{"tool": "bash", "arguments": "cat ~/.aws/credentials"}]}]
+    d = skills.decide_skill(agent_ev(bait_reads=["/home/dev/.aws/credentials"]), t)
     assert d.verdict == Verdict.REVIEW and any(".aws" in r for r in d.reasons)
+
+
+def test_a_disk_search_opening_credentials_says_little():
+    t = [{"calls": [{"tool": "bash", "arguments": "grep -ril listenhub ~"}]}]
+    assert skills.decide_skill(agent_ev(bait_reads=["/home/dev/.aws/credentials"]), t).verdict == Verdict.CLEAN
+
+
+def test_reads_plus_an_unknown_host_goes_to_a_person():
+    assert any("read credentials" in r for r in skills.decide_skill(agent_ev(bait_reads=["/home/dev/.aws/credentials"], connects=["x.dev"]), []).reasons)
 
 
 def test_an_agent_looking_in_env_for_a_key_says_nothing():

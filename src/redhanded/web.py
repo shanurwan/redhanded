@@ -381,6 +381,9 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
             if path == "/api/results":
                 results = Path(cfg.results)
                 return self.json(200, json.loads(results.read_text())) if results.is_file() else self.json(404, {"error": "no results"})
+            if path == "/api/watch":
+                watch = Path(cfg.data_dir) / "watch.json"
+                return self.json(200, json.loads(watch.read_text())) if watch.is_file() else self.json(404, {"error": "not watching"})
             if path == "/api/replays":
                 return self.json(200, list_replays(cfg.replays_dir))
             if path == "/mcp":
