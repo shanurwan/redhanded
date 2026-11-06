@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.3"
+RULES_VERSION = "2026-11-06.4"
 
 
 class Verdict(IntEnum):
@@ -135,7 +135,9 @@ def decide(ev: Evidence) -> Decision:
     for argv, by_runner in ev.execs:
         why = _suspicious_exec(argv, by_runner)
         if why:
-            hit(Verdict.HIGH, why)
+            # Ordinary packages do this too, such as `python3 -c` to check a version. Scanning new
+            # npm releases showed it, and no held-out attack was blocked by this rule alone.
+            hit(Verdict.REVIEW if why.startswith("ran inline code") else Verdict.HIGH, why)
     for path in sorted(set(ev.writes)):
         if any(path.endswith(s) or s + "/" in path for s in PERSISTENCE_SUFFIXES):
             hit(Verdict.HIGH, f"wrote persistence path {path}")

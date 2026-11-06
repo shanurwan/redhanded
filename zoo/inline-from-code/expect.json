@@ -1,4 +1,5 @@
 {
-  "min_verdict": "HIGH",
-  "why": "Spawns node -e from code at load time, not from a declared script."
+  "min_verdict": "REVIEW",
+  "max_verdict": "REVIEW",
+  "why": "Spawns node -e from code at load time, not from a declared script. Worth a look, not a block, since ordinary packages do this too."
 }

@@ -31,8 +31,8 @@ def test_curl_from_install_script_is_high():
     assert d.verdict == Verdict.HIGH
 
 
-def test_inline_node_is_high():
-    assert decide(Evidence(execs=[(["node", "-e", "require('x')"], False)])).verdict == Verdict.HIGH
+def test_inline_node_alone_goes_to_review():
+    assert decide(Evidence(execs=[(["node", "-e", "require('x')"], False)])).verdict == Verdict.REVIEW
 
 
 def test_workflow_write_is_high():

@@ -34,10 +34,13 @@ Both tiers run without root, in network namespaces created with `unshare` inside
 
 | Vultr service | What it does here |
 |---|---|
-| VX1 Cloud Compute | One VM (`vx1-g-2c-8g-120s`, Debian 13, San Jose) runs the site, the queue, gVisor, Firecracker and the sinkhole. VX1 exposes `/dev/kvm` to guests, which is what makes a microVM per scan possible on one small VM |
-| Serverless Inference | `deepseek-v4.1-flash-1017` does two jobs through the OpenAI-compatible API: it reads package text for instructions aimed at AI agents, which can raise a verdict to REVIEW and nothing else, and it writes the explanation beside each verdict. It never sees a way to lower a verdict |
-| Firewall | Ports 80 and 443 are open; SSH is allowed only from the admin address |
-| Account API | The spend guard reads the balance and pending charges every 10 minutes with a billing-only sub-user key. Vultr has no native spend alert, so if the state goes stale or the limit is reached, scans stop |
+| VX1 Cloud Compute | One VM (`vx1-g-2c-8g-120s`, Debian 13, San Jose) runs the site, the queue, gVisor, Firecracker and the sinkhole. `/dev/kvm` is there from first boot, so each scan gets a microVM with its own kernel, without root. Median gVisor run 4.5 s, median microVM run 6.4 s |
+| Serverless Inference | `deepseek-v4.1-flash-1017` reads package text for instructions aimed at AI agents, which can raise a verdict to REVIEW and nothing else, and writes the explanation beside each verdict |
+| Vector Store | Attack memory: the behaviour of 71 recorded real attacks, never their code. Search finds candidates, and a measured overlap check keeps only real matches, so an explanation can say which attack a package behaves like. It has no effect on the verdict |
+| Account API | The spend guard reads the balance and pending charges every 10 minutes with a billing-only sub-user key. Vultr has no native spend alert, so if the reading goes stale or the limit is reached, scans stop |
+| Firewall and Terraform | Ports 80 and 443 are open, SSH only from the admin address. One command builds it in any of the plan's 12 regions, and `terraform destroy` removes everything that bills |
+
+Measured on a throwaway `vx1-g-4c-16g-240s` ($0.153/h) over the held-out run: 855 scans an hour, three at a time, or about $0.0002 of compute per scan, without inference.
 
 ```
  page ────────┐
@@ -70,8 +73,8 @@ Evidence decides; the model only explains.
 | Verdict | Triggered by |
 |---|---|
 | CRITICAL | A honeytoken appears in outbound traffic or a DNS name, or a stolen token is presented to the fake npm, GitHub or AWS endpoint |
-| HIGH | Does something in the microVM that it hid from gVisor; reads bait and attempts network access; spawns a network tool anywhere; runs an inline interpreter from code (not from the package's declared script); writes a persistence path; modifies the runtime toolchain |
-| REVIEW | Unknown network destinations, container checks, package text that gives instructions to AI agents, incomplete scans, deadline kills |
+| HIGH | Reads bait and attempts network access; sends this scan's unique machine name out; contacts a data-collection service; spawns a network tool anywhere; writes a persistence path; modifies the runtime toolchain; does something in the microVM that it hid from gVisor |
+| REVIEW | Unknown network destinations, container checks, inline code run from code, package text that gives instructions to AI agents, incomplete scans, deadline kills |
 | CLEAN | None of the above |
 
 A package's declared lifecycle command, and npm's own build tooling (such as bundled node-gyp), are visible to any reviewer, so their form alone is not flagged; what they do still is. Loopback traffic is not network access. Each rule change bumps `RULES_VERSION`, so a cached verdict is never served under rules that did not make it.
@@ -99,6 +102,7 @@ How to read these numbers:
 
 - Some of the 131 misses are limits of replaying old attacks: payloads that delete themselves or depend on downloads and packages that no longer exist, for example the axios payload `plain-crypto-js`, whose `setup.js` is absent from the dataset's copy. Others are real gaps: code that only fires on Windows, or only when called in a specific way. [`evals/real-malware.json`](evals/real-malware.json) sorts them by cause, automatically and approximately.
 - The dataset leans toward what Datadog's own rules flag, so it is not a sample of all npm malware.
+- After this run, one rule changed: inline code alone now goes to review, because scanning new npm releases showed ordinary packages doing it. No held-out result relied on it alone, so these numbers are unchanged.
 - The second tier found nothing the first had missed on these samples. The rule that flags what a package hid from gVisor has fired only on our own Zoo sample.
 
 ### False alarms and the Zoo
@@ -167,6 +171,10 @@ python -m pytest
 ## Safety
 
 The Zoo samples imitate publicly documented attack behaviour. Their only targets are per-scan fake credentials and reserved `.invalid` domains, they are `"private": true`, and they are never published to npm.
+
+## Built during the event
+
+See [`BUILT_DURING_HACKATHON.md`](BUILT_DURING_HACKATHON.md).
 
 ## License
 

@@ -162,6 +162,7 @@ function renderResults(res) {
     stat(pct(blocked), "would have blocked the merge"),
     stat(`${res.benign_block} of ${res.benign_total}`, "popular clean packages blocked"),
     stat(`${Math.round(res.p50_seconds)} s`, "typical scan"),
+    ...(res.sweep && res.sweep.scanned ? [stat(res.sweep.scanned.toLocaleString(), `new npm releases scanned so far, ${res.sweep.blocked} blocked`)] : []),
     ...(res.cost_per_scan ? [stat(res.cost_per_scan, "compute per scan on VX1")] : []));
   $("stats").hidden = false;
   $("res-sub").textContent = res.source;

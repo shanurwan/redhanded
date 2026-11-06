@@ -19,6 +19,7 @@
       <a href="#how">How it works</a>
       <a href="#results">Results</a>
       <a href="#install">Install</a>
+      <a href="#vultr">Why Vultr</a>
     </nav>
     <a class="btn btn-sm" href="#scan">Scan a package</a>
   </div>
@@ -126,12 +127,22 @@
           <button class="copy" id="mcp-copy" type="button">Copy</button>
         </div>
       </div>
-      <div class="vultr">
-        <span>Runs on Vultr</span>
-        <b>VX1 Cloud Compute</b><em>microVM per scan</em>
-        <b>Serverless Inference</b><em>explains verdicts, flags text aimed at AI agents</em>
-        <b>Cloud Firewall</b><em>SSH from the admin address only</em>
+    </div>
+  </section>
+
+  <section class="band band-alt" id="vultr">
+    <div class="wrap">
+      <h2>Why this runs on Vultr</h2>
+      <p class="sub">A real kernel for every scan, cheap enough to run on every pull request, with the model next door.</p>
+      <div class="vgrid">
+        <div><b>VX1 Cloud Compute</b><span><code>/dev/kvm</code> is there from first boot, so one small VM runs gVisor and a Firecracker microVM per scan, without root.</span><em>Median microVM run: 6.4 s</em></div>
+        <div><b>Serverless Inference</b><span>Explains each verdict and flags package text aimed at AI agents. It can raise a verdict to review, and never lower one.</span><em>Model: deepseek-v4.1-flash-1017</em></div>
+        <div><b>Vector Store</b><span>Attack memory: the behaviour of recorded real attacks, never their code, so a reviewer sees which one a package resembles.</span><em>71 recorded attacks</em></div>
+        <div><b>Account API</b><span>Vultr has no spend alert, so a guard reads the balance with a billing-only key. If the reading goes stale or the limit is reached, scans stop.</span><em>Fails closed</em></div>
+        <div><b>Firewall and Terraform</b><span>Web ports open, SSH from one address. One command builds it in any of the plan's 12 regions, and one removes everything that bills.</span><em>Your packages, your account</em></div>
+        <div><b>Measured cost</b><span>855 scans an hour, three at a time, on a $0.153 per hour VX1. Compute only, without inference.</span><em>About $0.0002 per scan</em></div>
       </div>
+    </div>
     </div>
   </section>
 </main>
