@@ -176,8 +176,9 @@ class Scanner:
             self._forget_old()
         return job
 
-    def wait(self, job: Job, timeout: float = 280.0) -> Job:
-        deadline = self._clock() + timeout
+    def wait(self, job: Job, timeout: float | None = None) -> Job:
+        # A skill can run an agent twice, and a repair can run several versions.
+        deadline = self._clock() + (timeout or (420.0 if job.kind in ("skill", "repair") else 280.0))
         while job.state in ("queued", "running") and self._clock() < deadline:
             time.sleep(0.25)
         return job
