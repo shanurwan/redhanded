@@ -9,11 +9,16 @@ otherwise. Nothing is ever forwarded; the sinkhole has no upstream.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import base64
 import ipaddress
 import json
+import subprocess
+import ssl
+import re
 import struct
 import time
+from pathlib import Path
 from dataclasses import dataclass, field
 
 MAX_CAPTURE = 1 << 20          # bytes kept per connection
@@ -189,7 +194,8 @@ async def _read_http(first: bytes, reader: asyncio.StreamReader) -> tuple[str, d
         if sep:
             headers[k.strip().lower()] = v.strip()
     want = min(int(headers.get("content-length", "0") or 0), MAX_CAPTURE)
-    while len(body) < want:
+    chunked = "chunked" in headers.get("transfer-encoding", "").lower()
+    while (len(body) < want or (chunked and not body.endswith(b"0\r\n\r\n"))) and len(body) < MAX_CAPTURE:
         chunk = await asyncio.wait_for(reader.read(65536), READ_TIMEOUT)
         if not chunk:
             break
@@ -199,11 +205,110 @@ async def _read_http(first: bytes, reader: asyncio.StreamReader) -> tuple[str, d
 
 
 METADATA_IP = "169.254.169.254"
+_HOSTNAME = re.compile(r"^[a-z0-9._-]{1,253}$")
+# Enough of the real answers that a credential stealer carries on and shows what it wants.
+_FAKE_API = {("api.github.com", "GET /user"): b'{"login":"dev-user","id":4242,"type":"User"}',
+             ("registry.npmjs.org", "GET /-/whoami"): b'{"username":"dev-user"}',
+             ("github.com", "GET /user"): b'{"login":"dev-user","id":4242}'}
+
+
+def make_ca(directory: Path) -> Path:
+    """A root certificate for one scan. Its key never enters the sandbox."""
+    directory.mkdir(parents=True, exist_ok=True)
+    key, crt = directory / "ca.key", directory / "ca.crt"
+    run = lambda *a: subprocess.run(a, check=True, capture_output=True, timeout=20)
+    run("openssl", "ecparam", "-name", "prime256v1", "-genkey", "-noout", "-out", str(key))
+    run("openssl", "req", "-x509", "-new", "-key", str(key), "-sha256", "-days", "30", "-subj", "/O=Corp IT/CN=Corp Root CA", "-out", str(crt))
+    run("openssl", "ecparam", "-name", "prime256v1", "-genkey", "-noout", "-out", str(directory / "leaf.key"))
+    return crt
+
+
+class CertForge:
+    """Answers HTTPS for any name the sandbox asks for, signed by the scan's root."""
+
+    def __init__(self, directory: str | Path):
+        self.dir = Path(directory)
+        self._contexts: dict[str, ssl.SSLContext] = {}
+        self.server = self._context("localhost")
+        self.server.sni_callback = self._on_sni
+
+    def _context(self, host: str) -> ssl.SSLContext:
+        if host in self._contexts:
+            return self._contexts[host]
+        name = hashlib.sha256(host.encode()).hexdigest()[:16]
+        csr, crt, ext = self.dir / f"{name}.csr", self.dir / f"{name}.crt", self.dir / f"{name}.ext"
+        ext.write_text(f"subjectAltName=DNS:{host}\n")
+        run = lambda *a: subprocess.run(a, check=True, capture_output=True, timeout=20)
+        run("openssl", "req", "-new", "-key", str(self.dir / "leaf.key"), "-subj", "/O=Corp IT/CN=sandbox", "-out", str(csr))
+        run("openssl", "x509", "-req", "-in", str(csr), "-CA", str(self.dir / "ca.crt"), "-CAkey", str(self.dir / "ca.key"), "-CAcreateserial",
+            "-days", "30", "-sha256", "-extfile", str(ext), "-out", str(crt))
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(str(crt), str(self.dir / "leaf.key"))
+        ctx.set_alpn_protocols(["http/1.1"])
+        self._contexts[host] = ctx
+        return ctx
+
+    def _on_sni(self, sslobj, servername, _ctx):
+        if servername and _HOSTNAME.match(servername.lower()):
+            try:
+                sslobj.context = self._context(servername.lower())
+            except (subprocess.SubprocessError, OSError, ssl.SSLError):
+                pass
+
+
+class _TlsStream:
+    """TLS over the streams we already have, because the ClientHello was read before we knew it was TLS."""
+
+    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, ctx: ssl.SSLContext, first: bytes):
+        self.reader, self.writer = reader, writer
+        self.incoming, self.outgoing = ssl.MemoryBIO(), ssl.MemoryBIO()
+        self.obj = ctx.wrap_bio(self.incoming, self.outgoing, server_side=True)
+        self.incoming.write(first)
+
+    async def _flush(self) -> None:
+        data = self.outgoing.read()
+        if data:
+            self.writer.write(data)
+            await self.writer.drain()
+
+    async def _more(self) -> bool:
+        await self._flush()
+        chunk = await asyncio.wait_for(self.reader.read(65536), READ_TIMEOUT)
+        if not chunk:
+            return False
+        self.incoming.write(chunk)
+        return True
+
+    async def handshake(self) -> None:
+        while True:
+            try:
+                self.obj.do_handshake()
+                await self._flush()
+                return
+            except ssl.SSLWantReadError:
+                if not await self._more():
+                    raise ConnectionError("closed during handshake") from None
+
+    async def read(self, n: int) -> bytes:
+        while True:
+            try:
+                return self.obj.read(n)
+            except ssl.SSLWantReadError:
+                if not await self._more():
+                    return b""
+            except ssl.SSLZeroReturnError:
+                return b""
+
+    async def write(self, data: bytes) -> None:
+        self.obj.write(data)
+        await self._flush()
 
 
 class Sinkhole:
-    def __init__(self, capture: Capture, pool: NamePool | None = None, metadata: dict | None = None):
+    def __init__(self, capture: Capture, pool: NamePool | None = None, metadata: dict | None = None,
+                 forge: "CertForge | None" = None):
         self.capture = capture
+        self.forge = forge            # with it, HTTPS is answered and read instead of closed
         self.pool = pool or NamePool()
         self.metadata = metadata      # decoy cloud credentials served at the metadata address
         self._servers: list = []
@@ -213,7 +318,15 @@ class Sinkhole:
             if line.rstrip("/").endswith("/security-credentials"):
                 return b"redhanded-scan-role"
             return json.dumps(self.metadata).encode()
-        return b"{}"
+        return _FAKE_API.get((host.split(":", 1)[0], line), b"{}")
+
+    async def _answer_http(self, first: bytes, reader, send, peer: str, default_host: str = "") -> None:
+        line, headers, body = await _read_http(first, reader)
+        host = headers.get("host", "") or default_host
+        self.capture.add(Record("http", time.time(), peer, host, line, headers, body))
+        reply = self._http_body(host, line)
+        await send(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                   + str(len(reply)).encode() + b"\r\nConnection: close\r\n\r\n" + reply)
 
     async def _on_tcp(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         peer = writer.get_extra_info("peername")[0]
@@ -221,23 +334,29 @@ class Sinkhole:
         try:
             first = await asyncio.wait_for(reader.read(65536), READ_TIMEOUT)
             if first.startswith(_HTTP_METHODS):
-                line, headers, body = await _read_http(first, reader)
-                host = headers.get("host", "")
-                self.capture.add(Record("http", time.time(), peer, host, line, headers, body))
-                reply = self._http_body(host, line)
-                writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
-                             + str(len(reply)).encode() + b"\r\nConnection: close\r\n\r\n" + reply)
-                await writer.drain()
+                async def send(data: bytes) -> None:
+                    writer.write(data)
+                    await writer.drain()
+                await self._answer_http(first, reader, send, peer)
             elif first[:1] == b"\x16":
-                self.capture.add(Record("tls", time.time(), peer, tls_server_name(first) or "", port, data=first))
+                sni = tls_server_name(first) or ""
+                self.capture.add(Record("tls", time.time(), peer, sni, port, data=first))
+                if self.forge:
+                    stream = _TlsStream(reader, writer, self.forge.server, first)
+                    await stream.handshake()
+                    plain = await stream.read(65536)
+                    if plain.startswith(_HTTP_METHODS):
+                        await self._answer_http(plain, stream, stream.write, peer, sni)
+                    elif plain:
+                        self.capture.add(Record("raw", time.time(), peer, sni, port, data=plain[:MAX_CAPTURE]))
             else:
                 data = first
                 while first and len(data) < MAX_CAPTURE:
                     first = await asyncio.wait_for(reader.read(65536), READ_TIMEOUT)
                     data += first
                 self.capture.add(Record("raw", time.time(), peer, "", port, data=data[:MAX_CAPTURE]))
-        except (asyncio.TimeoutError, ConnectionError, ValueError):
-            pass
+        except (asyncio.TimeoutError, ConnectionError, ValueError, ssl.SSLError):
+            pass      # a client that rejects our certificate still left its server name above
         finally:
             writer.close()
 
@@ -278,6 +397,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dns-host", default="10.66.0.1")
     p.add_argument("--metadata", help="JSON file with decoy cloud credentials")
     p.add_argument("--ready", help="file to create once listening")
+    p.add_argument("--tls-dir", help="folder with this scan's root certificate; answers HTTPS when given")
     args = p.parse_args(argv)
 
     metadata = None
@@ -287,7 +407,13 @@ def main(argv: list[str] | None = None) -> int:
 
     async def run() -> None:
         capture = Capture(args.capture)
-        sink = Sinkhole(capture, metadata=metadata)
+        forge = None
+        if args.tls_dir:
+            try:
+                forge = CertForge(args.tls_dir)
+            except (subprocess.SubprocessError, OSError, ssl.SSLError):
+                forge = None     # HTTPS falls back to server names only
+        sink = Sinkhole(capture, metadata=metadata, forge=forge)
         await sink.start(args.host, 53, DEFAULT_TCP_PORTS, dns_host=args.dns_host)
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()

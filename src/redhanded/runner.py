@@ -31,7 +31,7 @@ from typing import Callable
 from .agenttext import read_package_text
 from .evidence import build
 from .honeytokens import HoneytokenSet
-from .sinkhole import Capture, NamePool, Record
+from .sinkhole import Capture, NamePool, Record, make_ca
 from .trace import parse
 from .verdict import Verdict, combine_microvm, decide, flag_agent_text
 
@@ -195,6 +195,7 @@ def _spec(scan: Path, name: str, tokens: HoneytokenSet) -> dict:
         "USER": "dev",
         "RH_PACKAGE": name,
         "HOSTNAME": tokens.machine_name or "dev-laptop",
+        "NODE_EXTRA_CA_CERTS": "/etc/ssl/certs/ca-certificates.crt",
         "CI": "true",
         "npm_config_cache": f"{HOME}/.npm",
         "npm_config_userconfig": "/dev/null",   # npm itself never reads the bait .npmrc
@@ -225,6 +226,7 @@ def _spec(scan: Path, name: str, tokens: HoneytokenSet) -> dict:
             bind(scan / "home", HOME),
             bind(scan / "work", WORK),
             bind(scan / "resolv.conf", "/etc/resolv.conf", ro=True),
+            *([bind(scan / "ca-bundle.crt", "/etc/ssl/certs/ca-certificates.crt", ro=True)] if (scan / "ca-bundle.crt").is_file() else []),
         ],
         "linux": {
             "namespaces": [{"type": t} for t in ("pid", "ipc", "uts", "mount")]
@@ -272,7 +274,18 @@ def fetch_deps(tarball: bytes, into: Path, rootfs: str, registry: str, timeout: 
     return f"{len(wanted)} dependencies fetched" if p.returncode == 0 else "some dependencies unavailable"
 
 
-def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: HoneytokenSet, rootfs: str, deps: Path | None = None) -> None:
+def trust_bundle(scan: Path, trust_from: str) -> None:
+    """The sandbox trusts this scan's root, the way a laptop behind a corporate proxy does."""
+    try:
+        ca = make_ca(scan / "tls")
+    except (subprocess.SubprocessError, OSError):
+        return
+    base = Path(trust_from) / "etc/ssl/certs/ca-certificates.crt"
+    (scan / "ca-bundle.crt").write_bytes((base.read_bytes() if base.is_file() else b"") + ca.read_bytes())
+
+
+def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: HoneytokenSet, rootfs: str, deps: Path | None = None,
+            trust_from: str | None = None) -> None:
     for d in ("home", "work/node_modules", "work/.rh", "bundle", "log", "state"):
         (scan / d).mkdir(parents=True, exist_ok=True)
     safe_unpack(tarball, scan / "work" / "node_modules" / name)
@@ -293,6 +306,7 @@ def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: Honeyto
             elif not target.exists():
                 subprocess.run(["cp", "-a", str(entry), str(target)], check=False, capture_output=True, timeout=120)
     (scan / "resolv.conf").write_text(f"nameserver {RESOLVER_IP}\n")
+    trust_bundle(scan, trust_from or rootfs)
     tokens.plant(scan / "home")
     (scan / "metadata.json").write_text(json.dumps(tokens.metadata_credentials()))
     spec = _spec(scan, name, tokens)
@@ -334,7 +348,8 @@ def inner(scan: Path, runsc: str, deadline_s: float) -> int:
         ready = scan / "sinkhole.ready"
         sink = subprocess.Popen([*ns, sys.executable, "-m", "redhanded.sinkhole",
                                  "--capture", str(scan / "capture.jsonl"),
-                                 "--metadata", str(scan / "metadata.json"), "--ready", str(ready)],
+                                 "--metadata", str(scan / "metadata.json"), "--ready", str(ready),
+                                 *(["--tls-dir", str(scan / "tls")] if (scan / "tls").is_dir() else [])],
                                 stdout=open(scan / "log" / "sinkhole.out", "wb"), stderr=subprocess.STDOUT)
         for _ in range(250):
             if ready.exists():

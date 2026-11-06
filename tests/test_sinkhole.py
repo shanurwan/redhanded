@@ -150,3 +150,66 @@ def test_metadata_address_serves_decoy_credentials():
     role, creds = run(go())
     assert role.endswith(b"redhanded-scan-role")
     assert creds.endswith(b'{"AccessKeyId": "ASIADECOY"}')
+
+
+def test_https_is_read_when_the_sandbox_trusts_the_scan_root(tmp_path):
+    import asyncio, shutil, ssl, urllib.request
+    import pytest
+    from redhanded.sinkhole import Capture, CertForge, Sinkhole, make_ca
+    if not shutil.which("openssl"):
+        pytest.skip("no openssl")
+    ca = make_ca(tmp_path)
+
+    async def run():
+        cap = Capture()
+        sink = Sinkhole(cap, forge=CertForge(tmp_path))
+        ports = await sink.start("127.0.0.1", 0, [0])
+
+        def client():
+            ctx = ssl.create_default_context(cafile=str(ca))
+            sock_ctx = ctx
+            import http.client
+            class Conn(http.client.HTTPSConnection):
+                def connect(self):
+                    import socket
+                    raw = socket.create_connection(("127.0.0.1", ports[1]))
+                    self.sock = sock_ctx.wrap_socket(raw, server_hostname="api.github.com")
+            c = Conn("api.github.com")
+            c.request("GET", "/user", headers={"Authorization": "token bait-value"})
+            return c.getresponse().read()
+
+        body = await asyncio.get_running_loop().run_in_executor(None, client)
+        await sink.stop()
+        return cap, body
+
+    cap, body = asyncio.run(run())
+    assert b"dev-user" in body
+    http = [r for r in cap.records if r.kind == "http"]
+    assert http and http[0].host == "api.github.com" and http[0].headers["authorization"] == "token bait-value"
+    assert any(r.kind == "tls" and r.host == "api.github.com" for r in cap.records)
+
+
+def test_a_client_that_rejects_our_certificate_still_leaves_its_server_name(tmp_path):
+    import asyncio, shutil, socket, ssl
+    import pytest
+    from redhanded.sinkhole import Capture, CertForge, Sinkhole, make_ca
+    if not shutil.which("openssl"):
+        pytest.skip("no openssl")
+    make_ca(tmp_path)
+
+    async def run():
+        cap = Capture()
+        sink = Sinkhole(cap, forge=CertForge(tmp_path))
+        ports = await sink.start("127.0.0.1", 0, [0])
+
+        def client():
+            ctx = ssl.create_default_context()
+            raw = socket.create_connection(("127.0.0.1", ports[1]))
+            with pytest.raises(ssl.SSLError):
+                ctx.wrap_socket(raw, server_hostname="pinned.example.invalid")
+
+        await asyncio.get_running_loop().run_in_executor(None, client)
+        await sink.stop()
+        return cap
+
+    assert any(r.kind == "tls" and r.host == "pinned.example.invalid" for r in asyncio.run(run()).records)

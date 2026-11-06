@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -75,6 +76,8 @@ def _build_scan_drive(scan: Path) -> None:
     fs.mkdir(exist_ok=True)
     os.rename(scan / "work", fs / "work")
     os.rename(scan / "home", fs / "home")
+    if (scan / "ca-bundle.crt").is_file():
+        shutil.copyfile(scan / "ca-bundle.crt", fs / "ca-bundle.crt")     # the certificate, never the key
 
 
 def _keep_console(proc: subprocess.Popen, path: Path) -> None:
@@ -107,7 +110,8 @@ def inner(scan: Path, deadline_s: float) -> int:
 
         ready = scan / "sinkhole.ready"
         sink = subprocess.Popen([sys.executable, "-m", "redhanded.sinkhole", "--capture", str(scan / "capture.jsonl"),
-                                 "--metadata", str(scan / "metadata.json"), "--ready", str(ready)],
+                                 "--metadata", str(scan / "metadata.json"), "--ready", str(ready),
+                                 *(["--tls-dir", str(scan / "tls")] if (scan / "tls").is_dir() else [])],
                                 stdout=open(scan / "log" / "sinkhole.out", "wb"), stderr=subprocess.STDOUT)
         for _ in range(250):
             if ready.exists():
@@ -143,7 +147,7 @@ def inner(scan: Path, deadline_s: float) -> int:
 def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfig, deps: Path | None = None) -> MicroVMResult:
     started = time.monotonic()
     tokens = HoneytokenSet.generate(scan.parent.name + "-microvm")
-    prepare(scan, name, version, tarball, tokens, cfg.fc_rootfs, deps)
+    prepare(scan, name, version, tarball, tokens, cfg.fc_rootfs, deps, trust_from=cfg.rootfs)
     _build_scan_drive(scan)
     _env_file(scan, name, tokens)
     used = sum(f.stat().st_size for f in (scan / "scan-fs").rglob("*") if f.is_file() and not f.is_symlink())

@@ -15,6 +15,7 @@ mkdir -p /scan /work /home/dev
 mount -o ro /dev/vdb /scan
 cp -a /scan/work/. /work/
 cp -a /scan/home/. /home/dev/
+[ -f /scan/ca-bundle.crt ] && cp /scan/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
 . /scan/env.sh
 hostname "$HOSTNAME"
 umount /scan
