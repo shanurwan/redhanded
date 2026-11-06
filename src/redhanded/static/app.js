@@ -106,6 +106,9 @@ function showSheet(view) {
   const ex = view.explanation && view.explanation.text;
   $("s-explain").hidden = !ex;
   $("s-explain").textContent = ex || "";
+  const like = view.explanation && view.explanation.similar;
+  $("s-like").hidden = !like;
+  if (like) $("s-like").textContent = `Behaves like ${like.package}@${like.version}${like.incident ? `, ${like.incident}` : ""}${like.date ? `, ${like.date}` : ""}. Found in Vultr Vector Store, checked against recorded behaviour.`;
   const rows = [{ head: "Rules" }, ...(r.reasons || []).map((w) => [w.split(":")[0], w.replace(/^\w+: /, ""), !w.startsWith("REVIEW")])];
   if (!(r.reasons || []).length) rows.push(["CLEAN", "No rule fired"]);
   rows.push({ head: "In the gVisor sandbox" }, ...behaviour(ev, view.capture));

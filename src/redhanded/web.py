@@ -29,6 +29,7 @@ from typing import Callable
 from . import __version__, mcp_http
 from .agenttext import AgentTextCheck
 from .explain import Explainer
+from .memory import AttackMemory
 from .runner import ScanConfig, ScanError, _get, scan_local
 from .service import ADVICE, SCAN_ID, Cache, InputError, Service, validate
 from .spend import GuardState, StateFile
@@ -59,7 +60,7 @@ SECURITY_HEADERS = {
 }
 MAX_BODY = 4 << 20       # a lockfile pair or a small tarball
 MAX_TARBALL = 2 << 20
-MAX_LOCKFILE_SCANS = 5
+MAX_LOCKFILE_SCANS = 12
 
 
 class Refused(Exception):
@@ -188,7 +189,7 @@ class Scanner:
     def _finish_scan(self, job: Job, scan_id: str, cached: bool) -> None:
         scan_dir = Path(self.service.cfg.scans_dir) / scan_id
         if self.explainer:
-            write_explanation(scan_dir, self.explainer)
+            write_explanation(scan_dir, self.explainer, AttackMemory.from_env())
         job.result = answer(scan_dir, cached)
         job.scan_id, job.verdict, job.cached = scan_id, job.result["verdict"], cached
 
@@ -234,14 +235,18 @@ def answer(scan_dir: Path, cached: bool = False) -> dict:
             "url": f"/#{report['scan_id']}"}
 
 
-def write_explanation(scan_dir: Path, explainer: Explainer) -> dict | None:
+def write_explanation(scan_dir: Path, explainer: Explainer, memory: "AttackMemory | None" = None) -> dict | None:
     path = scan_dir / "explain.json"
     if path.is_file():
         return json.loads(path.read_text())
     report_path = scan_dir / "report.json"
     if not report_path.is_file():
         return None
-    out = explainer.explain(json.loads(report_path.read_text()))
+    report = json.loads(report_path.read_text())
+    similar = memory.closest(report) if memory and report.get("verdict") in ("HIGH", "CRITICAL") else None
+    out = explainer.explain(report, similar) if similar else explainer.explain(report)
+    if similar:
+        out["similar"] = similar
     if out.get("text"):
         out["at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         path.write_text(json.dumps(out, indent=1))

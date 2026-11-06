@@ -126,7 +126,8 @@ class Service:
         except (ValueError, lockdiff.LockfileError) as e:
             raise InputError(f"could not read the lockfile: {e}") from e
         results, scanned = [], 0
-        for c in changes:
+        # The budget goes first to what runs code on install, then to the shallowest packages.
+        for c in sorted(changes, key=lambda c: (not c.has_install_script, c.path.count("node_modules/"), c.path)):
             allow_scan = scanned < max_scans
             try:
                 r = self.check(c.name, c.new_version, scan_if_missing=allow_scan, integrity=c.integrity or None)

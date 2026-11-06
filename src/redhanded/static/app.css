@@ -122,6 +122,7 @@ pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-ra
 .s-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-right: 72px; }
 .s-pkg { font: 600 22px var(--sans); overflow-wrap: anywhere; letter-spacing: -.01em; }
 .verdict { font: 700 15px var(--mono); padding: 5px 11px; border-radius: 6px; white-space: nowrap; }
+.s-like { margin: 18px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--red-soft); color: #ffc9c9; font-size: 14.5px; }
 .s-explain { margin: 18px 0 0; color: var(--text); font-size: 15.5px; }
 .events { list-style: none; margin: 20px 0 0; padding: 0; }
 .events li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14.5px; }

@@ -178,11 +178,23 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--order", type=int, default=99)
     x = sub.add_parser("explain", help="write explain.json for a scan folder with Vultr Serverless Inference")
     x.add_argument("scan_dir")
+    ms = sub.add_parser("memory-seed", help="load recorded attack behaviour into a Vultr Vector Store collection")
+    ms.add_argument("file", help="JSON lines: package, version, incident, date, traits")
     args = parser.parse_args(argv)
 
     if args.cmd == "replay-export":
         from .replay import export
         print(export(Path(args.scan_dir), Path(args.out), args.title, args.summary, args.order))
+        return 0
+    if args.cmd == "memory-seed":
+        import json
+        load_env(Path(args.env))
+        from .memory import AttackMemory
+        memory = AttackMemory.from_env()
+        if not memory:
+            print("redhanded: set VULTR_INFERENCE_API_KEY first", file=sys.stderr)
+            return 2
+        print("added", memory.seed([json.loads(l) for l in Path(args.file).read_text().splitlines() if l.strip()]))
         return 0
     if args.cmd in ("web", "explain"):
         load_env(Path(args.env))
@@ -196,7 +208,8 @@ def main(argv: list[str] | None = None) -> int:
             print("redhanded: set VULTR_INFERENCE_API_KEY first", file=sys.stderr)
             return 2
         from .web import write_explanation
-        out = write_explanation(Path(args.scan_dir), explainer)
+        from .memory import AttackMemory
+        out = write_explanation(Path(args.scan_dir), explainer, AttackMemory.from_env())
         print(out)
         return 0 if out and out.get("text") else 1
 

@@ -97,11 +97,14 @@ def main() -> int:
             verdict = r.get("verdict") or "UNSCANNED"
             link = f"{server}/#{r['scan_id']}" if r.get("scan_id") else ""
             rows.append((f"{r['package']}@{r['version']}", verdict, "; ".join(r.get("reasons", [])) or r.get("note", ""), link))
-            failed |= verdict in BLOCK or verdict == "UNSCANNED"
+            failed |= verdict in BLOCK         # not scanned goes to a person, and the table says so
 
     lines = ["| Package | Verdict | Why | Evidence |", "|---|---|---|---|"]
     lines += [f"| {p} | {v} | {w.replace('|', '/')} | {f'[open]({u})' if u else ''} |" for p, v, w, u in rows]
     table = "\n".join(lines) if rows else "No dependency changes."
+    unscanned = sum(1 for _, v, _, _ in rows if v == "UNSCANNED")
+    if unscanned:
+        table += f"\n\n{unscanned} packages were over the scan budget for one PR and were not scanned. Review them by hand."
     print(table)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
