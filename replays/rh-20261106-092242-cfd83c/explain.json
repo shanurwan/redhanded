@@ -1,0 +1,5 @@
+{
+ "text": "The package read the bait AWS credentials file and then attempted to send the harvested key outward, with network attempts toward the instance metadata endpoint, AWS STS, api.github.com and registry.npmjs.org, plus spawned curl calls carrying a GitHub token against the fake GitHub API. All of that traffic went to the sandbox's fake internet, so nothing was downloaded and no real host was reached, but the behavior is credential theft and exfiltration tooling rather than anything a toastr library needs. Treat the package and its install path as compromised, do not merge or run it, and check whether this version or its dependencies were recently changed or republished. Escalate to the maintainers or security team and rotate any credentials that could have been exposed in environments where it actually ran.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T09:32:52Z"
+}

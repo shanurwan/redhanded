@@ -1,0 +1,39 @@
+2026-11-06T09:33:21.789895642 [anonymous-instance:main] Running Firecracker v1.17.0
+2026-11-06T09:33:21.795027616 [anonymous-instance:main] Artificially kick devices
+2026-11-06T09:33:21.795166167 [anonymous-instance:fc_vcpu 1] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T09:33:21.795173207 [anonymous-instance:fc_vcpu 0] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T09:33:21.795193174 [anonymous-instance:main] Successfully started microvm that was configured from one single json
+2026-11-06T09:33:21.803054003 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0xcf8:0x4 failed: Failed to find address range.
+2026-11-06T09:33:21.803106095 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0xcfc:0x2 failed: Failed to find address range.
+[    0.013665] SELinux: CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE is non-zero.  This is deprecated and will be rejected in a future kernel release.
+[    0.013665] SELinux: https://github.com/SELinuxProject/selinux-kernel/wiki/DEPRECATE-checkreqprot
+2026-11-06T09:33:21.840978496 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T09:33:21.841013233 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+2026-11-06T09:33:21.843822941 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T09:33:21.843868453 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+[    0.018163] PCI: Fatal: No config space access function found
+2026-11-06T09:33:21.863345032 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0x87:0x1 failed: Failed to find address range.
+2026-11-06T09:33:21.878912490 [anonymous-instance:fc_vcpu 0] [Block:root] notifying queues
+2026-11-06T09:33:21.880517519 [anonymous-instance:fc_vcpu 0] [Block:scan] notifying queues
+2026-11-06T09:33:21.882714674 [anonymous-instance:fc_vcpu 0] [Net:eth0] notifying queues
+[    0.626921] EXT4-fs (vdb): write access unavailable, skipping orphan cleanup
+== lifecycle scripts
+
+> core-js@3.38.1 postinstall
+> node -e "try{require('./postinstall')}catch(e){}"
+
+[1mnpm[22m [33mwarn[39m [94mrebuild[39m 1 package has install scripts not yet covered by allowScripts. Run `npm install-scripts ls` to review.
+rebuilt dependencies successfully
+== exit 0
+== load
+loaded
+exercised 11
+== exit 0
+RH-WRITE /home/dev/.npm/_logs/2026-11-06T09_33_23_451Z-debug-0.log
+RH-READ /home/dev/.npm/_logs/2026-11-06T09_33_23_451Z-debug-0.log
+RH-REPORT-END
+[    5.870680] sysrq: Resetting
+2026-11-06T09:33:27.707916379 [anonymous-instance:main] Vmm is stopping.
+2026-11-06T09:33:27.707944828 [anonymous-instance:main] Killing vCPU threads
+2026-11-06T09:33:27.707961341 [anonymous-instance:fc_vcpu 1] Requested a vCPU run with immediate_exit enabled. The operation was skipped
+2026-11-06T09:33:27.744682687 [anonymous-instance:main] Firecracker exiting successfully. exit_code=0

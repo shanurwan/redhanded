@@ -1,5 +1,0 @@
-{
- "text": "The package ran node ping.js and attempted network connections to telemetry.rh-zoo.invalid, and the same attempt appeared in the second microVM run. That matters because a package reaching out to an external telemetry host on execution can disclose environment details or act as a beacon, even though nothing was downloaded and no bait files were read or exfiltrated here. The reviewer should inspect ping.js to see what data is sent and whether this endpoint is expected and approved, and hold the pull request until that is confirmed.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:32:16Z"
-}

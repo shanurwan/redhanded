@@ -1,0 +1,142 @@
+{
+ "scan_id": "rh-20261106-085217-dd963c",
+ "package": "@nx/devkit",
+ "version": "21.5.0",
+ "integrity": "sha512-EO0ANXoaB6jyW2C7Np7mFK20KGJwB3JhD7yrXgkYrJNWWxZhavcV9h2+niqlXiAa1pLqxEcE0Nm0N3dpuMoTbw==",
+ "verdict": "HIGH",
+ "reasons": [
+  "HIGH: wrote persistence path /home/dev/.bashrc",
+  "HIGH: wrote persistence path /home/dev/.zshrc",
+  "REVIEW: killed at deadline"
+ ],
+ "container_aware": false,
+ "seconds": 79.03,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node telemetry.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "telemetry.js"
+    ],
+    true
+   ],
+   [
+    [
+     "which",
+     "claude"
+    ],
+    false
+   ],
+   [
+    [
+     "which",
+     "gemini"
+    ],
+    false
+   ],
+   [
+    [
+     "which",
+     "q"
+    ],
+    false
+   ],
+   [
+    [
+     "which",
+     "gh"
+    ],
+    false
+   ],
+   [
+    [
+     "which",
+     "npm"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "whoami"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "whoami"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node ./bin/post-install || exit 0"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "./bin/post-install"
+    ],
+    true
+   ]
+  ],
+  "writes": [
+   "/home/dev/.bashrc",
+   "/home/dev/.zshrc"
+  ],
+  "incomplete": [],
+  "deadline_killed": true,
+  "load_hang": false,
+  "probe_flags": [],
+  "stats_count": 3566
+ },
+ "sandbox": {
+  "deadline_killed": true,
+  "exit_code": null,
+  "errors": [],
+  "seconds": 75.04,
+  "syscall_lines": 31959,
+  "unparsed": 0,
+  "sinkhole_records": 0,
+  "dependencies": "9 dependencies fetched"
+ },
+ "microvm": null
+}

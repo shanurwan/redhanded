@@ -1,0 +1,14 @@
+{
+ "title": "A package made to steal cloud keys",
+ "summary": "Published as malware. Six fake credentials left the sandbox.",
+ "order": 5,
+ "full_syscall_log": {
+  "sha256": "5c6e783fd24eaf8434f932a6ab335225dafe26666dbad90290efe4a0685dd3e6",
+  "lines": 68753,
+  "excerpt_lines": 318
+ },
+ "incident": "",
+ "date": "2026-05-07",
+ "hero": false,
+ "real": true
+}

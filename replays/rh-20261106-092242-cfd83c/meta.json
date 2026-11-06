@@ -1,0 +1,14 @@
+{
+ "title": "Shai-Hulud in an Angular toast library",
+ "summary": "The same worm, in another hijacked release. Stolen tokens went straight to fake GitHub and npm.",
+ "order": 2,
+ "full_syscall_log": {
+  "sha256": "b3ff53c906255ecd02686956725d844707049a08b085ff83d34794faf9cbeb99",
+  "lines": 57267,
+  "excerpt_lines": 205
+ },
+ "incident": "Shai-Hulud worm",
+ "date": "2025-09-15",
+ "hero": false,
+ "real": true
+}

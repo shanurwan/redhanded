@@ -54,7 +54,7 @@ write_files:
       [Service]
       Type=oneshot
       User=rh
-      ExecStart=/bin/sh -c 'find /var/lib/redhanded/scans -mindepth 2 -maxdepth 2 \( -name log -o -name work -o -name home -o -name bundle \) -mtime +2 -exec rm -rf {} +'
+      ExecStart=/bin/sh -c 'find /var/lib/redhanded/scans -mindepth 2 -maxdepth 2 \( -name log -o -name work -o -name home -o -name bundle -o -name deps -o -name tls \) -mtime +2 -exec rm -rf {} +'
   - path: /etc/systemd/system/redhanded-prune.timer
     content: |
       [Timer]

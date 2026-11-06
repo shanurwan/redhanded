@@ -1,0 +1,14 @@
+{
+ "title": "A logger that sends your credentials out",
+ "summary": "Published as malware. Fake AWS, GitHub and npm credentials left the sandbox.",
+ "order": 6,
+ "full_syscall_log": {
+  "sha256": "bbaf0aeb3961daeec3461d491cddc8469626125a09be25fe1467ed0e1336e849",
+  "lines": 62861,
+  "excerpt_lines": 255
+ },
+ "incident": "",
+ "date": "2025-07-31",
+ "hero": false,
+ "real": true
+}

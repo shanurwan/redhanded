@@ -1,0 +1,5 @@
+{
+ "text": "The package attempted to send honeytoken credentials \u2014 an AWS access key ID and secret, a GitHub token, and an npm token \u2014 to outside hosts, along with this machine's name, with network attempts directed at log-server-lovat.vercel.app, github.com, and nodejs.org. Those tokens were planted bait and the sandbox had no real internet route, so nothing was actually delivered, but the intent to exfiltrate credentials and host identity is exactly the behavior of a supply-chain stealer. Treat this version as compromised: do not merge or install it, and check whether any real credentials of these types were ever present in an environment where this package ran.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T09:32:48Z"
+}

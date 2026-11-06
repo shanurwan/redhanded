@@ -3,91 +3,158 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RedHanded</title>
-<meta name="description" content="Detonate npm dependency changes in a baited gVisor sandbox on Vultr before they merge.">
+<title>RedHanded: catch malicious npm packages before they merge</title>
+<meta name="description" content="RedHanded runs every dependency change in a baited sandbox and blocks the merge when it catches a package stealing credentials.">
 <link rel="icon" href="data:,">
+<link rel="preload" href="/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/app.css">
 <script src="/app.js" defer></script>
 </head>
 <body>
-<header class="top">
-  <div class="wrap top-row">
-    <div class="brand"><span class="mark" aria-hidden="true"></span>RedHanded</div>
-    <div class="status" id="status" aria-live="polite">connecting…</div>
+<header class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#top"><span class="mark" aria-hidden="true"></span>RedHanded</a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#attacks">Real attacks</a>
+      <a href="#how">How it works</a>
+      <a href="#results">Results</a>
+      <a href="#install">Install</a>
+    </nav>
+    <a class="btn btn-sm" href="#scan">Scan a package</a>
   </div>
 </header>
 
-<main class="wrap">
-  <section class="hero">
-    <h1>Before you merge, catch it red-handed.</h1>
-    <p>RedHanded runs each changed npm package in a disposable gVisor sandbox and a Firecracker microVM on Vultr, baited with fake
-      credentials and wired to a fake internet with no route out. If the code reaches for the bait, the
-      merge is blocked and the evidence comes with it. Fixed rules decide the verdict; the model only explains it.</p>
-  </section>
-
-  <section class="panel" aria-labelledby="replay-h">
-    <div class="panel-head">
-      <h2 id="replay-h">Recorded catches</h2>
-      <p class="hint">Real scans, replayed from the files they wrote. Download the evidence and check it.</p>
-    </div>
-    <div class="replays" id="replays" role="list"></div>
-  </section>
-
-  <section class="panel viewer" id="viewer" aria-live="polite" hidden>
-    <div class="viewer-head">
-      <div>
-        <div class="pkg" id="v-pkg"></div>
-        <div class="mono dim" id="v-integrity"></div>
+<main id="top">
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <h1>Catch malicious packages before they merge.</h1>
+      <p class="lede">RedHanded runs every dependency change in a sandbox baited with fake credentials. When a package steals them, the merge is blocked and you get the proof.</p>
+      <div class="cta">
+        <a class="btn" href="#scan">Scan a package</a>
+        <a class="btn btn-ghost" href="#install">Add to GitHub</a>
       </div>
-      <div class="verdict" id="v-verdict"></div>
     </div>
-    <div class="contain">
-      <div><b>Sandbox</b> gVisor, then a microVM with its own kernel</div>
-      <div><b>Network</b> only route leads to the sinkhole, which has no route out</div>
-      <div><b>Bait</b> fake npm, GitHub and AWS credentials made for this scan only</div>
-    </div>
-    <ol class="timeline" id="v-timeline"></ol>
-    <div class="explain" id="v-explain" hidden>
-      <div class="explain-label" id="v-explain-label"></div>
-      <p id="v-explain-text"></p>
-    </div>
-    <div class="facts" id="v-facts"></div>
-    <div class="files" id="v-files"></div>
+    <figure class="replay" id="replay" aria-label="Replay of a real attack">
+      <figcaption class="replay-head">
+        <div>
+          <div class="replay-kicker" id="r-kicker">Real attack, recorded on Vultr</div>
+          <div class="replay-pkg" id="r-pkg">&nbsp;</div>
+        </div>
+        <button class="replay-again" id="r-again" type="button" aria-label="Play again">Replay</button>
+      </figcaption>
+      <ol class="replay-steps" id="r-steps"></ol>
+      <div class="pr-check" id="r-check" hidden>
+        <span class="x" aria-hidden="true"></span>
+        <div><b>Merge blocked</b><span id="r-why"></span></div>
+        <a id="r-link" href="#">See the evidence</a>
+      </div>
+    </figure>
   </section>
 
-  <section class="panel" aria-labelledby="live-h">
-    <div class="panel-head">
-      <h2 id="live-h">Scan one yourself, live</h2>
-      <p class="hint">Runs now on the Vultr host. One scan at a time, so you may wait in a short queue.</p>
+  <section class="stats wrap" id="stats" aria-label="Measured results" hidden></section>
+
+  <section class="band" id="attacks">
+    <div class="wrap">
+      <h2>Real attacks, run again</h2>
+      <p class="sub">These are the published malicious releases, run in the sandbox with bait planted. Every card opens the recorded evidence.</p>
+      <div class="cards" id="incidents"></div>
     </div>
-    <form id="scan-form" class="scan-form" autocomplete="off">
-      <label for="pkg" class="sr">npm package</label>
-      <input id="pkg" name="pkg" placeholder="left-pad or left-pad@1.3.0" spellcheck="false" maxlength="260">
-      <button type="submit">Detonate</button>
-    </form>
-    <div class="zoo-row">
-      <span class="hint">Or a Zoo sample (harmless imitation malware):</span>
-      <div id="zoo" class="chips"></div>
-    </div>
-    <div id="job" class="job" aria-live="polite" hidden></div>
   </section>
 
-  <section class="panel" aria-labelledby="use-h">
-    <div class="panel-head"><h2 id="use-h">Ask it from your coding agent</h2></div>
-    <p>RedHanded is an MCP server. Add it, and your agent can check a package before it installs it, or a
-      lockfile change before it opens a pull request.</p>
-<pre class="code">{
-  "mcpServers": {
-    "redhanded": { "type": "http", "url": "https://45-32-140-228.sslip.io/mcp" }
-  }
-}</pre>
-    <p class="hint">Tools: <code>check_package</code>, <code>check_lockfile_change</code>, <code>get_scan_report</code>.</p>
+  <section class="band band-alt" id="how">
+    <div class="wrap">
+      <h2>Proof, not a score</h2>
+      <p class="sub">Credentials made for one scan cannot be seen by accident. If one leaves the sandbox, the package took it.</p>
+      <ol class="steps">
+        <li><b>Plant the bait</b><span>Fake AWS, GitHub and npm credentials, created for this scan only, on a machine that looks like a developer's laptop.</span></li>
+        <li><b>Run the exact bytes</b><span>The tarball your lockfile names, with its dependencies, in a gVisor sandbox and then a Firecracker microVM.</span></li>
+        <li><b>Fake the internet</b><span>DNS, HTTP and HTTPS are answered by a sinkhole with no route out, so a stealer shows what it wants to send.</span></li>
+        <li><b>Decide by rules</b><span>Fixed rules set the verdict from what was recorded. Text inside a package cannot talk them out of it. The model only explains.</span></li>
+      </ol>
+      <div class="diagram" role="img" aria-label="The package runs in a sandbox whose only route leads to a sinkhole with no route out">
+        <div class="node"><b>Your PR</b><span>lockfile change</span></div>
+        <i class="link"></i>
+        <div class="node node-red"><b>Sandbox</b><span>gVisor, then microVM, baited</span></div>
+        <i class="link"></i>
+        <div class="node"><b>Sinkhole</b><span>fake internet, no route out</span></div>
+        <i class="link"></i>
+        <div class="node"><b>Verdict</b><span>allow, review or block</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="results" hidden>
+    <div class="wrap">
+      <h2>Tested on real malware</h2>
+      <p class="sub" id="res-sub"></p>
+      <div class="res-grid">
+        <div class="res-panel"><h3>What happened to real malware</h3><div class="bars" id="res-bars"></div></div>
+        <div class="res-panel"><h3>Why packages got through</h3><div class="bars" id="res-misses"></div><p class="note" id="res-note"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-alt" id="scan">
+    <div class="wrap narrow">
+      <h2>Try it on any package</h2>
+      <p class="sub">It runs now, on the Vultr host.</p>
+      <form id="scan-form" class="scan-form" autocomplete="off">
+        <label for="pkg" class="sr">npm package</label>
+        <input id="pkg" placeholder="left-pad or left-pad@1.3.0" spellcheck="false" maxlength="260">
+        <button class="btn" type="submit">Scan</button>
+      </form>
+      <div id="job" class="job" aria-live="polite" hidden></div>
+      <div class="chips" id="samples" aria-label="Harmless test samples"></div>
+    </div>
+  </section>
+
+  <section class="band" id="install">
+    <div class="wrap">
+      <h2>Add it in minutes</h2>
+      <div class="tabs">
+        <div class="tab-panel">
+          <h3>Pull request check</h3>
+          <p>Add to any repo. A HIGH or CRITICAL verdict fails the check.</p>
+<pre><code>- uses: actions/checkout@v4
+  with: { fetch-depth: 0 }
+- uses: shanurwan/redhanded@main</code></pre>
+        </div>
+        <div class="tab-panel">
+          <h3>Your coding agent</h3>
+          <p>Agents ask before they install. Nothing to run locally.</p>
+<pre><code id="mcp-code"></code></pre>
+          <button class="copy" id="mcp-copy" type="button">Copy</button>
+        </div>
+      </div>
+      <div class="vultr">
+        <span>Runs on Vultr</span>
+        <b>VX1 Cloud Compute</b><em>microVM per scan</em>
+        <b>Serverless Inference</b><em>explains verdicts, flags text aimed at AI agents</em>
+        <b>Cloud Firewall</b><em>SSH from the admin address only</em>
+      </div>
+    </div>
   </section>
 </main>
 
-<footer class="wrap foot">
-  <span>MIT licensed.</span>
-  <a href="https://github.com/shanurwan/redhanded">Source, eval results and how it works</a>
+<footer class="foot wrap">
+  <span>RedHanded. MIT licensed. Built for Vultr Agent Rush 2026.</span>
+  <a href="https://github.com/shanurwan/redhanded">Source and eval results</a>
 </footer>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="s-pkg">
+  <div class="sheet-body">
+    <button class="sheet-close" id="s-close" type="button" aria-label="Close evidence">Close</button>
+    <div class="s-head">
+      <div>
+        <div class="s-pkg" id="s-pkg"></div>
+        <div class="mono dim" id="s-id"></div>
+      </div>
+      <div class="verdict" id="s-verdict"></div>
+    </div>
+    <p class="s-explain" id="s-explain" hidden></p>
+    <ol class="events" id="s-events"></ol>
+    <div class="s-files" id="s-files"></div>
+  </div>
+</div>
 </body>
 </html>

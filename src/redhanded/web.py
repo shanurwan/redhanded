@@ -48,7 +48,9 @@ SCAN_FILES = {
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
           "/app.js": ("app.js", "text/javascript; charset=utf-8"),
           "/app.css": ("app.css", "text/css; charset=utf-8"),
-          "/llms.txt": ("llms.txt", "text/plain; charset=utf-8")}
+          "/llms.txt": ("llms.txt", "text/plain; charset=utf-8"),
+          "/geist.woff2": ("geist.woff2", "font/woff2"),
+          "/geist-mono.woff2": ("geist-mono.woff2", "font/woff2")}
 SECURITY_HEADERS = {
     "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; base-uri 'none'; "
                                "form-action 'none'; frame-ancestors 'none'",
@@ -71,6 +73,7 @@ class WebConfig:
     data_dir: str = field(default_factory=lambda: os.path.expanduser(os.environ.get("RH_WEB_DATA", "~/rh-dev/web")))
     replays_dir: str = field(default_factory=lambda: os.environ.get("RH_REPLAYS", "replays"))
     zoo_dir: str = field(default_factory=lambda: os.environ.get("RH_ZOO", "zoo"))
+    results: str = field(default_factory=lambda: os.environ.get("RH_RESULTS", "evals/real-malware.json"))
     host_label: str = field(default_factory=lambda: os.environ.get("RH_HOST_LABEL", "dev server"))
     guard_state: str = field(default_factory=lambda: os.path.expanduser(
         os.environ.get("RH_GUARD_STATE", "~/rh-dev/web/guard-state.json")))
@@ -296,7 +299,8 @@ def list_replays(replays_dir: str) -> list[dict]:
         live = {"zoo": pkg[len("rh-zoo-"):]} if pkg.startswith("rh-zoo-") else {"package": f"{pkg}@{report['version']}"}
         out.append({"scan_id": report["scan_id"], "package": pkg, "version": report["version"],
                     "verdict": report["verdict"], "title": meta.get("title", pkg),
-                    "summary": meta.get("summary", ""), "order": meta.get("order", 99), "live": live})
+                    "summary": meta.get("summary", ""), "order": meta.get("order", 99), "live": live,
+                    "incident": meta.get("incident", ""), "date": meta.get("date", ""), "hero": bool(meta.get("hero"))})
     return sorted(out, key=lambda r: (r["order"], r["scan_id"]))
 
 
@@ -356,6 +360,9 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
                                        "scans_open": scanner.guard_allows(), "queued": scanner._queue.qsize(),
                                        "zoo": sorted(p.parent.name for p in Path(cfg.zoo_dir).glob("*/package.json")),
                                        "explainer": scanner.explainer.model if scanner.explainer else None})
+            if path == "/api/results":
+                results = Path(cfg.results)
+                return self.json(200, json.loads(results.read_text())) if results.is_file() else self.json(404, {"error": "no results"})
             if path == "/api/replays":
                 return self.json(200, list_replays(cfg.replays_dir))
             if path == "/mcp":

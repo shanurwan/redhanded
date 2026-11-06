@@ -122,3 +122,13 @@ def test_lockfile_ignores_the_repos_own_workspace_folders():
             "node_modules/x": {"resolved": "vendor/x", "link": True},
             "node_modules/y": {"version": "2.0.0", "integrity": "sha512-y"}}}
     assert [c.name for c in diff(None, lock)] == ["y"]
+
+
+def test_replay_report_does_not_carry_token_shaped_strings(tmp_path):
+    scan = tmp_path / REPORT["scan_id"]
+    (scan / "log").mkdir(parents=True)
+    (scan / "report.json").write_text(json.dumps({**REPORT, "evidence": {"execs": [[["curl", "-H", "Authorization: token ghp_" + "a" * 36], True]]}}))
+    out = export(scan, tmp_path / "replays", "t", "s", 1)
+    text = (out / "report.json").read_text()
+    assert "ghp_" not in text and "<honeytoken>" in text
+    assert json.loads(text)["scan_id"] == REPORT["scan_id"]

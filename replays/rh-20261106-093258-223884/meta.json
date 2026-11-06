@@ -1,0 +1,10 @@
+{
+ "title": "esbuild 0.24.0",
+ "summary": "A real package with a native binary install script. Clean.",
+ "order": 7,
+ "full_syscall_log": {
+  "sha256": "8393bfc37d6427712d33e07256d8218ad2f4357d521bdfbde641021cc0f29f8a",
+  "lines": 78388,
+  "excerpt_lines": 374
+ }
+}

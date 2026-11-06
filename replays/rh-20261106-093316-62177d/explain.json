@@ -1,0 +1,5 @@
+{
+ "text": "The package's postinstall script was executed in the sandbox, and the evidence shows no network attempts, no reads of bait files, no writes outside the package, and no honeytoken use. The same clean result appeared in the second detonation on its own kernel. Since nothing suspicious was observed in either run, the reviewer can treat this as a clean verdict and proceed with the pull request.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T09:33:30Z"
+}

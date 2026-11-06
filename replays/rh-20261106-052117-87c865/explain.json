@@ -1,5 +1,0 @@
-{
- "text": "The package attempted network connections only to registry.npmjs.org while running node install.js and npm install for @esbuild/linux-x64. It wrote /work/node_modules/.bin/esbuild outside the package, and the scan found no bait files read and no honeytokens leaving. The second microVM run showed the same registry.npmjs.org network attempts. With the fixed verdict CLEAN, the reviewer should proceed with normal PR review and no additional security action.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:23:54Z"
-}

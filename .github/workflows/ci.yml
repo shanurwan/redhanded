@@ -15,8 +15,6 @@ permissions:
 
 env:
   GVISOR_RELEASE: "20261012.0"
-  # node:24-alpine as of 2026-10-28, pinned by digest so every run detonates in the same image.
-  SANDBOX_IMAGE: "node@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85"
 
 jobs:
   test:
@@ -60,9 +58,11 @@ jobs:
       - name: Build the sandbox root filesystem
         run: |
           mkdir -p "$RUNNER_TEMP/rootfs"
-          cid=$(docker create "$SANDBOX_IMAGE")
+          docker build -q -t rh-sandbox -f deploy/sandbox.Dockerfile deploy
+          cid=$(docker create rh-sandbox)
           docker export "$cid" | tar -x -C "$RUNNER_TEMP/rootfs" --no-same-owner
           docker rm "$cid"
+          rm -f "$RUNNER_TEMP/rootfs/.dockerenv"
       - name: Run the Zoo gate
         env:
           RH_ROOTFS: ${{ runner.temp }}/rootfs

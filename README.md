@@ -2,7 +2,7 @@
 
 **Before you merge, catch it red-handed.**
 
-RedHanded is a pre-merge agent for npm dependency changes. For every pull request that adds or updates a dependency, whether Dependabot, a person or a coding agent wrote it, RedHanded runs the changed packages twice: in a gVisor sandbox, then in a Firecracker microVM with its own kernel. Both are baited with fake credentials and wired to a fake internet. If the code reaches for the bait, or does something in one that it hid from the other, the check fails and the evidence comes with it.
+RedHanded is a pre-merge agent for npm dependency changes. For every pull request that adds or updates a dependency, whether Dependabot, a person or a coding agent wrote it, RedHanded runs the changed packages in a sandbox baited with fake credentials and wired to a fake internet that also answers HTTPS: first gVisor, then a Firecracker microVM with its own kernel. When a package steals the bait or uses it, the check fails and the evidence comes with it.
 
 Built for the Vultr: Agent Rush Hackathon 2026, Challenge 1 "Blast Radius Zero".
 
@@ -24,7 +24,9 @@ Built for the Vultr: Agent Rush Hackathon 2026, Challenge 1 "Blast Radius Zero".
                 metadata endpoint. No route out.
 ```
 
-gVisor records every syscall, but it names itself: `/proc/version` reads `4.19.0-gvisor`, and `dmesg` prints `Starting gVisor...`. A package can check that with a plain `uname` and stay quiet. The microVM has its own Linux kernel, so that check comes back clean. It has no syscall log, so the two complement each other: the sinkhole sits outside both, and anything a package does only in the microVM, it hid from the sandbox.
+Testing on real malware shaped this. The sandbox looks like a developer's machine, with curl, Python and git, because real payloads die on a bare image. Dependencies are fetched with scripts off, because a package scanned alone dies on a missing `axios`. Each scan has its own root certificate, trusted inside the sandbox, so a token sent over HTTPS is seen. Each scan also has a unique machine name, so recon sent out in any encoding is caught.
+
+gVisor records every syscall, but it names itself: `/proc/version` reads `4.19.0-gvisor`. The microVM has its own Linux kernel, so that check comes back clean. It has no syscall log, so the two complement each other, and the sinkhole sits outside both.
 
 Both tiers run without root, in network namespaces created with `unshare` inside a user namespace. The only route leads to the sinkhole, and the sinkhole has no route at all. A hard deadline kills each run. A package already blocked by the first run, or killed at the deadline, skips the second.
 
@@ -59,7 +61,7 @@ Both tiers run without root, in network namespaces created with `unshare` inside
 4. It reads the logs and the sinkhole capture from outside, and fixed rules set the verdict.
 5. It asks Vultr Serverless Inference whether the package's text addresses AI agents and to explain the result, then returns the verdict, the advice (allow, review or block), the reasons and the evidence files.
 
-The replays in [`replays/`](replays) were all recorded on the VM. Each keeps the scan's report and sinkhole capture, plus the syscall lines that carry the story and the sha256 of the full log. Fake credentials in excerpts are replaced by their names, because they are shaped like real ones and secret scanners cannot tell.
+Each replay in [`replays/`](replays) keeps a scan's report and sinkhole capture, plus the syscall lines that carry the story and the sha256 of the full log. Attack replays were recorded on a throwaway VX1 and contain no package code. Fake credentials are replaced by their names, because they are shaped like real ones and secret scanners cannot tell.
 
 ## How a verdict is reached
 
@@ -78,22 +80,40 @@ A package's declared lifecycle command, and npm's own build tooling (such as bun
 
 `redhanded eval` scans every sample in [`zoo/`](zoo) and every pinned package in [`evals/benign.txt`](evals/benign.txt), then applies [`evals/gate.json`](evals/gate.json). Verdicts are deterministic, so the gate is exact: a sample below the verdict its `expect.json` demands fails the run, and a benign package that would block a merge fails it.
 
-Recorded runs are in [`evals/results`](evals/results). Latest, on the VX1 host with both tiers on (rules `2026-11-06.1`):
+Recorded runs are in [`evals/results`](evals/results).
+
+### Real malware
+
+A random 300 from [Datadog's public dataset](https://github.com/DataDog/malicious-software-packages-dataset) of malicious npm packages (Apache-2.0), set aside by a fixed seed before the rules were frozen and run once, on a throwaway Vultr VM. A separate 100 were used for tuning and do not count. No sample is kept in this repo: only the evidence of a few scans, in [`replays/`](replays).
+
+| Verdict, of 299 scanned | Packages | |
+|---|---|---|
+| CRITICAL: seen stealing or using fake credentials | 39 | 13% |
+| HIGH: blocks the merge | 100 | 33% |
+| REVIEW: sent to a person | 29 | 10% |
+| CLEAN: got through | 131 | 44% |
+
+That is 139 blocked (46%, Wilson 95%: 41% to 52%). Of the 188 with an install script, 129 were blocked (69%). Of the 75 hijacked releases of real libraries, 45 were blocked (60%).
+
+How to read these numbers:
+
+- Some of the 131 misses are limits of replaying old attacks: payloads that delete themselves or depend on downloads and packages that no longer exist, for example the axios payload `plain-crypto-js`, whose `setup.js` is absent from the dataset's copy. Others are real gaps: code that only fires on Windows, or only when called in a specific way. [`evals/real-malware.json`](evals/real-malware.json) sorts them by cause, automatically and approximately.
+- The dataset leans toward what Datadog's own rules flag, so it is not a sample of all npm malware.
+- The second tier found nothing the first had missed on these samples. The rule that flags what a package hid from gVisor has fired only on our own Zoo sample.
+
+### False alarms and the Zoo
 
 | Set | Result |
 |---|---|
 | Zoo samples (must be caught) | 9 of 9 at or above the expected verdict (Wilson 95%: 0.70 to 1.0) |
-| Benign: 42 popular packages plus 3 controls | 0 would block a merge, 0 sent to review |
-| Time per scan | About 10 s for most packages; p95 20 s. Large native builds take longer: esbuild took 154 s |
+| Benign: 42 popular packages plus 3 controls | 0 would block a merge, 2 sent to review (puppeteer downloads Chromium; nodemon reads `/proc/1/environ`) |
 | Agent-text check on 42 real package READMEs | 0 flagged |
+| Time per scan | About 10 s typically; p95 33 s on the malware set; large native builds take longer |
+| Compute per scan | About $0.0002 on a $0.153/h VX1 running 3 at a time, without inference |
 
-How to read these numbers:
-
-- The Zoo covers sandbox evasion, container checks, persistence, network tools, inline interpreters, telemetry, toolchain tampering and deadline overruns. The CRITICAL rules (honeytoken exfiltration and token use) are covered by unit tests.
-- The rules were tuned on left-pad, core-js and esbuild, and then on sqlite3 after the first held-out run flagged it. Those four do not count as held out.
-- Packages are scanned one at a time, so some fail to load without their dependencies. That is reported, not flagged.
+- The rules were tuned on left-pad, core-js and esbuild, then on sqlite3 after the first held-out run flagged it. Those four do not count as held out.
 - CI runs the Zoo under gVisor alone, without the model. The microVM tier and the agent-text check run on the VX1 host.
-- The agent-text check has been measured for false alarms much more than for catches: one Zoo sample and three hand-written strings. A package can also word its text to slip past it, so a miss means nothing was flagged, not that nothing is there.
+- The agent-text check has been measured for false alarms much more than for catches: one Zoo sample and three hand-written strings. A package can also word its text to slip past it.
 
 ## Use it
 

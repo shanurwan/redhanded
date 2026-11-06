@@ -1,0 +1,14 @@
+{
+ "title": "Nx build tooling writes to shell profiles",
+ "summary": "A hijacked release of build tooling. It wrote to .bashrc and .zshrc, then kept running until the deadline.",
+ "order": 4,
+ "full_syscall_log": {
+  "sha256": "35b94dde5106b64d6707b32f268b72891558bcb30b1b5a33f79084fa85857454",
+  "lines": 66420,
+  "excerpt_lines": 325
+ },
+ "incident": "Nx compromise",
+ "date": "2025-08-26",
+ "hero": false,
+ "real": true
+}

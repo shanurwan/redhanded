@@ -323,3 +323,14 @@ def test_replay_cards_carry_their_summary(site):
     _, _, body = get(base + "/api/replays")
     [r] = json.loads(body)
     assert r["summary"] == "wget in postinstall" and r["package"] == "rh-zoo-network-tool"
+
+
+def test_results_and_fonts_are_served(site, tmp_path):
+    base, scanner, cfg, calls = site
+    cfg.results = str(tmp_path / "missing.json")
+    assert get(base + "/api/results")[0] == 404
+    (tmp_path / "res.json").write_text('{"scanned": 3}')
+    cfg.results = str(tmp_path / "res.json")
+    assert json.loads(get(base + "/api/results")[2]) == {"scanned": 3}
+    status, headers, body = get(base + "/geist.woff2")
+    assert status == 200 and headers["Content-Type"] == "font/woff2" and body[:4] == b"wOF2"

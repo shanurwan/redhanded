@@ -1,0 +1,93 @@
+2026-11-06T09:33:04.596506654 [anonymous-instance:main] Running Firecracker v1.17.0
+2026-11-06T09:33:04.599963853 [anonymous-instance:main] Artificially kick devices
+2026-11-06T09:33:04.600095354 [anonymous-instance:fc_vcpu 0] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T09:33:04.600100010 [anonymous-instance:fc_vcpu 1] Received a VcpuEvent::Resume message with immediate_exit enabled. immediate_exit was disabled before proceeding
+2026-11-06T09:33:04.600110314 [anonymous-instance:main] Successfully started microvm that was configured from one single json
+2026-11-06T09:33:04.608336919 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0xcf8:0x4 failed: Failed to find address range.
+2026-11-06T09:33:04.608381529 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0xcfc:0x2 failed: Failed to find address range.
+[    0.013355] SELinux: CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE is non-zero.  This is deprecated and will be rejected in a future kernel release.
+[    0.013355] SELinux: https://github.com/SELinuxProject/selinux-kernel/wiki/DEPRECATE-checkreqprot
+2026-11-06T09:33:04.646560341 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T09:33:04.646602749 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+2026-11-06T09:33:04.649455887 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x70:0x1 failed: Failed to find address range.
+2026-11-06T09:33:04.649491327 [anonymous-instance:fc_vcpu 0] vcpu: IO write @ 0x71:0x1 failed: Failed to find address range.
+[    0.018142] PCI: Fatal: No config space access function found
+2026-11-06T09:33:04.670914123 [anonymous-instance:fc_vcpu 0] vcpu: IO read @ 0x87:0x1 failed: Failed to find address range.
+2026-11-06T09:33:04.686746816 [anonymous-instance:fc_vcpu 0] [Block:root] notifying queues
+2026-11-06T09:33:04.688402626 [anonymous-instance:fc_vcpu 0] [Block:scan] notifying queues
+2026-11-06T09:33:04.690771236 [anonymous-instance:fc_vcpu 0] [Net:eth0] notifying queues
+[    0.625766] EXT4-fs (vdb): write access unavailable, skipping orphan cleanup
+== lifecycle scripts
+
+> esbuild@0.24.0 postinstall
+> node install.js
+
+[esbuild] Failed to find package "@esbuild/linux-x64" on the file system
+
+This can happen if you use the "--no-optional" flag. The "optionalDependencies"
+package.json feature is used by esbuild to install the correct binary executable
+for your current platform. This install script will now attempt to work around
+this. If that fails, you need to remove the "--no-optional" flag to use esbuild.
+
+[esbuild] Trying to install package "@esbuild/linux-x64" using npm
+[esbuild] Failed to install package "@esbuild/linux-x64" using npm: Command failed: npm install --loglevel=error --prefer-offline --no-audit --progress=false @esbuild/linux-x64@0.24.0
+npm error code ETARGET
+npm error notarget No matching version found for undefined@0.24.0.
+npm error notarget In most cases you or one of your dependencies are requesting a package version that doesn't exist.
+npm error A complete log of this run can be found in: /home/dev/.npm/_logs/2026-11-06T09_33_05_965Z-debug-0.log
+
+[esbuild] Trying to download "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.24.0.tgz"
+[esbuild] Failed to download "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.24.0.tgz": Invalid gzip data in archive: incorrect header check
+/work/node_modules/esbuild/install.js:274
+        throw new Error(`Failed to install package "${pkg}"`);
+              ^
+
+Error: Failed to install package "@esbuild/linux-x64"
+    at checkAndPreparePackage (/work/node_modules/esbuild/install.js:274:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.22.2
+[1mnpm[22m [31merror[39m [94mcode[39m [33m1[39m
+[1mnpm[22m [31merror[39m [94mpath[39m /work/node_modules/esbuild
+[1mnpm[22m [31merror[39m command failed
+[1mnpm[22m [31merror[39m [94mcommand[39m sh -c node install.js
+[1mnpm[22m [31merror[39m A complete log of this run can be found in: /home/dev/.npm/_logs/2026-11-06T09_33_05_414Z-debug-0.log
+== exit 1
+== load
+loaded
+exercised 11
+/work/node_modules/esbuild/bin/esbuild:179
+        throw new Error(`The package "${pkg}" could not be found, and is needed by esbuild.
+        ^
+
+Error: The package "@esbuild/linux-x64" could not be found, and is needed by esbuild.
+
+If you are installing esbuild with npm, make sure that you don't specify the
+"--no-optional" or "--omit=optional" flags. The "optionalDependencies" feature
+of "package.json" is used by esbuild to install the correct binary executable
+for your current platform.
+    at generateBinPath (/work/node_modules/esbuild/bin/esbuild:179:15)
+    at Object.<anonymous> (/work/node_modules/esbuild/bin/esbuild:216:27)
+    at Module._compile (node:internal/modules/cjs/loader:1929:14)
+    at Object..js (node:internal/modules/cjs/loader:2060:10)
+    at Module.load (node:internal/modules/cjs/loader:1651:32)
+    at Module._load (node:internal/modules/cjs/loader:1443:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47
+
+Node.js v24.22.2
+== exit 0
+RH-WRITE /home/dev/.npm/_cacache/content-v2/sha512/27/c7/4670adb75075fad058d5ceaf7b20c4e7786c83bae8a32f626f9782af34c9a33c2046ef60fd2a7878d378e29fec851806bbd9a67878f3a9f1cda4830763fd
+RH-WRITE /home/dev/.npm/_cacache/index-v5/22/c5/6556db83229020f545974c0a96daa105f2aa03edd95f7f8e2235cbeecf9e
+RH-WRITE /home/dev/.npm/_logs/2026-11-06T09_33_05_965Z-debug-0.log
+RH-WRITE /home/dev/.npm/_logs/2026-11-06T09_33_05_414Z-debug-0.log
+RH-READ /home/dev/.npm/_cacache/content-v2/sha512/27/c7/4670adb75075fad058d5ceaf7b20c4e7786c83bae8a32f626f9782af34c9a33c2046ef60fd2a7878d378e29fec851806bbd9a67878f3a9f1cda4830763fd
+RH-READ /home/dev/.npm/_cacache/index-v5/22/c5/6556db83229020f545974c0a96daa105f2aa03edd95f7f8e2235cbeecf9e
+RH-READ /home/dev/.npm/_logs/2026-11-06T09_33_05_965Z-debug-0.log
+RH-READ /home/dev/.npm/_logs/2026-11-06T09_33_05_414Z-debug-0.log
+RH-REPORT-END
+[    5.412425] sysrq: Resetting
+2026-11-06T09:33:10.056428976 [anonymous-instance:main] Vmm is stopping.
+2026-11-06T09:33:10.056444017 [anonymous-instance:main] Killing vCPU threads
+2026-11-06T09:33:10.096694060 [anonymous-instance:main] Firecracker exiting successfully. exit_code=0

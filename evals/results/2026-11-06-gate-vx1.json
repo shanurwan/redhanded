@@ -1,0 +1,602 @@
+{
+ "at": "2026-11-06T09:05:45Z",
+ "thresholds": {
+  "_note": "Set before the first run on 2026-11-04. Every Zoo sample must meet its expect.json; benign packages must never block.",
+  "max_review_rate": 0.2,
+  "max_seconds_p95": 180
+ },
+ "passed": true,
+ "failures": [],
+ "summary": {
+  "malicious": {
+   "total": 9,
+   "caught": 9,
+   "recall": 1.0,
+   "recall_wilson95": [
+    0.7008,
+    1.0
+   ]
+  },
+  "benign": {
+   "total": 45,
+   "blocking_false_alarms": 0,
+   "review": 2,
+   "blocking_rate_wilson95": [
+    0.0,
+    0.0787
+   ],
+   "review_rate": 0.0444
+  },
+  "errors": 0,
+  "seconds_p95": 12.97
+ },
+ "results": [
+  {
+   "id": "zoo/busy-loop-on-load",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 19.34,
+   "scan_id": "rh-20261106-085647-c6a79e",
+   "reasons": [
+    "REVIEW: importing it never returned"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/container-evader",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 9.32,
+   "scan_id": "rh-20261106-085706-101130",
+   "reasons": [
+    "REVIEW: checked whether it runs in a container (/.dockerenv, /proc/1/cgroup)"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/hang-forever",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 20.16,
+   "scan_id": "rh-20261106-085715-e819af",
+   "reasons": [
+    "REVIEW: killed at deadline"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/hides-from-sandbox",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 9.4,
+   "scan_id": "rh-20261106-085735-4fb8de",
+   "reasons": [
+    "REVIEW: checked whether it runs in a container (/.dockerenv, /proc/1/cgroup)",
+    "REVIEW: network attempts to c2.rh-zoo.invalid (in the microVM)",
+    "HIGH: hid this from the sandbox: rh-zoo.invalid"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/inline-from-code",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.13,
+   "scan_id": "rh-20261106-085745-03bc91",
+   "reasons": [
+    "HIGH: ran inline code with node"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/lookalike-build-step",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.33,
+   "scan_id": "rh-20261106-085749-dcd7df",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zoo/lookalike-inline-banner",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.32,
+   "scan_id": "rh-20261106-085758-588e87",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zoo/network-tool",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.17,
+   "scan_id": "rh-20261106-085808-11c996",
+   "reasons": [
+    "HIGH: spawned wget",
+    "REVIEW: network attempts to update.rh-zoo.invalid"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/persistence-profile",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.18,
+   "scan_id": "rh-20261106-085812-5a4078",
+   "reasons": [
+    "HIGH: wrote persistence path /home/dev/.bashrc"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/talks-to-agents",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.2,
+   "scan_id": "rh-20261106-085816-aa4d33",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zoo/telemetry-ping",
+   "kind": "zoo",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 9.31,
+   "scan_id": "rh-20261106-085825-0d44bf",
+   "reasons": [
+    "REVIEW: network attempts to telemetry.rh-zoo.invalid",
+    "REVIEW: network attempts to telemetry.rh-zoo.invalid (in the microVM)"
+   ],
+   "error": ""
+  },
+  {
+   "id": "zoo/toolchain-tamper",
+   "kind": "zoo",
+   "verdict": "HIGH",
+   "ok": true,
+   "seconds": 4.12,
+   "scan_id": "rh-20261106-085835-19bcf8",
+   "reasons": [
+    "HIGH: modified the runtime toolchain at /usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js"
+   ],
+   "error": ""
+  },
+  {
+   "id": "lodash@4.18.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.84,
+   "scan_id": "rh-20261106-085839-b09f49",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "react@19.3.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.58,
+   "scan_id": "rh-20261106-085849-a9570c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "react-dom@19.3.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.97,
+   "scan_id": "rh-20261106-085858-945c50",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "express@5.3.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 11.29,
+   "scan_id": "rh-20261106-085908-83486f",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "chalk@6.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.16,
+   "scan_id": "rh-20261106-085920-5b2593",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "debug@4.4.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.43,
+   "scan_id": "rh-20261106-085929-1a4c10",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "commander@15.0.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.32,
+   "scan_id": "rh-20261106-085939-f2eccb",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "axios@1.21.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.52,
+   "scan_id": "rh-20261106-085948-82d13f",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "uuid@14.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.42,
+   "scan_id": "rh-20261106-085959-147f0a",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "semver@7.8.6",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.54,
+   "scan_id": "rh-20261106-090008-24ab3c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "yargs@18.2.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.12,
+   "scan_id": "rh-20261106-090018-08b42f",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "dayjs@1.11.23",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.39,
+   "scan_id": "rh-20261106-090028-847952",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "moment@2.31.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.56,
+   "scan_id": "rh-20261106-090038-f57459",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "tslib@2.9.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.27,
+   "scan_id": "rh-20261106-090047-3e8155",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "minimist@1.2.8",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.4,
+   "scan_id": "rh-20261106-090057-07cc7c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "glob@14.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.06,
+   "scan_id": "rh-20261106-090106-3f50e6",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "rimraf@6.1.4",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.36,
+   "scan_id": "rh-20261106-090116-8138c3",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "mkdirp@3.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.36,
+   "scan_id": "rh-20261106-090127-5006ff",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "fs-extra@11.4.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.59,
+   "scan_id": "rh-20261106-090136-888d3a",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "dotenv@18.0.9",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.31,
+   "scan_id": "rh-20261106-090146-f14bee",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "classnames@2.5.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.15,
+   "scan_id": "rh-20261106-090155-a50b92",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "cross-env@10.1.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.01,
+   "scan_id": "rh-20261106-090205-d61c6a",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "typescript@7.0.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.68,
+   "scan_id": "rh-20261106-090215-509a3c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "ws@8.22.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.36,
+   "scan_id": "rh-20261106-090224-d7b0ba",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "body-parser@2.4.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.4,
+   "scan_id": "rh-20261106-090234-67d258",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "jsonwebtoken@9.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.01,
+   "scan_id": "rh-20261106-090244-6bc595",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "bcryptjs@3.0.3",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.45,
+   "scan_id": "rh-20261106-090255-a96728",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "nanoid@6.0.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.27,
+   "scan_id": "rh-20261106-090304-fa4308",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "zod@4.6.7",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.7,
+   "scan_id": "rh-20261106-090313-9d5e5a",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "rxjs@7.8.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.61,
+   "scan_id": "rh-20261106-090323-2eb3aa",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "prettier@3.9.10",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.82,
+   "scan_id": "rh-20261106-090334-0bd62c",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "eslint@10.14.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 12.82,
+   "scan_id": "rh-20261106-090344-3b6ed1",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "husky@9.1.7",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.29,
+   "scan_id": "rh-20261106-090357-f94676",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "nodemon@3.1.14",
+   "kind": "benign",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 10.59,
+   "scan_id": "rh-20261106-090406-25091b",
+   "reasons": [
+    "REVIEW: checked whether it runs in a container (/proc/1/environ)"
+   ],
+   "error": ""
+  },
+  {
+   "id": "protobufjs@8.8.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.53,
+   "scan_id": "rh-20261106-090417-dc5db5",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "@swc/core@1.16.21",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.78,
+   "scan_id": "rh-20261106-090427-9642f1",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "bcrypt@6.0.0",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.89,
+   "scan_id": "rh-20261106-090438-e13cca",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "sqlite3@6.0.1",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 11.66,
+   "scan_id": "rh-20261106-090448-5583e0",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "puppeteer@25.16.0",
+   "kind": "benign",
+   "verdict": "REVIEW",
+   "ok": true,
+   "seconds": 12.97,
+   "scan_id": "rh-20261106-090500-d8a660",
+   "reasons": [
+    "REVIEW: network attempts to storage.googleapis.com",
+    "REVIEW: network attempts to storage.googleapis.com (in the microVM)"
+   ],
+   "error": ""
+  },
+  {
+   "id": "electron@45.2.2",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 11.89,
+   "scan_id": "rh-20261106-090513-8f7d75",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "sharp@0.35.5",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 9.69,
+   "scan_id": "rh-20261106-090525-32caf8",
+   "reasons": [],
+   "error": ""
+  },
+  {
+   "id": "es5-ext@0.10.64",
+   "kind": "benign",
+   "verdict": "CLEAN",
+   "ok": true,
+   "seconds": 10.4,
+   "scan_id": "rh-20261106-090535-5d2f41",
+   "reasons": [],
+   "error": ""
+  }
+ ]
+}

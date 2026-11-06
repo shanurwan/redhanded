@@ -1,5 +1,0 @@
-{
- "text": "The package ran persist.js, which wrote to /home/dev/.bashrc, a shell startup file outside the package directory. Modifying that file is a persistence mechanism: anything appended there would execute automatically in the developer's future shells, so this matters even though the sandbox discarded the write and no network attempts were recorded. The reviewer should treat the package as untrusted, inspect what persist.js appends to .bashrc, and not merge it without a clear, legitimate reason for touching shell startup files.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:20:01Z"
-}

@@ -1,0 +1,5 @@
+{
+ "text": "The package's install script attempted to contact registry.npmjs.org and ran npm install for @esbuild/linux-x64, then invoked the esbuild binary with --help. It also wrote /work/node_modules/.bin/esbuild outside its own package directory, which is the relevant install-time supply-chain surface even though the sandbox contained the network attempts and discarded writes. No bait files were read and no honeytokens were seen leaving in either run. The reviewer should confirm this matches the expected esbuild install path and lockfile entry, then proceed.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T09:33:15Z"
+}

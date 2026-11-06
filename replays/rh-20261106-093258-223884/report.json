@@ -1,0 +1,158 @@
+{
+ "scan_id": "rh-20261106-093258-223884",
+ "package": "esbuild",
+ "version": "0.24.0",
+ "integrity": "sha512-FuLPevChGDshgSicjisSooU0cemp/sGXR841D5LHMB7mTVOmsEHcAxaH3irL53+8YDIeVNQEySh4DaYU/iuPqQ==",
+ "verdict": "CLEAN",
+ "reasons": [],
+ "container_aware": false,
+ "seconds": 12.11,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [
+   "registry.npmjs.org"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node install.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "install.js"
+    ],
+    true
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "npm install --loglevel=error --prefer-offline --no-audit --progress=false @esbuild/linux-x64@0.24.0"
+    ],
+    false
+   ],
+   [
+    [
+     "npm",
+     "install",
+     "--loglevel=error",
+     "--prefer-offline",
+     "--no-audit",
+     "--progress=false",
+     "@esbuild/linux-x64@0.24.0"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "install",
+     "--loglevel=error",
+     "--prefer-offline",
+     "--no-audit",
+     "--progress=false",
+     "@esbuild/linux-x64@0.24.0"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "esbuild"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "esbuild"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/node_modules/esbuild/bin/esbuild",
+     "--help"
+    ],
+    false
+   ]
+  ],
+  "writes": [
+   "/work/node_modules/.bin/esbuild"
+  ],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "stats_count": 3501
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 5.16,
+  "syscall_lines": 37929,
+  "unparsed": 0,
+  "sinkhole_records": 8,
+  "dependencies": "no dependencies"
+ },
+ "microvm": {
+  "verdict": "CLEAN",
+  "reasons": [],
+  "seconds": 5.85,
+  "evidence": {
+   "exfil_matches": [],
+   "machine_leaks": [],
+   "token_uses": [],
+   "bait_reads": [],
+   "connects": [
+    "registry.npmjs.org"
+   ],
+   "execs": [],
+   "writes": [],
+   "incomplete": [],
+   "deadline_killed": false,
+   "load_hang": false,
+   "probe_flags": []
+  },
+  "sandbox": {
+   "deadline_killed": false,
+   "exit_code": 0,
+   "errors": [],
+   "seconds": 5.61,
+   "sinkhole_records": 8,
+   "guest_report_finished": true
+  }
+ }
+}

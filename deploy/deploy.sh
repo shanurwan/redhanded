@@ -38,6 +38,7 @@ umask 077
   echo "RH_REPLAYS=/opt/redhanded/app/replays"
   echo "RH_ZOO=/opt/redhanded/app/zoo"
   echo "RH_TRUST_PROXY=1"
+  echo "RH_RESULTS=/opt/redhanded/app/evals/real-malware.json"
   echo "RH_HOST_LABEL=Vultr $(tf output -raw region) · $(tf output -raw plan)"
   echo "RH_PUBLIC_URL=https://$SITE"
   echo "RH_FC_BIN=/var/lib/redhanded/bin/firecracker"
@@ -53,10 +54,27 @@ umask 077
 "${SSH[@]}" '
   set -e
   cd /var/lib/redhanded
+  want=$(sha256sum /opt/redhanded/app/deploy/sandbox.Dockerfile | cut -d" " -f1)
+  if [ "$(cat rootfs.built 2>/dev/null)" != "$want" ]; then
+    systemctl start docker
+    docker build -q -t rh-sandbox -f /opt/redhanded/app/deploy/sandbox.Dockerfile /opt/redhanded/app/deploy >/dev/null
+    cid=$(docker create rh-sandbox)
+    rm -rf rootfs && mkdir rootfs
+    docker export "$cid" | tar -x -C rootfs --no-same-owner
+    docker rm "$cid" >/dev/null
+    systemctl stop docker docker.socket
+    rm -f rootfs/.dockerenv
+    chown -R rh:rh rootfs
+    echo "$want" > rootfs.built
+  fi
   rsync -a --delete rootfs/ guest-rootfs/
   install -m 755 /opt/redhanded/app/deploy/guest/rh-init guest-rootfs/sbin/rh-init
-  mke2fs -q -F -t ext4 -d guest-rootfs guest.ext4 1200M
-  chown rh:rh guest.ext4'
+  mke2fs -q -F -t ext4 -d guest-rootfs guest.ext4 2000M
+  chown rh:rh guest.ext4
+  if ! grep -q "name deps" /etc/systemd/system/redhanded-prune.service; then
+    sed -i "s/-name bundle/-name bundle -o -name deps -o -name tls/" /etc/systemd/system/redhanded-prune.service
+    systemctl daemon-reload
+  fi'
 
 "${SSH[@]}" "
   set -e

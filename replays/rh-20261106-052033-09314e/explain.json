@@ -1,5 +1,0 @@
-{
- "text": "The package's check.js probed for container markers, looking at /.dockerenv and /proc/1/cgroup, which is environment fingerprinting rather than anything the package needs to function. That matters because such checks are typically used to decide whether to behave differently under analysis, though the evidence here shows no network attempts, no bait file reads, and no writes outside the package, and the second microvm run matched. The reviewer should confirm why a container-evasion check belongs in this dependency at all and whether its presence is justified before merging.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:20:48Z"
-}

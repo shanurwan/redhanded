@@ -1,5 +1,0 @@
-{
- "text": "The scan ran core-js's postinstall script, and the evidence shows no network attempts, no reads of bait files, no writes outside the package, and no honeytoken use. The second detonation in a separate microVM produced the same empty results, so the behavior is consistent across runs. Nothing here indicates data collection or tampering, so the reviewer can treat this as clean and proceed with the pull request.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:24:10Z"
-}

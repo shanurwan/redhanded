@@ -1,5 +1,0 @@
-{
- "text": "The package ran inline JavaScript through node's -e flag (the observed command was \"1 + 1\"), meaning it constructs and executes code at runtime rather than only shipping files. That matters because inline evaluation can run arbitrary logic that never appears as a reviewable file on disk, which is why the rule engine flagged it as HIGH. No network attempts, no reads of bait files, and no writes outside the package were recorded, so the evidence shows only the inline execution itself. The reviewer should read the package source to see what code it builds for that call and require a clear justification before merging.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:20:18Z"
-}

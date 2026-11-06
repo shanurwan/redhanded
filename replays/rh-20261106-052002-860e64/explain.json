@@ -1,5 +1,0 @@
-{
- "text": "The package ran tamper.js, which rewrote the globally installed npm toolchain file node-gyp.js outside its own directory. That matters because a package that alters the build toolchain can change how every later install or native build on the machine behaves, and the change would persist beyond the package itself. No network attempts were recorded, and the sandbox discarded the write, so nothing here reached a real host. The reviewer should treat this as a deliberate toolchain modification, inspect what the tamper script writes into node-gyp.js, and not merge the dependency until that is explained.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:20:10Z"
-}

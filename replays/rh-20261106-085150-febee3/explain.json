@@ -1,0 +1,5 @@
+{
+ "text": "The package read the bait AWS credentials file, spawned curl, and attempted network access to the cloud metadata endpoint, api.github.com, registry.npmjs.org and AWS STS, while also invoking gcloud config. The scan recorded an AWS access key honeytoken leaving the sandbox, and a stolen GitHub token was used in attempts against fake GitHub and fake npm endpoints. This is credential-harvesting and exfiltration behavior, which matters because a real deployment could expose live cloud and registry credentials. Do not merge this dependency; treat any credentials reachable from the build or install environment as compromised and rotate them.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T09:32:42Z"
+}

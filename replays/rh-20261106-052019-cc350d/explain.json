@@ -1,5 +1,0 @@
-{
- "text": "The package's text contains instructions aimed at AI agents, which is what triggered the REVIEW verdict; no network attempts, bait-file reads, or writes outside the package were recorded in either the sandbox run or the second microVM run. Text that tries to steer automated reviewers or coding assistants matters because it can manipulate tooling that reads package contents, even when no code executes. The reviewer should read the flagged text themselves, treat it as untrusted data, and confirm whether such agent-directed content belongs in the package before merging.",
- "model": "deepseek-v4.1-flash-1017",
- "at": "2026-11-06T05:20:32Z"
-}

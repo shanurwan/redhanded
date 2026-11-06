@@ -1,0 +1,112 @@
+{
+ "scan_id": "rh-20261106-093316-62177d",
+ "package": "core-js",
+ "version": "3.38.1",
+ "integrity": "sha512-OP35aUorbU3Zvlx7pjsFdu1rGNnD4pgw/CWoYzRY3t2EzoVT7shKHY1dlAy3f41cGIO7ZDPQimhGFTlEYkG/Hw==",
+ "verdict": "CLEAN",
+ "reasons": [],
+ "container_aware": false,
+ "seconds": 12.58,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node -e \"try{require('./postinstall')}catch(e){}\""
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "-e",
+     "try{require('./postinstall')}catch(e){}"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "core-js"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "core-js"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "stats_count": 4490
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 4.61,
+  "syscall_lines": 28252,
+  "unparsed": 0,
+  "sinkhole_records": 0,
+  "dependencies": "no dependencies"
+ },
+ "microvm": {
+  "verdict": "CLEAN",
+  "reasons": [],
+  "seconds": 6.54,
+  "evidence": {
+   "exfil_matches": [],
+   "machine_leaks": [],
+   "token_uses": [],
+   "bait_reads": [],
+   "connects": [],
+   "execs": [],
+   "writes": [],
+   "incomplete": [],
+   "deadline_killed": false,
+   "load_hang": false,
+   "probe_flags": []
+  },
+  "sandbox": {
+   "deadline_killed": false,
+   "exit_code": 0,
+   "errors": [],
+   "seconds": 6.06,
+   "sinkhole_records": 0,
+   "guest_report_finished": true
+  }
+ }
+}

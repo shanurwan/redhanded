@@ -1,3 +1,0 @@
-{"kind": "dns", "at": 1793943129.7406132, "peer": "172.31.255.2", "host": "telemetry.rh-zoo.invalid", "detail": "A", "headers": {"answer": "10.66.0.10"}, "data": ""}
-{"kind": "dns", "at": 1793943129.7408123, "peer": "172.31.255.2", "host": "telemetry.rh-zoo.invalid", "detail": "AAAA", "headers": {}, "data": ""}
-{"kind": "http", "at": 1793943129.7458048, "peer": "172.31.255.2", "host": "telemetry.rh-zoo.invalid", "detail": "POST /event", "headers": {"content-type": "application/json", "host": "telemetry.rh-zoo.invalid", "connection": "keep-alive", "content-length": "19"}, "data": "eyJldmVudCI6Imluc3RhbGwifQ=="}

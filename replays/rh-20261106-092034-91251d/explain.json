@@ -1,0 +1,5 @@
+{
+ "text": "The package spawned curl to query the EC2 metadata endpoint at 169.254.169.254 for IAM credentials, instance ID, region and identity info, and it attempted contact with oastify.com, a data-collection service, while sending this machine's name to an outside host. The scan recorded honeytokens for AWS keys, a GitHub token, metadata credentials and an npm token leaving the sandbox, which is the behavior of a credential stealer. Do not merge this package; treat any credentials present in the build environment as compromised and rotate them, and investigate how the dependency was introduced.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T09:32:50Z"
+}

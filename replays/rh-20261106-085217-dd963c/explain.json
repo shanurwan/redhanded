@@ -1,0 +1,5 @@
+{
+ "text": "The package's install-time scripts ran telemetry.js and bin/post-install, probed for developer tooling (claude, gemini, q, gh, npm), ran npm whoami, and wrote to /home/dev/.bashrc and /home/dev/.zshrc. Modifying shell startup files is a persistence mechanism: anything appended there executes on every new shell, which is why the rule engine rated this HIGH, and the run was killed at the deadline before it finished. No network destinations were recorded, so nothing shows data leaving, but the intent to touch shell profiles alongside credential-adjacent commands is enough to warrant blocking. The reviewer should read the post-install and telemetry scripts, check what was appended to those rc files, and hold the upgrade until the maintainers explain it.",
+ "model": "deepseek-v4.1-flash-1017",
+ "at": "2026-11-06T09:32:44Z"
+}

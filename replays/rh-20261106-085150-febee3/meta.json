@@ -1,0 +1,14 @@
+{
+ "title": "Shai-Hulud hits a popular colour library",
+ "summary": "A hijacked release. It read the fake AWS key and used stolen tokens on fake GitHub and npm.",
+ "order": 1,
+ "full_syscall_log": {
+  "sha256": "61bf787101732b4169f4658caa71ce32d712c9c9afdea105f4d209a0e4a40954",
+  "lines": 65962,
+  "excerpt_lines": 197
+ },
+ "incident": "Shai-Hulud worm",
+ "date": "2025-09-15",
+ "hero": true,
+ "real": true
+}

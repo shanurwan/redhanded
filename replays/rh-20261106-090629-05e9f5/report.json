@@ -1,0 +1,152 @@
+{
+ "scan_id": "rh-20261106-090629-05e9f5",
+ "package": "session-logger",
+ "version": "3.8.2",
+ "integrity": "sha512-919aSVu0eCk6EiNjEGA1xXuXPbFAr7u3giMSJqh0rfQ9xERVJ00RGHN3cDlJPyeA+JRTXajDAoCKz70CdX4gKw==",
+ "verdict": "CRITICAL",
+ "reasons": [
+  "CRITICAL: honeytoken aws_access_key_id left the sandbox",
+  "CRITICAL: honeytoken aws_secret_access_key left the sandbox",
+  "CRITICAL: honeytoken github_token left the sandbox",
+  "CRITICAL: honeytoken npm_token left the sandbox",
+  "HIGH: sent this machine's name to an outside host",
+  "REVIEW: network attempts to log-server-lovat.vercel.app"
+ ],
+ "container_aware": false,
+ "seconds": 8.35,
+ "evidence": {
+  "exfil_matches": [
+   "aws_access_key_id",
+   "aws_secret_access_key",
+   "github_token",
+   "npm_token"
+  ],
+  "machine_leaks": [
+   "log-server-lovat.vercel.app"
+  ],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [
+   "github.com",
+   "log-server-lovat.vercel.app",
+   "nodejs.org"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "prebuild-install -r napi || node-gyp rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "prebuild-install",
+     "-r",
+     "napi"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/node_modules/.bin/prebuild-install",
+     "-r",
+     "napi"
+    ],
+    true
+   ],
+   [
+    [
+     "node-gyp",
+     "rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "sh",
+     "/usr/local/lib/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/node-gyp",
+     "rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js",
+     "rebuild"
+    ],
+    true
+   ],
+   [
+    [
+     "python3",
+     "-c",
+     "import sys; sys.stdout.buffer.write(sys.executable.encode('utf-8'));"
+    ],
+    true
+   ],
+   [
+    [
+     "/usr/bin/python3",
+     "-c"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "session-logger"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "session-logger"
+    ],
+    false
+   ]
+  ],
+  "writes": [],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "stats_count": 4204
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 5.22,
+  "syscall_lines": 30129,
+  "unparsed": 0,
+  "sinkhole_records": 16,
+  "dependencies": "4 dependencies fetched"
+ },
+ "microvm": null
+}

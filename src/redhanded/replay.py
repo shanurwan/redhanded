@@ -43,7 +43,8 @@ def export(scan_dir: Path, out_root: Path, title: str, summary: str, order: int 
     report = json.loads((scan_dir / "report.json").read_text())
     out = out_root / report["scan_id"]
     out.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(scan_dir / "report.json", out / "report.json")
+    # Real malware passes stolen tokens on its command line, so the report carries them too.
+    (out / "report.json").write_text(redact((scan_dir / "report.json").read_text(), _bait_values(scan_dir) | _bait_values(scan_dir / "microvm")))
     if (scan_dir / "explain.json").is_file():
         shutil.copyfile(scan_dir / "explain.json", out / "explain.json")
     if (scan_dir / "capture.jsonl").is_file():
