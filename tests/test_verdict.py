@@ -17,7 +17,7 @@ def test_stolen_token_used_is_critical():
 
 
 def test_bait_read_plus_network_is_high():
-    d = decide(Evidence(bait_reads=["/home/dev/.npmrc"], connects=["1.2.3.4"]))
+    d = decide(Evidence(bait_reads=["/home/dev/.aws/credentials"], connects=["1.2.3.4"]))
     assert d.verdict == Verdict.HIGH
 
 

@@ -56,9 +56,9 @@ def test_token_in_dns_labels_is_critical():
 def test_bait_read_then_network_is_high():
     pool = NamePool()
     ip = pool.address("cdn.example.invalid")
-    trace = TraceFacts(opened=[f"{HOME}/.npmrc", f"{PKG}/index.js"], connects=[(ip, 443)])
+    trace = TraceFacts(opened=[f"{HOME}/.aws/credentials", f"{PKG}/index.js"], connects=[(ip, 443)])
     ev, d = scan(trace, pool=pool)
-    assert ev.bait_reads == [f"{HOME}/.npmrc"]
+    assert ev.bait_reads == [f"{HOME}/.aws/credentials"]
     assert ev.connects == ["cdn.example.invalid"]
     assert d.verdict == Verdict.HIGH
 
