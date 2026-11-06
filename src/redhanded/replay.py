@@ -43,10 +43,11 @@ def _without_skill_text(raw: str) -> str:
     """What a malicious skill said to the agent stays out of a replay. What the agent did stays in."""
     report = json.loads(raw)
     agent = report.get("agent")
-    if agent:
-        for run in ("run", "second_run"):
-            agent[run] = [{"calls": t.get("calls", [])} for t in agent.get(run, []) if t.get("calls")]
-        agent["task"] = re.sub(r"(for what it says it does:).*", r"\1 (its description).", agent.get("task", ""))
+    if not agent:
+        return raw
+    for run in ("run", "second_run"):
+        agent[run] = [{"calls": t.get("calls", [])} for t in agent.get(run, []) if t.get("calls")]
+    agent["task"] = re.sub(r"(for what it says it does:).*", r"\1 (its description).", agent.get("task", ""))
     return json.dumps(report, indent=1)
 
 

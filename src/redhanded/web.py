@@ -318,7 +318,7 @@ def list_replays(replays_dir: str) -> list[dict]:
         out.append({"scan_id": report["scan_id"], "package": pkg, "version": report["version"],
                     "verdict": report["verdict"], "title": meta.get("title", pkg),
                     "summary": meta.get("summary", ""), "order": meta.get("order", 99), "live": live,
-                    "incident": meta.get("incident", ""), "date": meta.get("date", ""), "hero": bool(meta.get("hero"))})
+                    "incident": meta.get("incident", ""), "date": meta.get("date", ""), "hero": bool(meta.get("hero")), "kind": meta.get("kind", "package")})
     return sorted(out, key=lambda r: (r["order"], r["scan_id"]))
 
 
