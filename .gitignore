@@ -28,3 +28,9 @@ node_modules/
 
 # local scan output
 runs/
+
+# terraform
+deploy/terraform/.terraform/
+deploy/terraform/*.tfstate*
+deploy/terraform/*.tfvars
+deploy/terraform/*.tfplan

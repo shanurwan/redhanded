@@ -1,0 +1,91 @@
+#cloud-config
+# Base host for RedHanded. The application itself is pushed by deploy/deploy.sh.
+package_update: true
+packages: [python3, python3-venv, curl, bzip2, rsync, caddy, docker.io, unattended-upgrades]
+
+users:
+  - name: rh
+    shell: /bin/bash
+    lock_passwd: true
+    homedir: /var/lib/redhanded
+
+write_files:
+  - path: /etc/sysctl.d/90-redhanded.conf
+    content: |
+      # No MPTCP listeners on a host that runs untrusted code (CVE-2026-98432).
+      net.mptcp.enabled = 0
+      # The scan worker builds its sandbox and sinkhole namespaces without root.
+      kernel.unprivileged_userns_clone = 1
+  - path: /etc/systemd/system/redhanded-web.service
+    content: |
+      [Unit]
+      Description=RedHanded demo site and scan worker
+      After=network-online.target
+      [Service]
+      User=rh
+      WorkingDirectory=/opt/redhanded/app
+      EnvironmentFile=/etc/redhanded/env
+      ExecStart=/opt/redhanded/venv/bin/redhanded --env /etc/redhanded/env web
+      Restart=always
+      RestartSec=3
+      ProtectHome=read-only
+      PrivateTmp=true
+      ReadWritePaths=/var/lib/redhanded
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/systemd/system/redhanded-guard.service
+    content: |
+      [Unit]
+      Description=RedHanded spend guard (reads the Vultr balance, writes the guard state)
+      After=network-online.target
+      [Service]
+      User=rh
+      WorkingDirectory=/opt/redhanded/app
+      EnvironmentFile=/etc/redhanded/env
+      ExecStart=/opt/redhanded/venv/bin/redhanded --env /etc/redhanded/env guard --interval 600 --state /var/lib/redhanded/guard-state.json
+      Restart=always
+      RestartSec=30
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/systemd/system/redhanded-prune.service
+    content: |
+      [Unit]
+      Description=Drop bulky scan files older than two days; reports stay
+      [Service]
+      Type=oneshot
+      User=rh
+      ExecStart=/bin/sh -c 'find /var/lib/redhanded/scans -mindepth 2 -maxdepth 2 \( -name log -o -name work -o -name home -o -name bundle \) -mtime +2 -exec rm -rf {} +'
+  - path: /etc/systemd/system/redhanded-prune.timer
+    content: |
+      [Timer]
+      OnCalendar=hourly
+      [Install]
+      WantedBy=timers.target
+
+runcmd:
+  - sysctl --system
+  - mkdir -p /etc/redhanded /opt/redhanded/app /var/lib/redhanded/scans /var/lib/redhanded/bin/gvisor-bin
+  - touch /etc/redhanded/env && chown root:rh /etc/redhanded/env && chmod 640 /etc/redhanded/env
+  # gVisor, pinned and checksum-verified
+  - |
+    set -e
+    cd /tmp
+    U="https://storage.googleapis.com/gvisor/releases/release/${gvisor_release}/x86_64"
+    curl -fsSLO "$U/gvisor.tar.bz2" && curl -fsSLO "$U/gvisor.tar.bz2.sha512"
+    sha512sum -c gvisor.tar.bz2.sha512
+    mkdir -p gv && tar xjf gvisor.tar.bz2 -C gv
+    install -m 755 gv/runsc /var/lib/redhanded/bin/runsc
+    install -m 755 gv/gvisor-bin/* /var/lib/redhanded/bin/gvisor-bin/
+  # The sandbox root filesystem, from the same pinned image as CI. Docker is only used to export it.
+  - |
+    set -e
+    mkdir -p /var/lib/redhanded/rootfs
+    cid=$(docker create "${sandbox_image}")
+    docker export "$cid" | tar -x -C /var/lib/redhanded/rootfs --no-same-owner
+    docker rm "$cid"
+    systemctl disable --now docker.service docker.socket
+  - chown -R rh:rh /var/lib/redhanded /opt/redhanded
+  - python3 -m venv /opt/redhanded/venv && chown -R rh:rh /opt/redhanded/venv
+  - systemctl daemon-reload
+  - systemctl enable redhanded-web.service redhanded-guard.service redhanded-prune.timer
+  - touch /var/lib/redhanded/cloud-init.done
