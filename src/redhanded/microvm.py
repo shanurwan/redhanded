@@ -112,7 +112,8 @@ def inner(scan: Path, deadline_s: float) -> int:
         sink = subprocess.Popen([sys.executable, "-m", "redhanded.sinkhole", "--capture", str(scan / "capture.jsonl"),
                                  "--metadata", str(scan / "metadata.json"), "--ready", str(ready),
                                  *(["--tls-dir", str(scan / "tls")] if (scan / "tls").is_dir() else []),
-                                 *(["--mirror", os.environ["RH_MIRROR"]] if os.environ.get("RH_MIRROR") else [])],
+                                 *(["--mirror", os.environ["RH_MIRROR"]] if os.environ.get("RH_MIRROR") else []),
+                                 *(["--model-socket", str(scan / "model.sock")] if (scan / "model.sock").exists() else [])],
                                 stdout=open(scan / "log" / "sinkhole.out", "wb"), stderr=subprocess.STDOUT)
         for _ in range(250):
             if ready.exists():
@@ -145,10 +146,12 @@ def inner(scan: Path, deadline_s: float) -> int:
     return 0 if not result["errors"] else 1
 
 
-def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfig, deps: Path | None = None) -> MicroVMResult:
+def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfig, deps: Path | None = None, mode=None) -> MicroVMResult:
     started = time.monotonic()
     tokens = HoneytokenSet.generate(scan.parent.name + "-microvm")
     prepare(scan, name, version, tarball, tokens, cfg.fc_rootfs, deps, trust_from=cfg.rootfs)
+    if mode:
+        mode.arm(scan, tokens)
     _build_scan_drive(scan)
     _env_file(scan, name, tokens)
     used = sum(f.stat().st_size for f in (scan / "scan-fs").rglob("*") if f.is_file() and not f.is_symlink())
@@ -173,6 +176,8 @@ def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfi
                        env=env, timeout=cfg.deadline_s + 60, capture_output=True)
     except subprocess.TimeoutExpired:
         pass
+    if mode:
+        mode.close(scan)
     inner_path = scan / "inner.json"
     result = json.loads(inner_path.read_text()) if inner_path.exists() \
         else {"errors": ["microVM supervisor did not report"], "deadline_killed": True}
@@ -187,9 +192,12 @@ def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfi
     ev.incomplete.extend(result.get("errors", []))
     if not finished and not ev.deadline_killed:
         ev.incomplete.append("the microVM guest did not finish its report")
+    if mode:
+        mode.after(ev, scan)
+    decision = mode.decide(ev, scan) if mode else decide(ev)
     for bulky in ("root.ext4", "scan.ext4", "scan-fs"):       # 700 MB per scan otherwise
         subprocess.run(["rm", "-rf", str(scan / bulky)], capture_output=True, timeout=30)
-    return MicroVMResult(decide(ev), ev, round(time.monotonic() - started, 2),
+    return MicroVMResult(decision, ev, round(time.monotonic() - started, 2),
                          {**result, "sinkhole_records": len(records), "guest_report_finished": finished})
 
 

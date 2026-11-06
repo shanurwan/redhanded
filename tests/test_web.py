@@ -288,7 +288,7 @@ def test_mcp_with_a_real_client(site):
             async with ClientSession(streams[0], streams[1]) as session:
                 await session.initialize()
                 tools = (await session.list_tools()).tools
-                assert {t.name for t in tools} == {"check_package", "check_lockfile_change", "get_scan_report"}
+                assert {t.name for t in tools} == {"check_package", "check_lockfile_change", "compare_versions", "find_safe_version", "check_skill", "get_scan_report"}
                 assert all(t.annotations.read_only_hint for t in tools)
                 out = await session.call_tool("check_package", {"name": "left-pad", "version": "1.3.0"})
                 assert out.is_error is False and out.structured_content["advice"] == "allow"

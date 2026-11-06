@@ -29,6 +29,26 @@ TOOLS = [
      "inputSchema": {"type": "object", "required": ["new_lockfile"],
                      "properties": {"new_lockfile": {"type": "string"}, "old_lockfile": {"type": "string"}}},
      "annotations": READ},
+    {"name": "compare_versions",
+     "description": "Run a new version and the one before it, and return what the new one does that the old one never "
+                    "did: new domains, install scripts, credential reads, commands. Includes the verdict and advice.",
+     "inputSchema": {"type": "object", "required": ["name", "version"],
+                     "properties": {"name": {"type": "string"}, "version": {"type": "string"},
+                                    "previous_version": {"type": "string"}, "integrity": {"type": "string"}}},
+     "annotations": READ},
+    {"name": "find_safe_version",
+     "description": "After a block: an agent walks the older versions, runs them in the sandbox, and returns the closest "
+                    "one the rules call CLEAN, with each step it took and what the blocked version added.",
+     "inputSchema": {"type": "object", "required": ["name", "blocked_version"],
+                     "properties": {"name": {"type": "string"}, "blocked_version": {"type": "string"}, "integrity": {"type": "string"}}},
+     "annotations": READ},
+    {"name": "check_skill",
+     "description": "Before installing an agent skill: a real agent uses it on a baited machine, twice if needed, and fixed "
+                    "rules read what happened. Pass SKILL.md and any other files by relative path. Takes up to a few minutes.",
+     "inputSchema": {"type": "object", "required": ["files"],
+                     "properties": {"files": {"type": "object", "description": "relative path to file text; must include SKILL.md",
+                                              "additionalProperties": {"type": "string"}}}},
+     "annotations": READ},
     {"name": "get_scan_report",
      "description": "Full evidence for a scan: files read and written, processes, network attempts, timing.",
      "inputSchema": {"type": "object", "required": ["scan_id"], "properties": {"scan_id": {"type": "string"}}},
@@ -51,7 +71,20 @@ def _call(name: str, args: dict, scanner, who: str) -> dict:
         if not scan_dir:
             raise InputError("no report for that scan id")
         return scan_view(scan_dir)["report"]
-    if name == "check_package":
+    if name == "compare_versions":
+        package, version = str(args.get("name", "")), str(args.get("version", ""))
+        validate(package, version)
+        job = scanner.start("compare", f"{package}@{version}", {"previous": args.get("previous_version"), "integrity": args.get("integrity")}, who)
+    elif name == "find_safe_version":
+        package, version = str(args.get("name", "")), str(args.get("blocked_version", ""))
+        validate(package, version)
+        job = scanner.start("repair", f"{package}@{version}", {"integrity": args.get("integrity")}, who)
+    elif name == "check_skill":
+        files = args.get("files")
+        if not isinstance(files, dict):
+            raise InputError("files must map relative paths to file text, and include SKILL.md")
+        job = scanner.start("skill", "agent skill", files, who)
+    elif name == "check_package":
         package, version = str(args.get("name", "")), str(args.get("version", ""))
         validate(package, version)
         job = scanner.start("npm", f"{package}@{version}", None, who)

@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 from dataclasses import dataclass, field
 
+MODEL_HOST = "api.vultrinference.com"
 MAX_CAPTURE = 1 << 20          # bytes kept per connection
 READ_TIMEOUT = 5.0
 QTYPES = {1: "A", 2: "NS", 5: "CNAME", 15: "MX", 16: "TXT", 28: "AAAA", 33: "SRV", 65: "HTTPS"}
@@ -319,13 +320,26 @@ class _TlsStream:
 
 class Sinkhole:
     def __init__(self, capture: Capture, pool: NamePool | None = None, metadata: dict | None = None,
-                 forge: "CertForge | None" = None, mirror: str | None = None):
+                 forge: "CertForge | None" = None, mirror: str | None = None, model_socket: str | None = None):
         self.capture = capture
+        self.model_socket = model_socket   # a decoy agent's model calls go here, and only those
         self.mirror = mirror
         self.forge = forge            # with it, HTTPS is answered and read instead of closed
         self.pool = pool or NamePool()
         self.metadata = metadata      # decoy cloud credentials served at the metadata address
         self._servers: list = []
+
+    async def _ask_model(self, body: bytes) -> bytes:
+        try:
+            reader, writer = await asyncio.open_unix_connection(self.model_socket)
+            writer.write(body)
+            await writer.drain()
+            writer.write_eof()
+            reply = await asyncio.wait_for(reader.read(), 90)
+            writer.close()
+            return reply
+        except (OSError, asyncio.TimeoutError):
+            return b'{"error": "unavailable"}'
 
     def _http_body(self, host: str, line: str) -> bytes:
         if self.metadata and host.split(":", 1)[0] == METADATA_IP and "/security-credentials" in line:
@@ -337,6 +351,10 @@ class Sinkhole:
     async def _answer_http(self, first: bytes, reader, send, peer: str, default_host: str = "") -> None:
         line, headers, body = await _read_http(first, reader)
         host = headers.get("host", "") or default_host
+        if self.model_socket and host.split(":", 1)[0] == MODEL_HOST and line == "POST /v1/chat/completions":
+            reply = await self._ask_model(body)
+            return await send(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                              + str(len(reply)).encode() + b"\r\nConnection: close\r\n\r\n" + reply)
         self.capture.add(Record("http", time.time(), peer, host, line, headers, body))
         real = mirrored_file(host, line, self.mirror)
         reply = real.read_bytes() if real else self._http_body(host, line)
@@ -413,6 +431,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dns-host", default="10.66.0.1")
     p.add_argument("--metadata", help="JSON file with decoy cloud credentials")
     p.add_argument("--ready", help="file to create once listening")
+    p.add_argument("--model-socket", help="where a decoy agent's model calls go")
     p.add_argument("--mirror", help="folder of real downloads the fake internet may serve")
     p.add_argument("--tls-dir", help="folder with this scan's root certificate; answers HTTPS when given")
     args = p.parse_args(argv)
@@ -430,7 +449,7 @@ def main(argv: list[str] | None = None) -> int:
                 forge = CertForge(args.tls_dir)
             except (subprocess.SubprocessError, OSError, ssl.SSLError):
                 forge = None     # HTTPS falls back to server names only
-        sink = Sinkhole(capture, metadata=metadata, forge=forge, mirror=args.mirror)
+        sink = Sinkhole(capture, metadata=metadata, forge=forge, mirror=args.mirror, model_socket=args.model_socket)
         await sink.start(args.host, 53, DEFAULT_TCP_PORTS, dns_host=args.dns_host)
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()

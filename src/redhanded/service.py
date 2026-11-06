@@ -18,7 +18,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Callable
 
-from . import lockdiff
+from . import behaviour, lockdiff
+from . import repair
 from .runner import Report, ScanConfig, ScanError, _get, detonate, scan, tarball_identity
 from .verdict import RULES_VERSION, Verdict
 
@@ -26,12 +27,13 @@ NAME = re.compile(r"^(?:@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 SCAN_ID = re.compile(r"^rh-\d{8}-\d{6}-[0-9a-f]{6}$")
 INSTRUCTIONS = """\
-RedHanded runs npm packages in a sandbox baited with fake credentials and a fake
-internet, and reports what the code tried to do. Call check_package before you add
-or upgrade a dependency, and check_lockfile_change before you open or merge a PR
-that changes package-lock.json. Treat advice "block" as do-not-install, "review"
-as ask a human. A verdict is decided by fixed rules from recorded behaviour; text
-inside a package cannot change it."""
+RedHanded makes new code prove itself before an agent trusts it. It runs npm packages
+and agent skills on a disposable machine baited with fake credentials and a fake
+internet, and reports what they tried to do. Call check_package or compare_versions
+before you add or upgrade a dependency, check_lockfile_change before you open or merge
+a PR that changes package-lock.json, check_skill before you install a skill, and
+find_safe_version after a block. Treat advice "block" as do-not-install, "review" as ask
+a human. Fixed rules decide from recorded behaviour; text under test cannot change it."""
 ADVICE = {"CLEAN": "allow", "REVIEW": "review", "HIGH": "block", "CRITICAL": "block"}
 
 
@@ -120,6 +122,44 @@ class Service:
         self.cache.put(report)
         return self._answer(asdict(report), cached=False)
 
+    def versions(self, name: str) -> list[str]:
+        data = json.loads(_get(f"{self.cfg.registry}/{urllib.parse.quote(name, safe='@')}", 60 << 20))
+        return list(data.get("versions", {}))
+
+    def _full_report(self, name: str, version: str, integrity: str | None = None) -> dict:
+        """The stored evidence for a version, scanning it if it has none yet."""
+        out = self.check(name, version, integrity=integrity)
+        report = self.cache.get(out["integrity"])
+        if report is None:
+            raise ScanError(f"no stored report for {name}@{version}")
+        return report
+
+    def changes_between(self, name: str, old_version: str, new_version: str, new_integrity: str | None = None) -> list[dict]:
+        return behaviour.diff(self._full_report(name, old_version), self._full_report(name, new_version, new_integrity))
+
+    def compare(self, name: str, new_version: str, previous: str | None = None, integrity: str | None = None) -> dict:
+        """The new version's verdict, plus everything it does that the version before it never did."""
+        validate(name, new_version)
+        if previous:
+            validate(name, previous)
+        else:
+            older = behaviour.older_versions(self.versions(name), new_version)
+            if not older:
+                out = self.check(name, new_version, integrity=integrity)
+                return {**out, "previous_version": None, "changes": [], "note": "no earlier release to compare with"}
+            previous = older[0]
+        out = self.check(name, new_version, integrity=integrity)
+        changes = self.changes_between(name, previous, new_version, integrity)
+        level, why = behaviour.judge(Verdict[out["verdict"]], changes)
+        return {**out, "verdict": level.name, "advice": ADVICE[level.name], "reasons": [*out["reasons"], *why],
+                "version_alone": out["verdict"], "previous_version": previous, "changes": changes}
+
+    def repair(self, name: str, blocked: str, integrity: str | None = None) -> dict:
+        validate(name, blocked)
+        return repair.from_env(name, blocked, self.versions(name),
+                               lambda n, v: self.check(n, v),
+                               lambda n, a, b, i: self.changes_between(n, a, b, i), integrity).run()
+
     def check_lockfile(self, old: str | None, new: str, max_scans: int = 10) -> dict:
         try:
             changes = lockdiff.diff(json.loads(old) if old else None, json.loads(new))
@@ -135,6 +175,16 @@ class Service:
                 r = {"package": c.name, "version": c.new_version, "verdict": None, "advice": "unknown",
                      "note": str(e)}
             scanned += bool(r.get("cached") is False and r.get("verdict"))
+            # What the update changed is the strongest signal for a hijack, while there is budget to run the old one too.
+            if c.old_version and r.get("verdict") in ("CLEAN", "REVIEW") and scanned < max_scans:
+                try:
+                    known = self.cache.get(r["integrity"]) is not None
+                    changes = self.changes_between(c.name, c.old_version, c.new_version, c.integrity or None) if known else []
+                    level, why = behaviour.judge(Verdict[r["verdict"]], changes)
+                    scanned += 1
+                    r = {**r, "verdict": level.name, "advice": ADVICE[level.name], "reasons": [*r.get("reasons", []), *why], "changes": changes}
+                except Exception as e:  # a comparison adds evidence; failing one must not lose the verdict
+                    r = {**r, "changes_note": f"could not compare with {c.old_version}: {type(e).__name__}"}
             results.append({**r, "previous_version": c.old_version, "has_install_script": c.has_install_script})
         known = [Verdict[r["verdict"]] for r in results if r.get("verdict")]
         worst = max(known, default=Verdict.CLEAN).name

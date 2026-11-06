@@ -17,6 +17,20 @@ _UPPER_ALNUM = string.ascii_uppercase + string.digits
 _ALNUM = string.ascii_letters + string.digits
 
 
+# Commands a developer's machine has now. Each is a stub that does nothing: the record of
+# the call, and whatever prompt it was handed, comes from outside the sandbox.
+AI_TOOLS = ("claude", "gemini", "q", "codex", "copilot", "cursor-agent")
+AI_TOOL_DIR = ".local/bin"
+
+
+def plant_ai_tools(home: Path) -> None:
+    (home / AI_TOOL_DIR).mkdir(parents=True, exist_ok=True)
+    for tool in AI_TOOLS:
+        path = home / AI_TOOL_DIR / tool
+        path.write_text("#!/bin/sh\nexit 0\n")
+        path.chmod(0o755)
+
+
 def _rand(alphabet: str, n: int) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(n))
 

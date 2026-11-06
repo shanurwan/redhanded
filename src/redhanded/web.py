@@ -32,6 +32,7 @@ from .explain import Explainer
 from .memory import AttackMemory
 from .runner import ScanConfig, ScanError, _get, scan_local
 from .service import ADVICE, SCAN_ID, Cache, InputError, Service, validate
+from .skills import check_skill
 from .spend import GuardState, StateFile
 from .verdict import RULES_VERSION
 
@@ -204,6 +205,17 @@ class Scanner:
             elif job.kind == "tarball":
                 out = self.service.check_tarball(job.payload)
                 self._finish_scan(job, out["scan_id"], out["cached"])
+            elif job.kind in ("compare", "repair"):
+                name, version = job.target.rsplit("@", 1)
+                extra = job.payload or {}
+                if job.kind == "compare":
+                    job.result = self.service.compare(name, version, extra.get("previous"), extra.get("integrity"))
+                    job.verdict, job.scan_id = job.result["verdict"], job.result.get("scan_id")
+                else:
+                    job.result = self.service.repair(name, version, extra.get("integrity"))
+            elif job.kind == "skill":
+                out = check_skill(job.payload, self.service.cfg, self.service.cache)
+                self._finish_scan(job, out["scan_id"], out["cached"])
             elif job.kind == "lockfile":
                 old, new = job.payload
                 job.result = self.service.check_lockfile(old, new, max_scans=MAX_LOCKFILE_SCANS)
@@ -231,7 +243,7 @@ def answer(scan_dir: Path, cached: bool = False) -> dict:
     explanation = json.loads(explain_path.read_text()).get("text") if explain_path.is_file() else None
     return {"package": report["package"], "version": report["version"], "integrity": report["integrity"],
             "verdict": report["verdict"], "advice": ADVICE[report["verdict"]], "reasons": report["reasons"],
-            "explanation": explanation, "scan_id": report["scan_id"], "cached": cached,
+            "explanation": explanation, "scan_id": report["scan_id"], "cached": cached, **({"agent": report["agent"]} if report.get("agent") else {}),
             "url": f"/#{report['scan_id']}"}
 
 
@@ -413,7 +425,7 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
         def do_POST(self):
             path = urllib.parse.urlsplit(self.path).path
             try:
-                if path not in ("/api/scan", "/api/lockfile", "/mcp"):
+                if path not in ("/api/scan", "/api/lockfile", "/api/compare", "/api/repair", "/api/skill", "/mcp"):
                     self.close_connection = True
                     raise Refused(404, "not found")
                 body = self.body()
@@ -430,6 +442,21 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
 
 
 def submit(scanner: Scanner, path: str, body: dict, who: str) -> Job:
+    if path in ("/api/compare", "/api/repair"):
+        name, version = body.get("name"), body.get("version")
+        if not isinstance(name, str) or not isinstance(version, str):
+            raise Refused(400, 'send {"name": "package", "version": "1.2.3"}')
+        try:
+            validate(name, version)
+        except InputError as e:
+            raise Refused(400, str(e)) from None
+        kind = path.rsplit("/", 1)[1]
+        return scanner.start(kind, f"{name}@{version}", {"previous": body.get("previous"), "integrity": body.get("integrity")}, who)
+    if path == "/api/skill":
+        files = body.get("files") if isinstance(body.get("files"), dict) else {"SKILL.md": body.get("skill_md")}
+        if not isinstance(files.get("SKILL.md"), str):
+            raise Refused(400, 'send {"skill_md": "..."} or {"files": {"SKILL.md": "...", ...}}')
+        return scanner.start("skill", "agent skill", files, who)
     if path == "/api/lockfile":
         new, old = body.get("new_lockfile"), body.get("old_lockfile") or None
         if not isinstance(new, str) or not isinstance(old, (str, type(None))):

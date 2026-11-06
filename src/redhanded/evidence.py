@@ -8,7 +8,7 @@ from __future__ import annotations
 import ipaddress
 import posixpath
 
-from .honeytokens import HoneytokenSet
+from .honeytokens import AI_TOOL_DIR, AI_TOOLS, HoneytokenSet
 from .matcher import Matcher
 from .sinkhole import NamePool, Record
 from .trace import TraceFacts
@@ -87,6 +87,12 @@ def build(trace: TraceFacts, records: list[Record], pool: NamePool, tokens: Hone
     })
     ev.stats = sorted(set(trace.probes))
     ev.execs = list(trace.execs)
+    calls = [" ".join(argv)[:300] for argv, _ in trace.execs if argv and posixpath.basename(argv[0]) in AI_TOOLS]
+    called = {c.split(" ", 1)[0].rsplit("/", 1)[-1] for c in calls}
+    # The microVM has no syscall log, so there a call shows up as the tool having been read.
+    stubs = {posixpath.join(home, AI_TOOL_DIR, t): t for t in AI_TOOLS}
+    ev.ai_tool_calls = [c.split(" ", 1)[0].rsplit("/", 1)[-1] + (" " + c.split(" ", 1)[1] if " " in c else "") for c in calls] \
+        + sorted({stubs[p] for p in trace.opened if p in stubs and stubs[p] not in called})
 
     ev.machine_leaks = sorted(set(ev.machine_leaks))
     ev.connects.extend(contacted(records))

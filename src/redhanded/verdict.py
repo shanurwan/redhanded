@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.6"
+RULES_VERSION = "2026-11-06.7"
 
 
 class Verdict(IntEnum):
@@ -32,6 +32,9 @@ BENIGN_HOSTS = frozenset({
     "codeload.github.com",
     "nodejs.org",
 })
+# Flags that tell an AI coding tool to act without asking anyone. Malware has used a
+# developer's own tools this way, so that the search for secrets looks like normal work.
+AI_BYPASS_FLAGS = ("--dangerously-skip-permissions", "--yolo", "--trust-all-tools", "--full-auto", "--dangerously-bypass-approvals-and-sandbox")
 NET_TOOLS = frozenset({"curl", "wget", "nc", "ncat", "netcat", "socat", "powershell", "pwsh"})
 INLINE_FLAGS = {"node": {"-e", "--eval", "-p"}, "python": {"-c"}, "python3": {"-c"}, "perl": {"-e"}, "ruby": {"-e"}}
 PERSISTENCE_SUFFIXES = (
@@ -64,6 +67,8 @@ class Evidence:
     deadline_killed: bool = False
     load_hang: bool = False                                     # importing it never returned
     probe_flags: list[str] = field(default_factory=list)        # e.g. "obfuscated-eval" from probes
+    ai_tool_calls: list[str] = field(default_factory=list)      # the machine's AI coding tools, as the code called them
+    skill_root: str = ""                                        # where the skill under test lives, if it is a skill
 
 
 @dataclass(frozen=True)
@@ -123,6 +128,13 @@ def decide(ev: Evidence) -> Decision:
         hit(Verdict.CRITICAL, f"honeytoken {name} left the sandbox")
     for svc in sorted(set(ev.token_uses)):
         hit(Verdict.CRITICAL, f"stolen token used against fake {svc}")
+
+    for call in sorted(set(ev.ai_tool_calls)):
+        tool = call.split(" ", 1)[0]
+        if any(f in call for f in AI_BYPASS_FLAGS):
+            hit(Verdict.HIGH, f"ran the machine's AI coding tool ({tool}) with its permission checks turned off")
+        else:
+            hit(Verdict.REVIEW, f"used the machine's AI coding tool ({tool})")
 
     if ev.machine_leaks:
         hit(Verdict.HIGH, "sent this machine's name to an outside host")

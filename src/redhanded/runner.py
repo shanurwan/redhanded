@@ -30,7 +30,8 @@ from typing import Callable
 
 from .agenttext import read_package_text
 from .evidence import build
-from .honeytokens import HoneytokenSet
+from .behaviour import manifest_summary
+from .honeytokens import AI_TOOL_DIR, HoneytokenSet, plant_ai_tools
 from .sinkhole import Capture, NamePool, Record, make_ca
 from .trace import parse
 from .verdict import Verdict, combine_microvm, decide, flag_agent_text
@@ -192,7 +193,7 @@ def fetch(name: str, version: str, registry: str, want_integrity: str | None = N
 
 def _spec(scan: Path, name: str, tokens: HoneytokenSet) -> dict:
     env = {
-        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PATH": f"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:{HOME}/{AI_TOOL_DIR}",
         "HOME": HOME,
         "USER": "dev",
         "RH_PACKAGE": name,
@@ -322,6 +323,7 @@ def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: Honeyto
     (scan / "resolv.conf").write_text(f"nameserver {RESOLVER_IP}\n")
     trust_bundle(scan, trust_from or rootfs)
     tokens.plant(scan / "home")
+    plant_ai_tools(scan / "home")
     (scan / "metadata.json").write_text(json.dumps(tokens.metadata_credentials()))
     spec = _spec(scan, name, tokens)
     spec["root"]["path"] = rootfs
@@ -364,7 +366,8 @@ def inner(scan: Path, runsc: str, deadline_s: float) -> int:
                                  "--capture", str(scan / "capture.jsonl"),
                                  "--metadata", str(scan / "metadata.json"), "--ready", str(ready),
                                  *(["--tls-dir", str(scan / "tls")] if (scan / "tls").is_dir() else []),
-                                 *(["--mirror", os.environ["RH_MIRROR"]] if os.environ.get("RH_MIRROR") else [])],
+                                 *(["--mirror", os.environ["RH_MIRROR"]] if os.environ.get("RH_MIRROR") else []),
+                                 *(["--model-socket", str(scan / "model.sock")] if (scan / "model.sock").exists() else [])],
                                 stdout=open(scan / "log" / "sinkhole.out", "wb"), stderr=subprocess.STDOUT)
         for _ in range(250):
             if ready.exists():
@@ -427,6 +430,15 @@ class Report:
     evidence: dict = field(default_factory=dict)
     sandbox: dict = field(default_factory=dict)
     microvm: dict | None = None
+    manifest: dict = field(default_factory=dict)
+    agent: dict | None = None
+
+
+def _read_manifest(path: Path) -> dict:
+    try:
+        return manifest_summary(json.loads(path.read_text(encoding="utf-8", errors="replace")))
+    except (OSError, ValueError):
+        return {}
 
 
 def tarball_identity(data: bytes) -> tuple[str, str]:
@@ -466,7 +478,8 @@ def scan_local(src: Path, cfg: ScanConfig | None = None) -> Report:
     return detonate(name, version, tarball, integrity, cfg or ScanConfig())
 
 
-def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanConfig) -> Report:
+def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanConfig, mode=None) -> Report:
+    """`mode` is what changes when the thing under test is an agent skill rather than a package."""
     started = time.monotonic()
     scan_id = f"rh-{time.strftime('%Y%m%d-%H%M%S')}-{os.urandom(3).hex()}"
     scan_dir = Path(cfg.scans_dir) / scan_id
@@ -474,6 +487,9 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
     deps = scan_dir / "deps"
     deps_note = fetch_deps(tarball, deps, cfg.rootfs, cfg.registry)
     prepare(scan_dir, name, version, tarball, tokens, cfg.rootfs, deps)
+    manifest = _read_manifest(scan_dir / "work" / "node_modules" / name / "package.json")
+    if mode:
+        mode.arm(scan_dir, tokens)
 
     env = dict(os.environ, PYTHONPATH=os.pathsep.join(p for p in sys.path if p))
     inner_cmd = ["unshare", "-rn", sys.executable, "-m", "redhanded.runner", "inner",
@@ -482,6 +498,8 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         subprocess.run(inner_cmd, env=env, timeout=cfg.deadline_s + 90, capture_output=True)
     except subprocess.TimeoutExpired:
         pass
+    if mode:
+        mode.close(scan_dir)
     inner_result = json.loads((scan_dir / "inner.json").read_text()) if (scan_dir / "inner.json").exists() \
         else {"errors": ["sandbox supervisor did not report"], "deadline_killed": True}
 
@@ -501,15 +519,17 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         ev.load_hang = True
     if trace.lines == 0:
         ev.incomplete.append("no syscall log from the sandbox")
-    decision = decide(ev)
+    if mode:
+        mode.after(ev, scan_dir)
+    decision = mode.decide(ev, scan_dir) if mode else decide(ev)
 
     microvm = None
     # gVisor names itself in uname and dmesg, so waiting for a package to look suspicious
     # would miss the simplest evader. Every package runs twice unless it is already blocked.
     if decision.verdict < Verdict.HIGH and not ev.deadline_killed and cfg.microvm_ready():
         from . import microvm as tier2
-        second = tier2.detonate(name, version, tarball, scan_dir / "microvm", cfg, deps)
-        decision = combine_microvm(decision, ev, second.decision, second.evidence)
+        second = tier2.detonate(name, version, tarball, scan_dir / "microvm", cfg, deps, mode)
+        decision = (mode.combine if mode else combine_microvm)(decision, ev, second.decision, second.evidence)
         microvm = second.summary()
     if cfg.text_reviewer and cfg.text_reviewer(read_package_text(scan_dir / "work" / "node_modules" / name)):
         decision = flag_agent_text(decision)
@@ -521,7 +541,7 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         evidence={k: v for k, v in asdict(ev).items() if k != "stats"} | {"stats_count": len(ev.stats)},
         sandbox={**inner_result, "syscall_lines": trace.lines, "unparsed": trace.unparsed,
                  "sinkhole_records": len(records), "dependencies": deps_note},
-        microvm=microvm,
+        microvm=microvm, manifest=manifest, agent=mode.summary(scan_dir) if mode else None,
     )
     (scan_dir / "report.json").write_text(json.dumps(asdict(report), indent=1))
     return report

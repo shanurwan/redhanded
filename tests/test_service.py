@@ -60,9 +60,9 @@ def lock(**pkgs):
 
 
 def test_lockfile_change_takes_the_worst_verdict(tmp_path):
-    svc, calls = make(tmp_path, {"a@2.0.0": "CLEAN", "b@1.0.0": "HIGH"})
+    svc, calls = make(tmp_path, {"a@1.0.0": "CLEAN", "a@2.0.0": "CLEAN", "b@1.0.0": "HIGH"})
     r = svc.check_lockfile(lock(a="1.0.0"), lock(a="2.0.0", b="1.0.0"))
-    assert sorted(calls) == ["a@2.0.0", "b@1.0.0"]
+    assert sorted(calls) == ["a@1.0.0", "a@2.0.0", "b@1.0.0"]   # the old version runs too, to compare
     assert (r["changed"], r["worst_verdict"], r["advice"]) == (2, "HIGH", "block")
     assert {p["package"]: p["previous_version"] for p in r["packages"]} == {"a": "1.0.0", "b": None}
 
@@ -84,3 +84,26 @@ def test_report_ids_cannot_reach_other_paths(tmp_path):
     for bad in ("../../etc/passwd", "rh-20261104-120000-abcdef/../../x", ""):
         with pytest.raises(InputError):
             svc.report(bad)
+
+
+def test_compare_raises_on_what_the_new_version_added(tmp_path):
+    made = {}
+
+    def scanner(name, version, cfg, integrity):
+        r = report(name, version, "CLEAN", integrity)
+        if version == "2.0.0":
+            r.evidence = {"connects": ["x.attacker.dev"], "bait_reads": [], "execs": [], "writes": []}
+            r.manifest = {"scripts": {"postinstall": "node s.js"}, "dependencies": []}
+        made[version] = r
+        return r
+    svc = Service(Cache(str(tmp_path / "c.sqlite3")), ScanConfig(scans_dir=str(tmp_path / "scans")),
+                  scanner=scanner, resolve=lambda n, v, r: f"sha512-{n}-{v}")
+    out = svc.compare("p", "2.0.0", "1.0.0")
+    assert out["version_alone"] == "CLEAN" and out["verdict"] == "HIGH" and out["advice"] == "block"
+    assert {c["kind"] for c in out["changes"]} == {"domain", "install_script"} and out["previous_version"] == "1.0.0"
+
+
+def test_lockfile_comparison_failure_keeps_the_verdict(tmp_path):
+    svc, _ = make(tmp_path, {"a@2.0.0": "CLEAN"})     # a@1.0.0 cannot be scanned
+    r = svc.check_lockfile(lock(a="1.0.0"), lock(a="2.0.0"))
+    assert r["packages"][0]["verdict"] == "CLEAN" and "could not compare" in r["packages"][0]["changes_note"]
