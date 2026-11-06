@@ -3,7 +3,7 @@ description: Detonate the packages a pull request adds or changes, and fail the 
 inputs:
   server:
     description: RedHanded server
-    default: https://45-76-169-219.sslip.io
+    default: https://45-32-140-228.sslip.io
 runs:
   using: composite
   steps:
