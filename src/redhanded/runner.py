@@ -52,7 +52,7 @@ _PLAIN_NAME = re.compile(r"^(?:@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$")
 _HARNESS = """\
 cd /work
 echo "== lifecycle scripts"
-npm rebuild "$RH_PACKAGE" --foreground-scripts --ignore-scripts=false
+npm rebuild --foreground-scripts --ignore-scripts=false
 echo "== exit $?"
 echo "== load"
 node /work/.rh/load.js "$RH_PACKAGE"
@@ -64,7 +64,9 @@ const { spawnSync } = require("child_process");
 const path = require("path");
 const name = process.argv[2];
 const root = path.join("/work/node_modules", name);
-spawnSync(process.execPath, ["/work/.rh/exercise.js", name], { stdio: "inherit", timeout: 8000 });
+const run = spawnSync(process.execPath, ["/work/.rh/exercise.js", name], { encoding: "utf8", timeout: 8000, maxBuffer: 1 << 22 });
+process.stdout.write((run.stdout || "") + (run.stderr || ""));
+if (run.error && run.error.code === "ETIMEDOUT" && !/^(loaded|load failed)/m.test(run.stdout || "")) console.log("RH-LOAD-HANG");
 let pkg = {};
 try { pkg = require(path.join(root, "package.json")); } catch (e) {}
 const bins = typeof pkg.bin === "string" ? [pkg.bin] : Object.values(pkg.bin || {});
@@ -271,7 +273,19 @@ def fetch_deps(tarball: bytes, into: Path, rootfs: str, registry: str, timeout: 
     if size > MAX_DEPS:
         shutil.rmtree(into / "node_modules", ignore_errors=True)
         return "dependencies over the size limit"
-    return f"{len(wanted)} dependencies fetched" if p.returncode == 0 else "some dependencies unavailable"
+    if p.returncode == 0:
+        return f"{len(wanted)} dependencies fetched"
+    fetched = 0
+    for dep, spec in list(wanted.items())[:25]:
+        (into / "package.json").write_text(json.dumps({"name": "rh-deps", "version": "0.0.0", "private": True, "dependencies": {dep: spec}}))
+        try:
+            one = subprocess.run([str(node), str(cli), "install", "--ignore-scripts", "--omit=dev", "--omit=optional", "--omit=peer", "--no-audit", "--no-fund",
+                                  "--no-package-lock", "--no-save", "--loglevel=error"], cwd=into, env=env, capture_output=True, timeout=45)
+            fetched += one.returncode == 0
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+    shutil.rmtree(into / ".npm", ignore_errors=True)
+    return f"{fetched} of {len(wanted)} dependencies available"
 
 
 def trust_bundle(scan: Path, trust_from: str) -> None:
@@ -481,6 +495,9 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
     ev = build(trace, records, pool, tokens, HOME, f"{WORK}/node_modules/{name}", RESOLVER_IP)
     ev.deadline_killed = bool(inner_result.get("deadline_killed"))
     ev.incomplete.extend(inner_result.get("errors", []))
+    sandbox_out = scan_dir / "log" / "sandbox.out"
+    if sandbox_out.is_file() and b"RH-LOAD-HANG" in sandbox_out.read_bytes()[-(1 << 20):]:
+        ev.load_hang = True
     if trace.lines == 0:
         ev.incomplete.append("no syscall log from the sandbox")
     decision = decide(ev)

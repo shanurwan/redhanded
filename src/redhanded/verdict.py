@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.2"
+RULES_VERSION = "2026-11-06.3"
 
 
 class Verdict(IntEnum):
@@ -62,6 +62,7 @@ class Evidence:
     stats: list[str] = field(default_factory=list)              # paths stat-ed or opened that look like environment checks
     incomplete: list[str] = field(default_factory=list)         # reasons the scan could not finish
     deadline_killed: bool = False
+    load_hang: bool = False                                     # importing it never returned
     probe_flags: list[str] = field(default_factory=list)        # e.g. "obfuscated-eval" from probes
 
 
@@ -152,6 +153,8 @@ def decide(ev: Evidence) -> Decision:
         hit(Verdict.REVIEW, f"scan incomplete: {why}")
     if ev.deadline_killed:
         hit(Verdict.REVIEW, "killed at deadline")
+    if ev.load_hang:
+        hit(Verdict.REVIEW, "importing it never returned")
 
     return Decision(level, tuple(reasons), container_aware=bool(checks) and level <= Verdict.REVIEW)
 

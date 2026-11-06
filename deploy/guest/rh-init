@@ -29,4 +29,8 @@ cd /
 find / -xdev -type f -newer /tmp/.rh-start 2>/dev/null | sed 's/^/RH-WRITE /'
 find /home/dev -type f -anewer /tmp/.rh-start 2>/dev/null | sed 's/^/RH-READ /'
 echo RH-REPORT-END
-reboot -f
+sync
+# The image has no reboot command, and init exiting panics the kernel, which can lose the last console lines.
+sleep 0.2
+echo b > /proc/sysrq-trigger
+sleep 5

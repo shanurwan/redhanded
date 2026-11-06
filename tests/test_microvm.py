@@ -90,3 +90,8 @@ def test_data_collection_services_are_high():
 def test_sending_the_machine_name_out_is_high():
     d = decide(Evidence(machine_leaks=["x.attacker.example"]))
     assert d.verdict == Verdict.HIGH and any("machine's name" in r for r in d.reasons)
+
+
+def test_a_package_that_hangs_on_import_goes_to_review():
+    d = decide(Evidence(load_hang=True))
+    assert d.verdict == Verdict.REVIEW and any("never returned" in r for r in d.reasons)
