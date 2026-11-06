@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RedHanded</title>
+<meta name="description" content="Detonate npm dependency changes in a baited gVisor sandbox on Vultr before they merge.">
+<link rel="stylesheet" href="/app.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>RedHanded</div>
+    <div class="status" id="status" aria-live="polite">connecting…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Before you merge, catch it red-handed.</h1>
+    <p>RedHanded runs each changed npm package in a disposable gVisor sandbox on Vultr, baited with fake
+      credentials and wired to a fake internet with no route out. If the code reaches for the bait, the
+      merge is blocked and the evidence comes with it. Fixed rules decide the verdict; the model only explains it.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="replay-h">
+    <div class="panel-head">
+      <h2 id="replay-h">Recorded catches</h2>
+      <p class="hint">Real scans, replayed from the files they wrote. Download the evidence and check it.</p>
+    </div>
+    <div class="replays" id="replays" role="list"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="live-h">
+    <div class="panel-head">
+      <h2 id="live-h">Scan one yourself, live</h2>
+      <p class="hint">Runs now on the Vultr host. One scan at a time, so you may wait in a short queue.</p>
+    </div>
+    <form id="scan-form" class="scan-form" autocomplete="off">
+      <label for="pkg" class="sr">npm package</label>
+      <input id="pkg" name="pkg" placeholder="left-pad or left-pad@1.3.0" spellcheck="false" maxlength="260">
+      <button type="submit">Detonate</button>
+    </form>
+    <div class="zoo-row">
+      <span class="hint">Or a Zoo sample (harmless imitation malware):</span>
+      <div id="zoo" class="chips"></div>
+    </div>
+    <div id="job" class="job" aria-live="polite" hidden></div>
+  </section>
+
+  <section class="panel viewer" id="viewer" aria-live="polite" hidden>
+    <div class="viewer-head">
+      <div>
+        <div class="pkg" id="v-pkg"></div>
+        <div class="mono dim" id="v-integrity"></div>
+      </div>
+      <div class="verdict" id="v-verdict"></div>
+    </div>
+    <div class="contain">
+      <div><b>Sandbox</b> gVisor, own network namespace, in-memory filesystem</div>
+      <div><b>Network</b> only route leads to the sinkhole, which has no route out</div>
+      <div><b>Bait</b> fake npm, GitHub and AWS credentials made for this scan only</div>
+    </div>
+    <ol class="timeline" id="v-timeline"></ol>
+    <div class="explain" id="v-explain" hidden>
+      <div class="explain-label" id="v-explain-label"></div>
+      <p id="v-explain-text"></p>
+    </div>
+    <div class="facts" id="v-facts"></div>
+    <div class="files" id="v-files"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="use-h">
+    <div class="panel-head"><h2 id="use-h">Ask it from your coding agent</h2></div>
+    <p>RedHanded is an MCP server. Add it, and your agent can check a package before it installs it, or a
+      lockfile change before it opens a pull request.</p>
+<pre class="code">{
+  "mcpServers": {
+    "redhanded": { "command": "redhanded", "args": ["mcp"] }
+  }
+}</pre>
+    <p class="hint">Tools: <code>check_package</code>, <code>check_lockfile_change</code>, <code>get_scan_report</code>.</p>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <span>MIT licensed.</span>
+  <a href="https://github.com/shanurwan/redhanded">Source, eval results and how it works</a>
+</footer>
+</body>
+</html>

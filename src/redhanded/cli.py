@@ -167,7 +167,38 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--only", choices=["zoo", "benign"])
     m = sub.add_parser("mcp", help="serve the MCP tools (needs the mcp extra)")
     m.add_argument("--transport", choices=["stdio", "streamable-http"], default="stdio")
+    w = sub.add_parser("web", help="serve the demo site: replays plus live scans")
+    w.add_argument("--host", default="127.0.0.1")
+    w.add_argument("--port", type=int, default=8080)
+    r = sub.add_parser("replay-export", help="turn a recorded scan folder into a replay")
+    r.add_argument("scan_dir")
+    r.add_argument("--out", default="replays")
+    r.add_argument("--title", required=True)
+    r.add_argument("--summary", default="")
+    r.add_argument("--order", type=int, default=99)
+    x = sub.add_parser("explain", help="write explain.json for a scan folder with Vultr Serverless Inference")
+    x.add_argument("scan_dir")
     args = parser.parse_args(argv)
+
+    if args.cmd == "replay-export":
+        from .replay import export
+        print(export(Path(args.scan_dir), Path(args.out), args.title, args.summary, args.order))
+        return 0
+    if args.cmd in ("web", "explain"):
+        load_env(Path(args.env))
+        from .explain import Explainer
+        if args.cmd == "web":
+            from .web import main as web_main
+            web_main(args.host, args.port)
+            return 0
+        explainer = Explainer.from_env()
+        if not explainer:
+            print("redhanded: set VULTR_INFERENCE_API_KEY first", file=sys.stderr)
+            return 2
+        from .web import write_explanation
+        out = write_explanation(Path(args.scan_dir), explainer)
+        print(out)
+        return 0 if out and out.get("text") else 1
 
     if args.cmd == "mcp":
         from .mcp_server import main as mcp_main
