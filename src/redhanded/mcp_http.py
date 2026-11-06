@@ -7,6 +7,7 @@ for someone running their own sandbox host.
 from __future__ import annotations
 
 import json
+import os
 
 from . import __version__
 from .service import INSTRUCTIONS, InputError, validate
@@ -62,7 +63,16 @@ def _call(name: str, args: dict, scanner, who: str) -> dict:
     scanner.wait(job)
     if job.state != "done":
         raise InputError(job.error or "the scan is still running; try again in a minute")
-    return job.result
+    return _with_links(job.result)
+
+
+def _with_links(out: dict) -> dict:
+    """Agents get links they can follow, not paths relative to a page they are not on."""
+    site = os.environ.get("RH_PUBLIC_URL", "").rstrip("/")
+    for r in [out, *out.get("packages", [])]:
+        if r.get("scan_id"):
+            r["url"] = f"{site}/#{r['scan_id']}"
+    return out
 
 
 def handle(msg: dict, scanner, who: str) -> dict | None:

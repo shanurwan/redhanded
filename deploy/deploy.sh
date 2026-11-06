@@ -38,6 +38,7 @@ umask 077
   echo "RH_REPLAYS=/opt/redhanded/app/replays"
   echo "RH_ZOO=/opt/redhanded/app/zoo"
   echo "RH_TRUST_PROXY=1"
+  echo "RH_PUBLIC_URL=https://$SITE"
   echo "RH_FC_BIN=/var/lib/redhanded/bin/firecracker"
   echo "RH_FC_KERNEL=/var/lib/redhanded/vmlinux"
   echo "RH_FC_ROOTFS=/var/lib/redhanded/guest.ext4"
