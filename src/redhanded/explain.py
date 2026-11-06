@@ -15,7 +15,7 @@ import urllib.request
 from typing import Callable
 
 DEFAULT_BASE_URL = "https://api.vultrinference.com/v1"
-DEFAULT_MODEL = "deepseek-v4.1-flash"
+DEFAULT_MODEL = "deepseek-v4.1-flash-1017"
 MAX_FIELD = 300          # characters kept from any package-controlled string
 MAX_ITEMS = 12
 
@@ -78,7 +78,7 @@ class Explainer:
         body = {
             "model": self.model,
             "temperature": 0.2,
-            "max_tokens": 220,
+            "max_tokens": 1000,      # reasoning tokens count against this
             "messages": [
                 {"role": "system", "content": SYSTEM},
                 {"role": "user", "content": "<evidence>\n" + json.dumps(evidence_digest(report), indent=1)
@@ -88,7 +88,10 @@ class Explainer:
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         try:
             out = self._post(f"{self.base_url}/chat/completions", headers, body, self.timeout)
-            text = (out["choices"][0]["message"]["content"] or "").strip()
+            choice = out["choices"][0]
+            if choice.get("finish_reason") == "length":   # half a sentence reads worse than nothing
+                return {"text": None, "model": self.model, "error": "truncated"}
+            text = (choice["message"]["content"] or "").strip()
         except Exception as e:  # an explanation is optional; the verdict never waits on it
             return {"text": None, "model": self.model, "error": type(e).__name__}
         return {"text": text[:1200] or None, "model": self.model}

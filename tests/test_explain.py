@@ -37,6 +37,11 @@ def test_failures_return_no_text_and_never_raise():
     assert Explainer("k", post=lambda *a: {"choices": []}).explain(REPORT)["text"] is None
 
 
+def test_a_truncated_answer_is_not_shown():
+    out = Explainer("k", post=lambda *a: {"choices": [{"finish_reason": "length", "message": {"content": "It ran"}}]}).explain(REPORT)
+    assert out["text"] is None and out["error"] == "truncated"
+
+
 def test_explainer_off_without_a_key(monkeypatch):
     monkeypatch.delenv("VULTR_INFERENCE_API_KEY", raising=False)
     assert Explainer.from_env() is None
