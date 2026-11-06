@@ -27,7 +27,7 @@ function decode(b64) {
 
 function isHarness(argv) {
   const s = argv.join(" ");
-  return s.includes("/work/.rh/load.js") || (/(^| )npm( |$)|\/usr\/local\/bin\/npm/.test(s) && argv.includes("rebuild"));
+  return s.includes("/work/.rh/") || (/(^| )npm( |$)|\/usr\/local\/bin\/npm/.test(s) && argv.includes("rebuild"));
 }
 
 function network(capture) {

@@ -5,7 +5,6 @@ mount -t proc proc /proc
 mount -t sysfs sys /sys
 mount -t devtmpfs dev /dev 2>/dev/null
 mount -t tmpfs tmp /tmp
-hostname dev-laptop
 ip link set lo up
 ip addr add 172.31.255.2/30 dev eth0
 ip link set eth0 up
@@ -17,6 +16,7 @@ mount -o ro /dev/vdb /scan
 cp -a /scan/work/. /work/
 cp -a /scan/home/. /home/dev/
 . /scan/env.sh
+hostname "$HOSTNAME"
 umount /scan
 
 rm -f /sbin/rh-init          # nothing on this machine should say what it is for

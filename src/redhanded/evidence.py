@@ -39,12 +39,22 @@ def _payload(rec: Record) -> bytes:
     return f"{rec.detail}\n{head}\n".encode() + rec.data
 
 
+def contacted(records: list[Record]) -> list[str]:
+    """Every destination that reached the sinkhole, by name. The same measure in both tiers."""
+    hosts = {r.host for r in records if r.host}
+    hosts |= {f"port {r.detail}" for r in records if r.kind == "raw" and not r.host}
+    return sorted(hosts)
+
+
 def build(trace: TraceFacts, records: list[Record], pool: NamePool, tokens: HoneytokenSet,
           home: str, package_root: str, resolver_ip: str) -> Evidence:
     ev = Evidence()
     matcher = Matcher(tokens.values())
+    machine = Matcher({"machine_name": tokens.machine_name}) if tokens.machine_name else None
 
     for rec in records:
+        if machine and (machine.find_dns(rec.host) or machine.find(_payload(rec))):
+            ev.machine_leaks.append(rec.host or f"port {rec.detail}")
         if rec.kind == "dns":
             ev.exfil_matches.extend(m.token for m in matcher.find_dns(rec.host))
         elif rec.kind == "tls":
@@ -78,6 +88,8 @@ def build(trace: TraceFacts, records: list[Record], pool: NamePool, tokens: Hone
     ev.stats = sorted(set(trace.probes))
     ev.execs = list(trace.execs)
 
+    ev.machine_leaks = sorted(set(ev.machine_leaks))
+    ev.connects.extend(contacted(records))
     ev.exfil_matches = sorted(set(ev.exfil_matches))
     ev.token_uses = sorted(set(ev.token_uses))
     ev.connects = sorted(set(ev.connects))

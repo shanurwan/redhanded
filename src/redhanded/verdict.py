@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.1"
+RULES_VERSION = "2026-11-06.2"
 
 
 class Verdict(IntEnum):
@@ -53,6 +53,7 @@ CONTAINER_CHECKS = frozenset({
 class Evidence:
     """Facts collected outside the sandbox for one scan."""
     exfil_matches: list[str] = field(default_factory=list)      # honeytoken names found in outbound traffic
+    machine_leaks: list[str] = field(default_factory=list)      # hosts sent this scan's unique machine name
     token_uses: list[str] = field(default_factory=list)         # stolen token used against fake npm/GitHub APIs
     bait_reads: list[str] = field(default_factory=list)         # bait file paths opened
     connects: list[str] = field(default_factory=list)           # destination hosts or IPs contacted
@@ -73,6 +74,23 @@ class Decision:
     @property
     def label(self) -> str:
         return self.verdict.name
+
+
+# Services that exist to receive callbacks and collect what they are sent.
+COLLECTORS = ("oastify.com", "oast.pro", "oast.live", "oast.site", "oast.online", "oast.fun", "oast.me", "interact.sh",
+              "burpcollaborator.net", "webhook.site", "pipedream.net", "requestbin.net", "requestcatcher.com", "canarytokens.com",
+              "dnslog.cn", "ceye.io", "beeceptor.com", "ngrok.io", "ngrok-free.app", "pinggy.link", "pinggy-free.link", "trycloudflare.com")
+
+
+def _collector(host: str) -> str | None:
+    host = host.lower().rstrip(".")
+    return next((c for c in COLLECTORS if host == c or host.endswith("." + c)), None)
+
+
+def _domain(host: str) -> str:
+    """The name an attacker controls: data smuggled in the left-hand labels changes from run to run."""
+    parts = host.lower().rstrip(".").split(".")
+    return host if host.startswith("port ") or host.replace(".", "").isdigit() or len(parts) < 2 else ".".join(parts[-2:])
 
 
 def _suspicious_exec(argv: list[str], by_runner: bool) -> str | None:
@@ -104,6 +122,11 @@ def decide(ev: Evidence) -> Decision:
         hit(Verdict.CRITICAL, f"honeytoken {name} left the sandbox")
     for svc in sorted(set(ev.token_uses)):
         hit(Verdict.CRITICAL, f"stolen token used against fake {svc}")
+
+    if ev.machine_leaks:
+        hit(Verdict.HIGH, "sent this machine's name to an outside host")
+    for name in sorted({c for c in map(_collector, ev.connects) if c}):
+        hit(Verdict.HIGH, f"contacted a data-collection service ({name})")
 
     risky_connects = sorted({c for c in ev.connects if c not in BENIGN_HOSTS})
     if ev.bait_reads and (ev.connects or ev.exfil_matches):
@@ -140,7 +163,8 @@ def combine_microvm(first: Decision, sandbox: Evidence, second: Decision, microv
     """
     level = max(first.verdict, second.verdict)
     reasons = list(first.reasons) + [f"{r} (in the microVM)" for r in second.reasons]
-    hidden = sorted(set(microvm.connects) - set(sandbox.connects) - BENIGN_HOSTS)
+    seen = {_domain(c) for c in sandbox.connects}
+    hidden = sorted({_domain(c) for c in microvm.connects if c not in BENIGN_HOSTS} - seen)
     hidden += sorted(f"read {p}" for p in set(microvm.bait_reads) - set(sandbox.bait_reads))
     if hidden:
         level = max(level, Verdict.HIGH)

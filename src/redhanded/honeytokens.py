@@ -33,6 +33,7 @@ class HoneytokenSet:
     metadata_access_key_id: str
     metadata_secret: str
     extra: dict[str, str] = field(default_factory=dict)
+    machine_name: str = ""
 
     @classmethod
     def generate(cls, scan_id: str) -> "HoneytokenSet":
@@ -46,6 +47,7 @@ class HoneytokenSet:
             wallet_private_key=secrets.token_hex(32),
             metadata_access_key_id="ASIA" + _rand(_UPPER_ALNUM, 16),
             metadata_secret=_rand(_ALNUM + "/+", 40),
+            machine_name="dev-laptop-" + secrets.token_hex(4),
         )
 
     def values(self) -> dict[str, str]:

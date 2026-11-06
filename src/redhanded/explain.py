@@ -51,7 +51,7 @@ def _clip(value) -> str:
 
 def _is_harness(argv: list[str]) -> bool:
     """RedHanded's own npm rebuild and loader. The model must not read them as the package's doing."""
-    return "/work/.rh/load.js" in argv or ("rebuild" in argv and any(a == "npm" or a.endswith("/npm") for a in argv))
+    return any(a.startswith("/work/.rh/") for a in argv) or ("rebuild" in argv and any(a == "npm" or a.endswith("/npm") for a in argv))
 
 
 def _commands(execs: list) -> list[str]:

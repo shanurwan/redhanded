@@ -24,7 +24,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .evidence import build
+from .evidence import build, contacted
 from .honeytokens import HoneytokenSet
 from .runner import GATEWAY_IP, HOME, METADATA_IP, POOL_NET, RESOLVER_IP, WORK, ScanConfig, ScanError, _spec, _sh, prepare
 from .sinkhole import NamePool, Record
@@ -34,7 +34,6 @@ from .verdict import Decision, Evidence, decide
 TAP = "rhtap0"
 GUEST_MAC = "06:00:AC:1F:FF:02"
 MAX_CONSOLE = 2 << 20
-SCAN_FS_SIZE = "300M"
 BOOT_ARGS = "console=ttyS0 quiet reboot=k panic=1 pci=off ip=off init=/sbin/rh-init"
 
 
@@ -63,13 +62,6 @@ def parse_console(text: str) -> tuple[list[str], list[str], bool]:
         elif line == "RH-REPORT-END":
             finished = True
     return writes, reads, finished
-
-
-def contacted(records: list[Record]) -> list[str]:
-    """No connect() log from a guest, so destinations come from what reached the sinkhole."""
-    hosts = {r.host for r in records if r.host}
-    hosts |= {f"port {r.detail}" for r in records if r.kind == "raw" and not r.host}
-    return sorted(hosts)
 
 
 def _env_file(scan: Path, name: str, tokens: HoneytokenSet) -> None:
@@ -148,14 +140,15 @@ def inner(scan: Path, deadline_s: float) -> int:
     return 0 if not result["errors"] else 1
 
 
-def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfig) -> MicroVMResult:
+def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfig, deps: Path | None = None) -> MicroVMResult:
     started = time.monotonic()
     tokens = HoneytokenSet.generate(scan.parent.name + "-microvm")
-    prepare(scan, name, version, tarball, tokens, cfg.fc_rootfs)
+    prepare(scan, name, version, tarball, tokens, cfg.fc_rootfs, deps)
     _build_scan_drive(scan)
     _env_file(scan, name, tokens)
+    used = sum(f.stat().st_size for f in (scan / "scan-fs").rglob("*") if f.is_file() and not f.is_symlink())
     subprocess.run(["mke2fs", "-q", "-F", "-t", "ext4", "-d", str(scan / "scan-fs"), str(scan / "scan.ext4"),
-                    SCAN_FS_SIZE], check=True, capture_output=True, timeout=60)
+                    f"{(used >> 20) * 2 + 300}M"], check=True, capture_output=True, timeout=120)
     subprocess.run(["cp", "--sparse=always", cfg.fc_rootfs, str(scan / "root.ext4")],
                    check=True, capture_output=True, timeout=60)
     (scan / "fc.json").write_text(json.dumps({
@@ -185,7 +178,6 @@ def detonate(name: str, version: str, tarball: bytes, scan: Path, cfg: ScanConfi
     records = [Record.from_json(l) for l in cap.read_text().splitlines()] if cap.exists() else []
     ev = build(TraceFacts(opened=reads, writes=writes), records, NamePool.from_records(records), tokens, HOME,
                f"{WORK}/node_modules/{name}", RESOLVER_IP)
-    ev.connects = contacted(records)
     ev.deadline_killed = bool(result.get("deadline_killed"))
     ev.incomplete.extend(result.get("errors", []))
     if not finished and not ev.deadline_killed:

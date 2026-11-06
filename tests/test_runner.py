@@ -74,3 +74,42 @@ def test_prepare_lays_out_scan(tmp_path):
     assert env["npm_config_userconfig"] == "/dev/null" and env["AWS_ACCESS_KEY_ID"] == tokens.aws_access_key_id
     assert spec["linux"]["namespaces"][-1]["type"] == "network"
     assert json.loads((tmp_path / "metadata.json").read_text())["AccessKeyId"] == tokens.metadata_access_key_id
+
+
+def _tgz(manifest):
+    import io, json, tarfile
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        data = json.dumps(manifest).encode()
+        info = tarfile.TarInfo("package/package.json")
+        info.size = len(data)
+        tar.addfile(info, io.BytesIO(data))
+    return buf.getvalue()
+
+
+def test_fetch_deps_never_passes_on_git_url_or_file_specs(tmp_path):
+    import json
+    from redhanded import runner
+    root = tmp_path / "rootfs"
+    (root / "usr/local/bin").mkdir(parents=True)
+    (root / "usr/local/lib/node_modules/npm/bin").mkdir(parents=True)
+    (root / "usr/local/bin/node").write_text("")
+    (root / "usr/local/lib/node_modules/npm/bin/npm-cli.js").write_text("")
+    tgz = _tgz({"name": "x", "version": "1.0.0", "dependencies": {
+        "ok": "^1.2.3", "gitdep": "git+https://example.invalid/a.git", "urldep": "https://example.invalid/a.tgz",
+        "filedep": "file:../a", "alias": "npm:evil@1.0.0", "Bad Name": "1.0.0"}})
+    calls = []
+    real = runner.subprocess.run
+    runner.subprocess.run = lambda *a, **k: calls.append(k) or type("P", (), {"returncode": 0})()
+    try:
+        note = runner.fetch_deps(tgz, tmp_path / "d", str(root), "http://unused")
+    finally:
+        runner.subprocess.run = real
+    assert json.loads((tmp_path / "d/package.json").read_text())["dependencies"] == {"ok": "^1.2.3"}
+    assert calls[0]["env"]["npm_config_ignore_scripts"] == "true" and "NPM_TOKEN" not in calls[0]["env"]
+    assert "1 dependencies" in note
+
+
+def test_fetch_deps_without_npm_just_says_so(tmp_path):
+    from redhanded.runner import fetch_deps
+    assert fetch_deps(_tgz({"name": "x", "version": "1.0.0"}), tmp_path / "d", str(tmp_path), "http://unused") == "no npm available"

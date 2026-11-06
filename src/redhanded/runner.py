@@ -15,6 +15,7 @@ import io
 import json
 import os
 import posixpath
+import re
 import shutil
 import signal
 import subprocess
@@ -44,6 +45,9 @@ WORK = "/work"
 MAX_TARBALL = 50 << 20
 MAX_UNPACKED = 200 << 20
 MAX_FILES = 20_000
+MAX_DEPS = 400 << 20
+_PLAIN_RANGE = re.compile(r"^[\^~<>=* ]*[0-9x*][0-9A-Za-z.\-+* |<>=^~]*$|^latest$|^\*$")
+_PLAIN_NAME = re.compile(r"^(?:@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$")
 
 _HARNESS = """\
 cd /work
@@ -55,11 +59,44 @@ node /work/.rh/load.js "$RH_PACKAGE"
 echo "== exit $?"
 """
 _LOADER = """\
-// Load the package the way an application would, so import-time code runs.
+// Use the package the way an application would, so code behind an import or a call runs.
+const { spawnSync } = require("child_process");
+const path = require("path");
 const name = process.argv[2];
-try { require(name); console.log("loaded"); }
-catch (e) { console.log("load failed: " + (e && e.code || e)); }
-setTimeout(() => process.exit(0), 3000);   // give timers and pending sockets a moment
+const root = path.join("/work/node_modules", name);
+spawnSync(process.execPath, ["/work/.rh/exercise.js", name], { stdio: "inherit", timeout: 8000 });
+let pkg = {};
+try { pkg = require(path.join(root, "package.json")); } catch (e) {}
+const bins = typeof pkg.bin === "string" ? [pkg.bin] : Object.values(pkg.bin || {});
+for (const bin of bins.slice(0, 3)) {
+  spawnSync(process.execPath, [path.join(root, String(bin)), "--help"], { stdio: "inherit", timeout: 4000 });
+}
+"""
+_EXERCISER = """\
+const name = process.argv[2];
+process.on("uncaughtException", () => {});
+process.on("unhandledRejection", () => {});
+function exercise(mod) {
+  const seen = new Set();
+  const call = (fn) => { try { const r = fn(); if (r && r.catch) r.catch(() => {}); } catch (e) {} };
+  const targets = typeof mod === "function" ? [mod] : [];
+  for (const key of Object.keys(mod || {}).slice(0, 40)) {
+    let v; try { v = mod[key]; } catch (e) { continue; }
+    if (typeof v === "function" && !seen.has(v)) { seen.add(v); targets.push(v); }
+  }
+  targets.forEach(call);
+  console.log("exercised " + targets.length);
+}
+(async () => {
+  let mod;
+  try { mod = require(name); console.log("loaded"); }
+  catch (e) {
+    try { mod = await import(name); console.log("loaded"); }
+    catch (e2) { console.log("load failed: " + (e2 && e2.code || e2)); }
+  }
+  if (mod) exercise(mod);
+  setTimeout(() => process.exit(0), 3000);   // give timers and pending sockets a moment
+})();
 """
 
 
@@ -157,6 +194,7 @@ def _spec(scan: Path, name: str, tokens: HoneytokenSet) -> dict:
         "HOME": HOME,
         "USER": "dev",
         "RH_PACKAGE": name,
+        "HOSTNAME": tokens.machine_name or "dev-laptop",
         "CI": "true",
         "npm_config_cache": f"{HOME}/.npm",
         "npm_config_userconfig": "/dev/null",   # npm itself never reads the bait .npmrc
@@ -179,7 +217,7 @@ def _spec(scan: Path, name: str, tokens: HoneytokenSet) -> dict:
             "noNewPrivileges": True,
         },
         "root": {"path": "", "readonly": False},      # set by prepare()
-        "hostname": "dev-laptop",
+        "hostname": tokens.machine_name or "dev-laptop",
         "mounts": [
             {"destination": "/proc", "type": "proc", "source": "proc"},
             {"destination": "/dev", "type": "tmpfs", "source": "tmpfs", "options": ["nosuid", "mode=755"]},
@@ -195,7 +233,46 @@ def _spec(scan: Path, name: str, tokens: HoneytokenSet) -> dict:
     }
 
 
-def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: HoneytokenSet, rootfs: str) -> None:
+def fetch_deps(tarball: bytes, into: Path, rootfs: str, registry: str, timeout: float = 150.0) -> str:
+    """The package's registry dependencies, fetched outside the sandbox with scripts off.
+
+    Scanned alone, real malware dies on `Cannot find module 'axios'` before it does anything.
+    Only plain version ranges are kept: no git, URL, file or alias specs. Returns a short note.
+    """
+    node = Path(rootfs) / "usr/local/bin/node"
+    cli = Path(rootfs) / "usr/local/lib/node_modules/npm/bin/npm-cli.js"
+    if not (node.is_file() and cli.is_file()):
+        return "no npm available"
+    try:
+        with tarfile.open(fileobj=io.BytesIO(tarball), mode="r:gz") as tar:
+            member = next((m for m in tar if m.isfile() and m.name.count("/") == 1 and m.name.endswith("/package.json")), None)
+            manifest = json.loads(tar.extractfile(member).read()) if member else {}
+    except (tarfile.TarError, OSError, ValueError, EOFError):
+        return "unreadable manifest"
+    wanted = {k: v for k, v in (manifest.get("dependencies") or {}).items()
+              if isinstance(v, str) and _PLAIN_RANGE.match(v) and _PLAIN_NAME.match(k)}
+    if not wanted:
+        return "no dependencies"
+    into.mkdir(parents=True, exist_ok=True)
+    (into / "package.json").write_text(json.dumps({"name": "rh-deps", "version": "0.0.0", "private": True, "dependencies": wanted}))
+    env = {"PATH": "/usr/bin:/bin", "HOME": str(into), "npm_config_cache": str(into / ".npm"), "npm_config_registry": registry,
+           "npm_config_ignore_scripts": "true", "npm_config_update_notifier": "false"}
+    try:
+        p = subprocess.run([str(node), str(cli), "install", "--ignore-scripts", "--omit=dev", "--omit=optional", "--omit=peer", "--no-audit",
+                            "--no-fund", "--no-package-lock", "--loglevel=error"],
+                           cwd=into, env=env, capture_output=True, timeout=timeout)
+    except (subprocess.TimeoutExpired, OSError):
+        shutil.rmtree(into / "node_modules", ignore_errors=True)
+        return "dependency fetch timed out"
+    shutil.rmtree(into / ".npm", ignore_errors=True)
+    size = sum(f.stat().st_size for f in (into / "node_modules").rglob("*") if f.is_file() and not f.is_symlink()) if (into / "node_modules").is_dir() else 0
+    if size > MAX_DEPS:
+        shutil.rmtree(into / "node_modules", ignore_errors=True)
+        return "dependencies over the size limit"
+    return f"{len(wanted)} dependencies fetched" if p.returncode == 0 else "some dependencies unavailable"
+
+
+def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: HoneytokenSet, rootfs: str, deps: Path | None = None) -> None:
     for d in ("home", "work/node_modules", "work/.rh", "bundle", "log", "state"):
         (scan / d).mkdir(parents=True, exist_ok=True)
     safe_unpack(tarball, scan / "work" / "node_modules" / name)
@@ -203,6 +280,18 @@ def prepare(scan: Path, name: str, version: str, tarball: bytes, tokens: Honeyto
         {"name": "rh-scan", "version": "0.0.0", "private": True, "dependencies": {name: version}}))
     (scan / "work" / ".rh" / "run.sh").write_text(_HARNESS)
     (scan / "work" / ".rh" / "load.js").write_text(_LOADER)
+    (scan / "work" / ".rh" / "exercise.js").write_text(_EXERCISER)
+    if deps and (deps / "node_modules").is_dir():
+        # cp, not move: the second tier uses the same tree. Never over the package under test.
+        for entry in (deps / "node_modules").iterdir():
+            target = scan / "work" / "node_modules" / entry.name
+            if entry.name.startswith("@"):
+                target.mkdir(exist_ok=True)
+                for sub_entry in entry.iterdir():
+                    if not (target / sub_entry.name).exists():
+                        subprocess.run(["cp", "-a", str(sub_entry), str(target)], check=False, capture_output=True, timeout=120)
+            elif not target.exists():
+                subprocess.run(["cp", "-a", str(entry), str(target)], check=False, capture_output=True, timeout=120)
     (scan / "resolv.conf").write_text(f"nameserver {RESOLVER_IP}\n")
     tokens.plant(scan / "home")
     (scan / "metadata.json").write_text(json.dumps(tokens.metadata_credentials()))
@@ -352,7 +441,9 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
     scan_id = f"rh-{time.strftime('%Y%m%d-%H%M%S')}-{os.urandom(3).hex()}"
     scan_dir = Path(cfg.scans_dir) / scan_id
     tokens = HoneytokenSet.generate(scan_id)
-    prepare(scan_dir, name, version, tarball, tokens, cfg.rootfs)
+    deps = scan_dir / "deps"
+    deps_note = fetch_deps(tarball, deps, cfg.rootfs, cfg.registry)
+    prepare(scan_dir, name, version, tarball, tokens, cfg.rootfs, deps)
 
     env = dict(os.environ, PYTHONPATH=os.pathsep.join(p for p in sys.path if p))
     inner_cmd = ["unshare", "-rn", sys.executable, "-m", "redhanded.runner", "inner",
@@ -384,7 +475,7 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
     # would miss the simplest evader. Every package runs twice unless it is already blocked.
     if decision.verdict < Verdict.HIGH and not ev.deadline_killed and cfg.microvm_ready():
         from . import microvm as tier2
-        second = tier2.detonate(name, version, tarball, scan_dir / "microvm", cfg)
+        second = tier2.detonate(name, version, tarball, scan_dir / "microvm", cfg, deps)
         decision = combine_microvm(decision, ev, second.decision, second.evidence)
         microvm = second.summary()
     if cfg.text_reviewer and cfg.text_reviewer(read_package_text(scan_dir / "work" / "node_modules" / name)):
@@ -396,7 +487,7 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         seconds=round(time.monotonic() - started, 2),
         evidence={k: v for k, v in asdict(ev).items() if k != "stats"} | {"stats_count": len(ev.stats)},
         sandbox={**inner_result, "syscall_lines": trace.lines, "unparsed": trace.unparsed,
-                 "sinkhole_records": len(records)},
+                 "sinkhole_records": len(records), "dependencies": deps_note},
         microvm=microvm,
     )
     (scan_dir / "report.json").write_text(json.dumps(asdict(report), indent=1))

@@ -1,4 +1,5 @@
-from redhanded.microvm import contacted, parse_console
+from redhanded.evidence import contacted
+from redhanded.microvm import parse_console
 from redhanded.runner import ScanConfig
 from redhanded.sinkhole import Record
 from redhanded.verdict import Evidence, Verdict, combine_microvm, decide
@@ -30,7 +31,7 @@ def test_doing_in_the_microvm_what_it_hid_from_the_sandbox_is_high():
     microvm = Evidence(connects=["c2.rh-zoo.invalid"])
     out = combine_microvm(first, sandbox, decide(microvm), microvm)
     assert out.verdict == Verdict.HIGH
-    assert any("hid this from the sandbox: c2.rh-zoo.invalid" in r for r in out.reasons)
+    assert any("hid this from the sandbox: rh-zoo.invalid" in r for r in out.reasons)
 
 
 def test_reading_bait_only_in_the_microvm_counts_as_hiding():
@@ -64,3 +65,28 @@ def test_microvm_tier_is_off_without_its_files(monkeypatch):
     for k in ("RH_FC_BIN", "RH_FC_KERNEL", "RH_FC_ROOTFS"):
         monkeypatch.delenv(k, raising=False)
     assert ScanConfig().microvm_ready() is False
+
+
+def test_data_smuggled_in_dns_labels_is_not_hiding_when_the_domain_was_seen():
+    sandbox = Evidence(connects=["abc123.collector.example"], stats=["/.dockerenv"])
+    microvm = Evidence(connects=["def456.collector.example"])
+    out = combine_microvm(decide(sandbox), sandbox, decide(microvm), microvm)
+    assert not any("hid this" in r for r in out.reasons)
+
+
+def test_a_domain_seen_only_in_the_microvm_is_hiding():
+    sandbox = Evidence(stats=["/.dockerenv"])
+    microvm = Evidence(connects=["a.c2.example"])
+    out = combine_microvm(decide(sandbox), sandbox, decide(microvm), microvm)
+    assert any("hid this from the sandbox: c2.example" in r for r in out.reasons)
+
+
+def test_data_collection_services_are_high():
+    d = decide(Evidence(connects=["x1y2z3.oastify.com"]))
+    assert d.verdict == Verdict.HIGH and any("oastify.com" in r for r in d.reasons)
+    assert decide(Evidence(connects=["notoastify.com"])).verdict == Verdict.REVIEW
+
+
+def test_sending_the_machine_name_out_is_high():
+    d = decide(Evidence(machine_leaks=["x.attacker.example"]))
+    assert d.verdict == Verdict.HIGH and any("machine's name" in r for r in d.reasons)
