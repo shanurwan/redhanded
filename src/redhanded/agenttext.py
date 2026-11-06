@@ -33,7 +33,7 @@ def read_package_text(package_dir: Path) -> str:
     if manifest.is_file():
         try:
             m = json.loads(manifest.read_text(encoding="utf-8", errors="replace"))
-            parts.append(json.dumps({k: m.get(k) for k in ("description", "keywords", "scripts") if m.get(k)}))
+            parts.append(json.dumps({k: m.get(k) for k in ("description", "keywords") if m.get(k)}))
         except ValueError:
             pass
     for path in sorted(package_dir.iterdir()) if package_dir.is_dir() else []:
