@@ -97,6 +97,7 @@ h3 { font-size: 16px; font-weight: 600; }
 .bar i { display: block; height: 10px; border-radius: 3px; background: var(--line-2); min-width: 2px; }
 .bar b { font: 500 13.5px var(--mono); text-align: right; }
 .bar.CRITICAL i { background: var(--red); } .bar.HIGH i { background: #ff8e8f; } .bar.REVIEW i { background: var(--amber); } .bar.CLEAN i { background: var(--faint); }
+.sweep-note { margin: 16px 0 0; color: var(--muted); font-size: 15px; max-width: 70ch; }
 .note { font-size: 13.5px; color: var(--faint); margin: 14px 0 0; }
 
 .scan-form { display: flex; gap: 10px; }

@@ -102,8 +102,12 @@ How to read these numbers:
 
 - Some of the 131 misses are limits of replaying old attacks: payloads that delete themselves or depend on downloads and packages that no longer exist, for example the axios payload `plain-crypto-js`, whose `setup.js` is absent from the dataset's copy. Others are real gaps: code that only fires on Windows, or only when called in a specific way. [`evals/real-malware.json`](evals/real-malware.json) sorts them by cause, automatically and approximately.
 - The dataset leans toward what Datadog's own rules flag, so it is not a sample of all npm malware.
-- After this run, one rule changed: inline code alone now goes to review, because scanning new npm releases showed ordinary packages doing it. No held-out result relied on it alone, so these numbers are unchanged.
+- After this run, two rules changed, because scanning new npm releases showed ordinary packages tripping them: inline code alone, and reading only `.npmrc`, now go to review. No blocked held-out result relied on either alone, so these numbers are unchanged.
 - The second tier found nothing the first had missed on these samples. The rule that flags what a package hid from gVisor has fired only on our own Zoo sample.
+
+### False alarms on live npm
+
+681 new npm releases, scanned as they were published. Under the current rules 6 were blocked (0.9%), and 6 of the 112 with an install script. Checked by hand, these are aggressive installers rather than confirmed malware: telemetry carrying the machine name, shell profile edits, downloads with curl, using a GitHub token without asking. Relaxing the rule for curl alone would remove 2 of the 6 and lose 29 of the 139 held-out catches, so it stays. No malware has been found this way so far.
 
 ### False alarms and the Zoo
 

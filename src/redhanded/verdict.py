@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.4"
+RULES_VERSION = "2026-11-06.5"
 
 
 class Verdict(IntEnum):
@@ -131,7 +131,9 @@ def decide(ev: Evidence) -> Decision:
 
     risky_connects = sorted({c for c in ev.connects if c not in BENIGN_HOSTS})
     if ev.bait_reads and (ev.connects or ev.exfil_matches):
-        hit(Verdict.HIGH, f"read bait ({', '.join(sorted(set(ev.bait_reads)))}) and attempted network access")
+        # npm tooling reads .npmrc as a matter of course, so reading only that is worth a look, not a block.
+        only_npmrc = all(p.endswith("/.npmrc") for p in ev.bait_reads) and not ev.exfil_matches
+        hit(Verdict.REVIEW if only_npmrc else Verdict.HIGH, f"read bait ({', '.join(sorted(set(ev.bait_reads)))}) and attempted network access")
     for argv, by_runner in ev.execs:
         why = _suspicious_exec(argv, by_runner)
         if why:

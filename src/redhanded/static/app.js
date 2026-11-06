@@ -170,6 +170,10 @@ function renderResults(res) {
        (l) => l.split(":")[0]);
   bars($("res-misses"), (res.misses || []).map((m) => [m.cause, m.count]));
   $("res-note").textContent = res.note || "";
+  if (res.sweep && res.sweep.note) {
+    $("res-sweep").textContent = `On live npm: ${res.sweep.scanned.toLocaleString()} new releases scanned, ${res.sweep.blocked} blocked. ${res.sweep.note}`;
+    $("res-sweep").hidden = false;
+  }
   $("results").hidden = false;
 }
 function renderIncidents(list) {

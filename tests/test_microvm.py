@@ -95,3 +95,9 @@ def test_sending_the_machine_name_out_is_high():
 def test_a_package_that_hangs_on_import_goes_to_review():
     d = decide(Evidence(load_hang=True))
     assert d.verdict == Verdict.REVIEW and any("never returned" in r for r in d.reasons)
+
+
+def test_reading_only_npmrc_goes_to_review_unless_something_left():
+    assert decide(Evidence(bait_reads=["/home/dev/.npmrc"], connects=["a.example"])).verdict == Verdict.REVIEW
+    assert decide(Evidence(bait_reads=["/home/dev/.aws/credentials"], connects=["a.example"])).verdict == Verdict.HIGH
+    assert decide(Evidence(bait_reads=["/home/dev/.npmrc"], exfil_matches=["npm_token"])).verdict == Verdict.CRITICAL
