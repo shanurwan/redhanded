@@ -363,7 +363,8 @@ def inner(scan: Path, runsc: str, deadline_s: float) -> int:
         sink = subprocess.Popen([*ns, sys.executable, "-m", "redhanded.sinkhole",
                                  "--capture", str(scan / "capture.jsonl"),
                                  "--metadata", str(scan / "metadata.json"), "--ready", str(ready),
-                                 *(["--tls-dir", str(scan / "tls")] if (scan / "tls").is_dir() else [])],
+                                 *(["--tls-dir", str(scan / "tls")] if (scan / "tls").is_dir() else []),
+                                 *(["--mirror", os.environ["RH_MIRROR"]] if os.environ.get("RH_MIRROR") else [])],
                                 stdout=open(scan / "log" / "sinkhole.out", "wb"), stderr=subprocess.STDOUT)
         for _ in range(250):
             if ready.exists():

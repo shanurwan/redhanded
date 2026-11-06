@@ -213,3 +213,15 @@ def test_a_client_that_rejects_our_certificate_still_leaves_its_server_name(tmp_
         return cap
 
     assert any(r.kind == "tls" and r.host == "pinned.example.invalid" for r in asyncio.run(run()).records)
+
+
+def test_only_the_named_real_download_is_served(tmp_path):
+    from redhanded.sinkhole import mirrored_file
+    (tmp_path / "bun-linux-x64.zip").write_bytes(b"PK")
+    line = "GET /oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64.zip"
+    assert mirrored_file("github.com", line, str(tmp_path)).name == "bun-linux-x64.zip"
+    assert mirrored_file("github.com:443", line, str(tmp_path)) is not None
+    assert mirrored_file("evil.example", line, str(tmp_path)) is None
+    assert mirrored_file("github.com", "GET /oven-sh/bun/releases/download/bun-v1.3.13/../../secret.zip", str(tmp_path)) is None
+    assert mirrored_file("github.com", line, None) is None
+    assert mirrored_file("github.com", line.replace("x64.zip", "x64-baseline.zip"), str(tmp_path)) is None

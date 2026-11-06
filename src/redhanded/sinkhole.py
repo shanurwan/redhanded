@@ -212,6 +212,19 @@ _FAKE_API = {("api.github.com", "GET /user"): b'{"login":"dev-user","id":4242,"t
              ("github.com", "GET /user"): b'{"login":"dev-user","id":4242}'}
 
 
+# Real downloads the fake internet can answer, because attacks stop without them. The 2026 npm
+# worms fetch Bun from GitHub to run their payload, and quit without acting if the fetch fails.
+_MIRRORED = re.compile(r"^GET /oven-sh/bun/releases/download/bun-v[0-9.]+/(bun-linux-x64(?:-baseline)?)\.zip$")
+
+
+def mirrored_file(host: str, line: str, mirror: str | None) -> Path | None:
+    if not mirror or host.split(":", 1)[0] not in ("github.com", "objects.githubusercontent.com"):
+        return None
+    m = _MIRRORED.match(line)
+    path = Path(mirror) / f"{m.group(1)}.zip" if m else None
+    return path if path and path.is_file() else None
+
+
 def make_ca(directory: Path) -> Path:
     """A root certificate for one scan. Its key never enters the sandbox."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -306,8 +319,9 @@ class _TlsStream:
 
 class Sinkhole:
     def __init__(self, capture: Capture, pool: NamePool | None = None, metadata: dict | None = None,
-                 forge: "CertForge | None" = None):
+                 forge: "CertForge | None" = None, mirror: str | None = None):
         self.capture = capture
+        self.mirror = mirror
         self.forge = forge            # with it, HTTPS is answered and read instead of closed
         self.pool = pool or NamePool()
         self.metadata = metadata      # decoy cloud credentials served at the metadata address
@@ -324,8 +338,10 @@ class Sinkhole:
         line, headers, body = await _read_http(first, reader)
         host = headers.get("host", "") or default_host
         self.capture.add(Record("http", time.time(), peer, host, line, headers, body))
-        reply = self._http_body(host, line)
-        await send(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+        real = mirrored_file(host, line, self.mirror)
+        reply = real.read_bytes() if real else self._http_body(host, line)
+        kind = b"application/zip" if real else b"application/json"
+        await send(b"HTTP/1.1 200 OK\r\nContent-Type: " + kind + b"\r\nContent-Length: "
                    + str(len(reply)).encode() + b"\r\nConnection: close\r\n\r\n" + reply)
 
     async def _on_tcp(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -397,6 +413,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dns-host", default="10.66.0.1")
     p.add_argument("--metadata", help="JSON file with decoy cloud credentials")
     p.add_argument("--ready", help="file to create once listening")
+    p.add_argument("--mirror", help="folder of real downloads the fake internet may serve")
     p.add_argument("--tls-dir", help="folder with this scan's root certificate; answers HTTPS when given")
     args = p.parse_args(argv)
 
@@ -413,7 +430,7 @@ def main(argv: list[str] | None = None) -> int:
                 forge = CertForge(args.tls_dir)
             except (subprocess.SubprocessError, OSError, ssl.SSLError):
                 forge = None     # HTTPS falls back to server names only
-        sink = Sinkhole(capture, metadata=metadata, forge=forge)
+        sink = Sinkhole(capture, metadata=metadata, forge=forge, mirror=args.mirror)
         await sink.start(args.host, 53, DEFAULT_TCP_PORTS, dns_host=args.dns_host)
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()
