@@ -24,7 +24,7 @@ from pathlib import Path
 
 from .explain import DEFAULT_BASE_URL, DEFAULT_MODEL, Post, _post
 from .runner import ScanConfig, ScanError, detonate
-from .verdict import AI_BYPASS_FLAGS, Decision, Evidence, Verdict, decide
+from .verdict import AI_BYPASS_FLAGS, TOOLCHAIN_PREFIXES, Decision, Evidence, Verdict, decide
 
 MODEL_HOST = "api.vultrinference.com"
 MAX_FILES = 200
@@ -195,15 +195,35 @@ def read_transcript(path: Path) -> list[dict]:
     return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines()][:30] if path.is_file() else []
 
 
-def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None) -> Decision:
+_HOST_IN_TEXT = re.compile(r"\b((?:[a-z0-9-]+\.)+[a-z]{2,})\b", re.I)
+
+
+def declared_hosts(files: dict[str, str]) -> frozenset[str]:
+    """Hosts the skill's own files name. Using a service it says it uses is the skill working."""
+    return frozenset(m.lower() for text in files.values() for m in _HOST_IN_TEXT.findall(text))
+
+
+def _named_by_skill(host: str, declared: frozenset[str]) -> bool:
+    parts = host.lower().split(".")
+    return any(".".join(parts[i:]) in declared for i in range(len(parts) - 1))
+
+
+def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None, declared: frozenset[str] = frozenset()) -> Decision:
     """The package rules, without the ones an agent trips by working normally."""
-    # An unattended agent told to set a skill up goes looking for the API key it needs, so a read
-    # alone is worth a person's look. What blocks is the credential leaving, which stays CRITICAL.
-    # npm reads .npmrc for itself on any install, so that says nothing at all.
+    # An unattended agent told to set a skill up goes looking for the API key it needs, and reading
+    # .env is the first place it looks, so that says nothing. Other credential files go to a person.
+    # What blocks is a credential going somewhere it does not belong, which stays CRITICAL.
+    # npm reads .npmrc for itself on any install. Installing tools globally is what agents do.
     outside_hosts = [c for c in ev.connects if c not in PACKAGE_HOSTS]
-    reads = sorted(p for p in ev.bait_reads if not p.endswith("/.npmrc"))
+    unnamed_hosts = [c for c in outside_hosts if not _named_by_skill(c, declared)]
+    reads = sorted(p for p in ev.bait_reads if not p.endswith(("/.npmrc", "/.env")))
     bypassed = [c for c in ev.ai_tool_calls if any(f in c for f in AI_BYPASS_FLAGS)]    # a search of the disk opens the stubs too
-    base = decide(dataclasses.replace(ev, execs=[], connects=outside_hosts, bait_reads=[], ai_tool_calls=bypassed))
+    def belongs(token: str) -> bool:
+        hosts = ev.exfil_to.get(token)
+        return bool(hosts) and all(h in PACKAGE_HOSTS for h in hosts)
+    stolen = [t for t in ev.exfil_matches if not belongs(t)]
+    writes = [p for p in ev.writes if not p.startswith(TOOLCHAIN_PREFIXES) and "/.github/workflows" not in p]
+    base = decide(dataclasses.replace(ev, execs=[], connects=unnamed_hosts, bait_reads=[], ai_tool_calls=bypassed, exfil_matches=stolen, token_uses=[], writes=writes))
     level, reasons = base.verdict, list(base.reasons)
 
     def hit(v: Verdict, why: str) -> None:
@@ -215,6 +235,10 @@ def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None
         hit(Verdict.HIGH, f"changed the agent's own instructions or memory ({path})")
     if any("/.agents/skills/" in p and not p.startswith(ev.skill_root) for p in ev.writes if ev.skill_root):
         hit(Verdict.HIGH, "installed another skill for the agent")
+    for service in sorted(set(ev.token_uses)):
+        hit(Verdict.REVIEW, f"the agent used a credential it found with {service}")
+    if any("/.github/workflows" in p for p in ev.writes):
+        hit(Verdict.REVIEW, "the agent changed a CI workflow")
     if reads:
         hit(Verdict.REVIEW, f"the agent read credentials while using this skill ({', '.join(reads)[:160]})")
     outside = outside_hosts
@@ -235,8 +259,10 @@ def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None
 class DecoyAgent:
     """Everything a package scan does differently when the thing under test is a skill."""
 
-    def __init__(self, name: str, description: str, api_key: str, base_url: str = DEFAULT_BASE_URL, model: str = DEFAULT_MODEL, post: Post = _post):
+    def __init__(self, name: str, description: str, api_key: str, base_url: str = DEFAULT_BASE_URL, model: str = DEFAULT_MODEL, post: Post = _post,
+                 declared: frozenset[str] = frozenset()):
         self.name, self.description, self.api_key, self.base_url, self.model, self._post = name, description, api_key, base_url, model, post
+        self.declared = declared
         self.canaries: dict[str, str] = {}
         self._gateways: dict[str, ModelGateway] = {}
 
@@ -278,7 +304,7 @@ class DecoyAgent:
         ev.skill_root = f"/home/dev/.agents/skills/{self.name}/"
 
     def decide(self, ev: Evidence, scan: Path) -> Decision:
-        return decide_skill(ev, read_transcript(scan / "agent.jsonl"), self.canaries.get(str(scan)))
+        return decide_skill(ev, read_transcript(scan / "agent.jsonl"), self.canaries.get(str(scan)), self.declared)
 
     def combine(self, first: Decision, sandbox: Evidence, second: Decision, microvm: Evidence) -> Decision:
         """Two independent runs of an agent. They may differ with no one hiding anything."""
@@ -300,7 +326,7 @@ def check_skill(files: dict[str, str], cfg: ScanConfig, cache=None, api_key: str
     if hit:
         return hit | {"cached": True}
     version = "skill-" + hashlib.sha256(integrity.encode()).hexdigest()[:12]
-    mode = DecoyAgent(name, description, key, os.environ.get("VULTR_INFERENCE_BASE_URL", DEFAULT_BASE_URL), os.environ.get("VULTR_INFERENCE_MODEL", DEFAULT_MODEL), post)
+    mode = DecoyAgent(name, description, key, os.environ.get("VULTR_INFERENCE_BASE_URL", DEFAULT_BASE_URL), os.environ.get("VULTR_INFERENCE_MODEL", DEFAULT_MODEL), post, declared_hosts(files))
     report = detonate(name, version, tarball, integrity, dataclasses.replace(cfg, deadline_s=DEADLINE_S, text_reviewer=None), mode=mode)
     if cache:
         cache.put(report)

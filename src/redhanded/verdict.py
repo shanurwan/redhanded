@@ -13,7 +13,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.7"
+RULES_VERSION = "2026-11-06.8"
 
 
 class Verdict(IntEnum):
@@ -68,6 +68,7 @@ class Evidence:
     load_hang: bool = False                                     # importing it never returned
     probe_flags: list[str] = field(default_factory=list)        # e.g. "obfuscated-eval" from probes
     ai_tool_calls: list[str] = field(default_factory=list)      # the machine's AI coding tools, as the code called them
+    exfil_to: dict[str, list[str]] = field(default_factory=dict)  # honeytoken name -> hosts it was sent to
     http_requests: list[str] = field(default_factory=list)      # host and request line, for rules that need the path
     skill_root: str = ""                                        # where the skill under test lives, if it is a skill
 
@@ -154,6 +155,8 @@ def decide(ev: Evidence) -> Decision:
             # npm releases showed it, and no held-out attack was blocked by this rule alone.
             hit(Verdict.REVIEW if why.startswith("ran inline code") else Verdict.HIGH, why)
     for path in sorted(set(ev.writes)):
+        if path.endswith(".sample"):     # git writes these on every clone, and they never run
+            continue
         if any(path.endswith(s) or s + "/" in path for s in PERSISTENCE_SUFFIXES):
             hit(Verdict.HIGH, f"wrote persistence path {path}")
         elif path.startswith(TOOLCHAIN_PREFIXES):

@@ -68,7 +68,10 @@ def build(trace: TraceFacts, records: list[Record], pool: NamePool, tokens: Hone
             used = {m.token for m in matcher.find(auth)} if service else set()
             if used:
                 ev.token_uses.append(service)
-            ev.exfil_matches.extend(m.token for m in matcher.find(_payload(rec)) if m.token not in used)
+            found = [m.token for m in matcher.find(_payload(rec)) if m.token not in used]
+            ev.exfil_matches.extend(found)
+            for token in found:
+                ev.exfil_to.setdefault(token, []).append(rec.host.split(":", 1)[0].lower())
         elif rec.kind == "raw":
             ev.exfil_matches.extend(m.token for m in matcher.find(rec.data))
 
@@ -98,6 +101,7 @@ def build(trace: TraceFacts, records: list[Record], pool: NamePool, tokens: Hone
     ev.machine_leaks = sorted(set(ev.machine_leaks))
     ev.connects.extend(contacted(records))
     ev.exfil_matches = sorted(set(ev.exfil_matches))
+    ev.exfil_to = {k: sorted(set(v)) for k, v in ev.exfil_to.items()}
     ev.token_uses = sorted(set(ev.token_uses))
     ev.connects = sorted(set(ev.connects))
     return ev

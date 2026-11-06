@@ -4,6 +4,9 @@ inputs:
   server:
     description: RedHanded server
     default: https://45-32-140-228.sslip.io
+  strict:
+    description: Also fail when a release adds an install script its predecessor never had
+    default: "false"
   repair:
     description: After a block, open a PR that goes back to the closest version RedHanded cleared. Needs contents and pull-requests write.
     default: "false"
@@ -14,6 +17,8 @@ runs:
   using: composite
   steps:
     - shell: bash
+      env:
+        REDHANDED_STRICT: ${{ inputs.strict }}
       run: python3 "$GITHUB_ACTION_PATH/action/check.py" "${{ inputs.server }}"
     - if: failure() && inputs.repair == 'true'
       shell: bash

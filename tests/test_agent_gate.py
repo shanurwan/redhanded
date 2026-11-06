@@ -206,12 +206,49 @@ def test_installing_another_skill_blocks():
 
 
 def test_an_agent_reading_credentials_goes_to_a_person():
-    d = skills.decide_skill(agent_ev(bait_reads=["/home/dev/.env"], connects=["api.service.dev"]), [])
-    assert d.verdict == Verdict.REVIEW and any(".env" in r for r in d.reasons)
+    d = skills.decide_skill(agent_ev(bait_reads=["/home/dev/.aws/credentials"]), [])
+    assert d.verdict == Verdict.REVIEW and any(".aws" in r for r in d.reasons)
+
+
+def test_an_agent_looking_in_env_for_a_key_says_nothing():
+    assert skills.decide_skill(agent_ev(bait_reads=["/home/dev/.env"]), []).verdict == Verdict.CLEAN
+
+
+def test_a_credential_sent_to_where_it_belongs_is_not_theft():
+    ev = agent_ev(exfil_matches=["npm_token"], exfil_to={"npm_token": ["registry.npmjs.org"]}, connects=["registry.npmjs.org"])
+    assert skills.decide_skill(ev, []).verdict == Verdict.CLEAN
+
+
+def test_a_credential_sent_anywhere_else_is_critical():
+    ev = agent_ev(exfil_matches=["npm_token"], exfil_to={"npm_token": ["registry.npmjs.org", "x.dev"]}, connects=["x.dev"])
+    assert skills.decide_skill(ev, []).verdict == Verdict.CRITICAL
+
+
+def test_a_token_used_on_its_own_service_goes_to_a_person():
+    assert skills.decide_skill(agent_ev(token_uses=["GitHub"]), []).verdict == Verdict.REVIEW
+
+
+def test_a_service_the_skill_names_is_not_a_signal_but_an_unnamed_one_is():
+    declared = skills.declared_hosts({"SKILL.md": "Calls https://api.service.dev/v1 for results."})
+    assert skills.decide_skill(agent_ev(connects=["api.service.dev"]), [], None, declared).verdict == Verdict.CLEAN
+    assert skills.decide_skill(agent_ev(connects=["other.dev"]), [], None, declared).verdict == Verdict.REVIEW
+
+
+def test_a_paste_site_blocks_even_when_the_skill_names_it():
+    assert skills.decide_skill(agent_ev(connects=["glot.io"]), [], None, frozenset({"glot.io"})).verdict == Verdict.HIGH
+
+
+def test_agent_installing_tools_and_cloning_is_normal():
+    ev = agent_ev(writes=["/usr/local/bin/oktk", "/usr/local/lib/node_modules/oktk/x", "/work/repo/.git/hooks/commit-msg.sample"])
+    assert skills.decide_skill(ev, []).verdict == Verdict.CLEAN
+
+
+def test_changing_a_workflow_goes_to_a_person():
+    assert skills.decide_skill(agent_ev(writes=["/work/project/.github/workflows/ci.yml"]), []).verdict == Verdict.REVIEW
 
 
 def test_a_credential_leaving_is_critical():
-    assert skills.decide_skill(agent_ev(bait_reads=["/home/dev/.env"], connects=["x.dev"], exfil_matches=["github_token"]), []).verdict == Verdict.CRITICAL
+    assert skills.decide_skill(agent_ev(bait_reads=["/home/dev/.env"], connects=["x.dev"], exfil_matches=["github_token"], exfil_to={"github_token": ["x.dev"]}), []).verdict == Verdict.CRITICAL
 
 
 def test_a_disk_search_touching_ai_tools_is_not_a_signal():
@@ -331,3 +368,8 @@ def test_a_replay_keeps_what_the_agent_did_and_drops_what_the_skill_said():
                                 "second_run": []}})
     out = _without_skill_text(raw)
     assert "EVIL" not in out and json.loads(out)["agent"]["run"] == [{"calls": [{"tool": "bash", "arguments": "ls"}]}]
+
+
+def test_git_sample_hooks_are_not_persistence():
+    assert decide(Evidence(writes=["/home/dev/repo/.git/hooks/pre-commit.sample"])).verdict == Verdict.CLEAN
+    assert decide(Evidence(writes=["/home/dev/repo/.git/hooks/pre-commit"])).verdict == Verdict.HIGH

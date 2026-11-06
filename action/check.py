@@ -97,8 +97,9 @@ def main() -> int:
             verdict = r.get("verdict") or "UNSCANNED"
             link = f"{server}/#{r['scan_id']}" if r.get("scan_id") else ""
             rows.append((f"{r['package']}@{r['version']}", verdict, "; ".join(r.get("reasons", [])) or r.get("note", ""), link))
-            failed |= verdict in BLOCK         # not scanned goes to a person, and the table says so
-            if verdict in BLOCK:
+            new_script = os.environ.get("REDHANDED_STRICT") == "true" and any(c.get("kind") == "install_script" for c in r.get("changes", []))
+            failed |= verdict in BLOCK or new_script         # not scanned goes to a person, and the table says so
+            if verdict in BLOCK or new_script:
                 blocked.append({"name": r["package"], "version": r["version"], "integrity": r.get("integrity")})
 
     if blocked:
