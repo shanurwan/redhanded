@@ -3,7 +3,8 @@
 
 Standard library only. Registry packages go by lockfile, and only by lockfile. A
 package vendored into the repo and linked from the lockfile has no bytes on the
-registry, so it is packed and uploaded. An answer that never arrives fails the check.
+registry, so it is packed and uploaded. An answer that never arrives fails the check,
+and so does a package with no current evidence.
 """
 import base64
 import hashlib
@@ -101,7 +102,7 @@ def main() -> int:
             link = f"{server}/#{r['scan_id']}" if r.get("scan_id") else ""
             rows.append((f"{r['package']}@{r['version']}", verdict, "; ".join(r.get("reasons", [])) or r.get("note", ""), link))
             new_script = os.environ.get("REDHANDED_STRICT") == "true" and any(c.get("kind") == "install_script" for c in r.get("changes", []))
-            failed |= verdict in BLOCK or new_script         # not scanned goes to a person, and the table says so
+            failed |= verdict in BLOCK or new_script or verdict == "UNSCANNED"    # no current evidence, no pass
             if verdict in BLOCK or new_script:
                 blocked.append({"name": r["package"], "version": r["version"], "integrity": r.get("integrity")})
 
@@ -112,7 +113,7 @@ def main() -> int:
     table = "\n".join(lines) if rows else "No dependency changes."
     unscanned = sum(1 for _, v, _, _ in rows if v == "UNSCANNED")
     if unscanned:
-        table += f"\n\n{unscanned} packages were over the scan budget for one PR and were not scanned. Review them by hand."
+        table += f"\n\n{unscanned} packages have no current evidence, so this check fails. Finished scans are kept, so running it again covers more of them."
     print(table)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:

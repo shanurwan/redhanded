@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from redhanded.runner import Report, ScanConfig
+from redhanded.runner import Report, ScanConfig, ScanError
 from redhanded.service import Cache, InputError, Service, validate
 
 
@@ -107,3 +107,64 @@ def test_lockfile_comparison_failure_keeps_the_verdict(tmp_path):
     svc, _ = make(tmp_path, {"a@2.0.0": "CLEAN"})     # a@1.0.0 cannot be scanned
     r = svc.check_lockfile(lock(a="1.0.0"), lock(a="2.0.0"))
     assert r["packages"][0]["verdict"] == "CLEAN" and "could not compare" in r["packages"][0]["changes_note"]
+
+
+def aged(tmp_path, verdict, calls):
+    now = [1000.0]
+
+    def scanner(name, version, cfg, integrity):
+        calls.append(name)
+        return report(name, version, verdict, integrity)
+
+    cache = Cache(str(tmp_path / "aged.sqlite3"), max_age_s=100.0, clock=lambda: now[0])
+    svc = Service(cache, ScanConfig(scans_dir=str(tmp_path / "scans")), scanner=scanner, resolve=lambda n, v, r: f"sha512-{n}-{v}")
+    return svc, now
+
+
+@pytest.mark.parametrize("verdict", ["CLEAN", "REVIEW"])
+def test_expired_evidence_runs_again_before_anything_gets_through(tmp_path, verdict):
+    calls = []
+    svc, now = aged(tmp_path, verdict, calls)
+    svc.check("a", "1.0.0")
+    now[0] += 100.0
+    assert svc.check("a", "1.0.0")["cached"] is True and calls == ["a"]
+    now[0] += 1.0
+    assert svc.check("a", "1.0.0")["cached"] is False and calls == ["a", "a"]
+    assert svc.check("a", "1.0.0")["cached"] is True and calls == ["a", "a"]
+
+
+def test_expired_evidence_is_never_served_by_a_lookup(tmp_path):
+    calls = []
+    svc, now = aged(tmp_path, "CLEAN", calls)
+    svc.check("a", "1.0.0")
+    now[0] += 101.0
+    out = svc.check("a", "1.0.0", scan_if_missing=False)
+    assert out["verdict"] is None and out["advice"] == "unknown" and "expired" in out["note"] and calls == ["a"]
+
+
+@pytest.mark.parametrize("verdict", ["HIGH", "CRITICAL"])
+def test_a_block_does_not_expire(tmp_path, verdict):
+    calls = []
+    svc, now = aged(tmp_path, verdict, calls)
+    svc.check("a", "1.0.0")
+    now[0] += 10 ** 9
+    out = svc.check("a", "1.0.0", scan_if_missing=False)
+    assert out["verdict"] == verdict and out["advice"] == "block" and calls == ["a"]
+
+
+def test_a_rescan_that_cannot_run_gives_no_verdict(tmp_path):
+    now = [1000.0]
+    runs = []
+
+    def scanner(name, version, cfg, integrity):
+        runs.append(name)
+        if len(runs) > 1:
+            raise ScanError("npm no longer serves it")
+        return report(name, version, "CLEAN", integrity)
+
+    svc = Service(Cache(str(tmp_path / "gone.sqlite3"), max_age_s=100.0, clock=lambda: now[0]),
+                  ScanConfig(scans_dir=str(tmp_path / "scans")), scanner=scanner, resolve=lambda n, v, r: f"sha512-{n}-{v}")
+    svc.check("a", "1.0.0")
+    now[0] += 101.0
+    with pytest.raises(ScanError):
+        svc.check("a", "1.0.0")

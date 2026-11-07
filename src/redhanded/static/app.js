@@ -333,6 +333,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const v = $("skill-md").value;
     if (v.trim()) start({ skill_md: v }, "This skill", "/api/skill");
   });
+  $("tgz").addEventListener("change", async () => {
+    const file = $("tgz").files[0];
+    $("tgz").value = "";
+    if (!file) return;
+    if (file.size > 2 << 20) return job("That file is over the 2 MB limit", true);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let raw = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) raw += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    start({ tarball: btoa(raw) }, file.name);
+  });
   let mode = "package";
   for (const b of document.querySelectorAll(".mode")) {
     b.addEventListener("click", () => {
@@ -341,6 +351,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       $("scan-form").hidden = mode === "skill";
       $("skill-form").hidden = mode !== "skill";
       $("samples").hidden = mode !== "package";
+      $("upload").hidden = mode !== "package";
       $("pkg").placeholder = mode === "compare" ? "left-pad@1.3.0" : "left-pad or left-pad@1.3.0";
     });
   }

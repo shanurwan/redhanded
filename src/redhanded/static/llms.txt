@@ -11,6 +11,7 @@ POST /mcp, stateless HTTP. Tools: check_package, check_lockfile_change, compare_
 ## HTTP
 
 POST /api/scan {"package": "name@version"} returns {"job": id}
+POST /api/scan {"tarball": "<base64 npm tarball, up to 2 MB>"} returns {"job": id}; real malware is welcome
 POST /api/lockfile {"new_lockfile": "...", "old_lockfile": "..."} returns {"job": id}
 POST /api/compare {"name": "package", "version": "1.2.3"} returns {"job": id}; the result lists what is new since the version before
 POST /api/repair {"name": "package", "version": "1.2.3"} returns {"job": id}; the result names the closest version the rules cleared
@@ -19,5 +20,7 @@ GET /api/jobs/{id} returns state, verdict and result
 GET /api/scans/{scan_id} returns the report and evidence
 
 Limit: 12 runs an hour per address.
+
+A verdict that lets code through expires after 24 hours and the bytes run again. A block never expires.
 
 Containment was measured, not assumed: while the 100 most network-active malware samples ran, 250 outside hosts were tried and 0 appeared on the real network card, with positive controls. A Claude Code hook (hooks/redhanded_guard.py) refuses a blocked install and names the version that proved clean.

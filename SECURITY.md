@@ -11,6 +11,6 @@ Most useful to hear about:
 - A way to make a malicious package come back CLEAN by something other than behaving well, such as tampering with the evidence
 - A path where the PR check passes when it should fail
 
-Please do not run a denial of service against the hosted instance, or use it to attack others. It is a demo on one VM, and its sandbox holds only fake credentials.
+Real malware samples are welcome on the hosted instance, as a package name or an upload. Please do not run a denial of service against it, or use it to attack others. It is a demo on one VM, and its sandbox holds only fake credentials.
 
 Missing a piece of malware is a detection gap and not a vulnerability. Those are welcome as ordinary issues, with the package name and version.

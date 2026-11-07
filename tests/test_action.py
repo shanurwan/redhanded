@@ -21,6 +21,19 @@ def test_unanswered_scan_fails_closed(monkeypatch):
     assert check.wait("http://unused", "job")["state"] == "error"
 
 
+def test_no_current_evidence_fails_the_check(monkeypatch, tmp_path):
+    (tmp_path / "package-lock.json").write_text('{"packages": {}}')
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.setattr("sys.argv", ["check.py", "http://rh"])
+    monkeypatch.setattr(check, "git", lambda *a: "")
+    packages = [{"package": "a", "version": "1.0.0", "verdict": None, "note": "evidence expired, it must run again"}]
+    monkeypatch.setattr(check, "call", lambda s, p, b=None: {"job": "j"} if b else {"state": "done", "result": {"packages": packages}})
+    assert check.main() == 1
+    packages[0].update(verdict="CLEAN", reasons=[])
+    assert check.main() == 0
+
+
 rspec = importlib.util.spec_from_file_location("repair_action", Path(__file__).parent.parent / "action" / "repair.py")
 repair_action = importlib.util.module_from_spec(rspec)
 rspec.loader.exec_module(repair_action)

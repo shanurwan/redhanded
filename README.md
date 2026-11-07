@@ -99,7 +99,7 @@ This is one run, on a throwaway VM with the same code. It does not rule out an u
 
 ## Stand in the path
 
-**Pull request.** A HIGH or CRITICAL verdict, or an answer that never arrives, fails the check.
+**Pull request.** A HIGH or CRITICAL verdict, an answer that never arrives, or a package with no current evidence fails the check.
 
 ```yaml
 on: pull_request
@@ -157,10 +157,12 @@ A security gate that passes when it breaks is worse than none. Each of these is 
 | When this happens | RedHanded does this | Proved by |
 |---|---|---|
 | The verdict never reaches the PR check | The check fails. It never passes by default | [`test_unanswered_scan_fails_closed`](tests/test_action.py) |
+| A clean verdict is over 24 hours old | It is not served, because code that waits can pass today and fire tomorrow. The same bytes run again first. A block never expires | [`test_expired_evidence_runs_again_before_anything_gets_through`](tests/test_service.py) |
+| Evidence is stale and a new run is not possible | No verdict, so the PR check fails | [`test_no_current_evidence_fails_the_check`](tests/test_action.py) |
 | The spend reading goes stale | Every scan pauses, because unknown spend is not safe spend | [`test_scans_fail_closed_without_a_fresh_guard_state`](tests/test_web.py) |
 | The budget runs out with work queued | Queued jobs stop | [`test_guard_pausing_mid_queue_stops_the_job`](tests/test_web.py) |
 | A package hangs or hits the deadline | It is killed and goes to a person. It is never CLEAN | [`test_deadline_kill_is_review`](tests/test_verdict.py) |
-| A lockfile changes more than the budget allows | Install scripts go first; the rest are reported as not scanned and sent to a person | [`test_lockfile_scan_budget_leaves_rest_unknown_and_advises_review`](tests/test_service.py) |
+| A lockfile changes more than the budget allows | Install scripts go first and the check fails until the rest have run. Finished scans are kept, so each rerun covers more | [`test_lockfile_scan_budget_leaves_rest_unknown_and_advises_review`](tests/test_service.py) |
 | The model fails | The verdict stands, the explanation is left out, and a fixed walk finishes the repair | [`test_a_model_failure_still_repairs`](tests/test_agent_gate.py) |
 | A dependency names a URL or git source | The gate refuses it without looking the name up | [`test_the_gate_refuses_everything_else_without_touching_it`](tests/test_egress.py) |
 | Someone floods the service | A per-address limit and a short queue: it slows down instead of running up a bill | [`test_rate_limit_and_bad_requests`](tests/test_web.py) |

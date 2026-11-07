@@ -103,6 +103,9 @@ h3 { font-size: 16px; font-weight: 600; }
 .scan-form { display: flex; gap: 10px; }
 .scan-form input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--bg); color: var(--text); font: 15px var(--mono); }
 .job { margin-top: 14px; font-size: 15px; color: var(--muted); } .job.err { color: var(--amber); }
+.upload { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+.upload label { color: var(--text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.upload input:focus-visible + label { outline: 2px solid var(--text); outline-offset: 2px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .chip { font: 13px var(--mono); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; color: var(--muted); cursor: pointer; }
 .chip:hover { color: var(--text); border-color: var(--faint); }

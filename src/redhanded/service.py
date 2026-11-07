@@ -3,6 +3,10 @@
 A verdict belongs to exact bytes: the cache key is the tarball's sha512 plus
 the rules version, so the same package always gets the same recorded answer,
 and changing a rule never serves a verdict the new rules did not make.
+
+Evidence also has an age. Code that waits can pass today and fire tomorrow, so a
+verdict that lets code through expires and those bytes must run again. A block
+does not expire: stale evidence never makes anything safer.
 """
 from __future__ import annotations
 
@@ -10,6 +14,7 @@ import base64
 import contextlib
 import hashlib
 import json
+import os
 import re
 import sqlite3
 import time
@@ -33,8 +38,10 @@ internet, and reports what they tried to do. Call check_package or compare_versi
 before you add or upgrade a dependency, check_lockfile_change before you open or merge
 a PR that changes package-lock.json, check_skill before you install a skill, and
 find_safe_version after a block. Treat advice "block" as do-not-install, "review" as ask
-a human. Fixed rules decide from recorded behaviour; text under test cannot change it."""
+a human. Fixed rules decide from recorded behaviour; text under test cannot change it.
+A verdict that lets code through expires after 24 hours and the bytes run again. A block never expires."""
 ADVICE = {"CLEAN": "allow", "REVIEW": "review", "HIGH": "block", "CRITICAL": "block"}
+MAX_EVIDENCE_AGE_S = 24 * 3600.0
 
 
 class InputError(ValueError):
@@ -51,9 +58,11 @@ def validate(name: str, version: str) -> None:
 class Cache:
     """One short-lived connection per call: MCP runs sync tools on worker threads."""
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, max_age_s: float | None = None, clock: Callable[[], float] = time.time):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.path = path
+        self.max_age_s = float(os.environ.get("RH_EVIDENCE_MAX_AGE_S", MAX_EVIDENCE_AGE_S)) if max_age_s is None else max_age_s
+        self._clock = clock
         with self._db() as db:
             db.execute("""CREATE TABLE IF NOT EXISTS verdicts (
                 integrity TEXT NOT NULL, rules TEXT NOT NULL, package TEXT NOT NULL, version TEXT NOT NULL,
@@ -69,17 +78,28 @@ class Cache:
         finally:
             db.close()
 
-    def get(self, integrity: str) -> dict | None:
+    def _row(self, integrity: str) -> tuple | None:
         with self._db() as db:
-            row = db.execute("SELECT report, scanned_at FROM verdicts WHERE integrity = ? AND rules = ?",
-                             (integrity, RULES_VERSION)).fetchone()
-        return {**json.loads(row[0]), "scanned_at": row[1]} if row else None
+            return db.execute("SELECT report, scanned_at, verdict FROM verdicts WHERE integrity = ? AND rules = ?",
+                              (integrity, RULES_VERSION)).fetchone()
+
+    def _expired(self, row: tuple) -> bool:
+        return ADVICE[row[2]] != "block" and self._clock() - row[1] > self.max_age_s
+
+    def get(self, integrity: str) -> dict | None:
+        """The current evidence for these bytes. Expired evidence is the same as none."""
+        row = self._row(integrity)
+        return {**json.loads(row[0]), "scanned_at": row[1]} if row and not self._expired(row) else None
+
+    def expired(self, integrity: str) -> bool:
+        row = self._row(integrity)
+        return bool(row) and self._expired(row)
 
     def put(self, report: Report) -> None:
         with self._db() as db:
             db.execute("INSERT OR REPLACE INTO verdicts VALUES (?, ?, ?, ?, ?, ?, ?)",
                        (report.integrity, RULES_VERSION, report.package, report.version, report.verdict,
-                        json.dumps(asdict(report)), time.time()))
+                        json.dumps(asdict(report)), self._clock()))
 
 
 def registry_integrity(name: str, version: str, registry: str) -> str:
@@ -105,7 +125,8 @@ class Service:
             return self._answer(hit, cached=True)
         if not scan_if_missing:
             return {"package": name, "version": version, "integrity": integrity, "verdict": None,
-                    "advice": "unknown", "cached": False, "note": "not scanned yet"}
+                    "advice": "unknown", "cached": False,
+                    "note": "evidence expired, it must run again" if self.cache.expired(integrity) else "not scanned yet"}
         report = self._scan(name, version, self.cfg, integrity)
         self.cache.put(report)
         return self._answer(asdict(report), cached=False)
