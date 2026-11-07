@@ -6,6 +6,7 @@ cannot talk its way to CLEAN.
 """
 from __future__ import annotations
 
+import re
 import ipaddress
 import posixpath
 from dataclasses import dataclass, field
@@ -14,7 +15,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-07.3"
+RULES_VERSION = "2026-11-07.4"
 
 
 class Verdict(IntEnum):
@@ -119,6 +120,7 @@ def _suspicious_exec(argv: list[str], by_runner: bool) -> str | None:
     return None
 
 
+_GLOBAL_INSTALL = re.compile(r"\b(?:npm|pnpm)\s+(?:i|install|add)\b(?=[^;&|]*\s(?:-g|--global)\b)[^;&|]*|\byarn\s+global\s+add\b[^;&|]*")
 _CONNECTIVITY_CHECKS = frozenset({"1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9"})
 
 
@@ -158,6 +160,12 @@ def decide(ev: Evidence) -> Decision:
         hit(Verdict.HIGH, "sent this machine's name to an outside host")
     for name in sorted({c for c in map(_collector, ev.connects) if c}):
         hit(Verdict.HIGH, f"contacted a data-collection service ({name})")
+
+    # A package's install has no business putting another program on the whole machine. This is the
+    # entire attack in the Cline incident of February 2026: one postinstall line and a stolen token.
+    installs = sorted({m.group(0).strip()[:80] for argv, _ in ev.execs for m in [_GLOBAL_INSTALL.search(" ".join(map(str, argv)))] if m})
+    if installs:
+        hit(Verdict.HIGH, f"installed another program on the whole machine ({installs[0]})")
 
     bare = sorted({c.rsplit(":", 1)[0] for c in ev.connects if bare_public_ip(c)})
     if bare:

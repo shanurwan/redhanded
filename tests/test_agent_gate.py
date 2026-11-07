@@ -515,3 +515,16 @@ def test_a_package_reaching_a_bare_public_ip_blocks():
     assert d.verdict == Verdict.HIGH and any("bare IP" in r for r in d.reasons)
     assert decide(agent_ev(connects=["1.1.1.1"])).verdict < Verdict.HIGH
     assert decide(agent_ev(connects=["1.0.0.127"])).verdict < Verdict.HIGH
+
+
+def test_an_install_that_puts_another_program_on_the_whole_machine_blocks():
+    from redhanded.verdict import decide
+    d = decide(agent_ev(execs=[(["sh", "-c", "npm install -g openclaw@latest"], 0)]))
+    assert d.verdict == Verdict.HIGH and "openclaw" in d.reasons[-1]
+    assert decide(agent_ev(execs=[(["yarn", "global", "add", "x"], 0)])).verdict == Verdict.HIGH
+    assert decide(agent_ev(execs=[(["npm", "rebuild", "--foreground-scripts", "--ignore-scripts=false"], 0)])).verdict == Verdict.CLEAN
+    assert decide(agent_ev(execs=[(["npm", "install", "left-pad"], 0)])).verdict < Verdict.HIGH
+
+
+def test_a_skill_agent_installing_a_tool_globally_is_not_this_rule():
+    assert skills.decide_skill(agent_ev(execs=[(["npm", "install", "-g", "typescript"], 0)]), []).verdict == Verdict.CLEAN
