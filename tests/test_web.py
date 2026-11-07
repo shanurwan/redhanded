@@ -406,3 +406,17 @@ def test_a_recorded_verdict_answers_from_its_replay(site):
     job = types.SimpleNamespace(result=None, scan_id=None, verdict=None, cached=False)
     scanner._finish_scan(job, sid, True)
     assert job.scan_id == sid and job.cached and job.result["scan_id"] == sid
+
+
+def test_a_version_npm_no_longer_serves_gets_a_plain_answer(site, monkeypatch):
+    import types
+    import urllib.error
+    import redhanded.web as web
+    _, scanner, _, _ = site
+    set_guard(scanner.cfg.guard_state)
+    def gone(*a, **k):
+        raise urllib.error.HTTPError("u", 404, "gone", None, None)
+    monkeypatch.setattr(web, "resolve_spec", gone)
+    job = types.SimpleNamespace(kind="npm", target="x@1.0.0", payload=None, state="queued", error=None)
+    scanner.run_one(job)
+    assert job.state == "error" and "does not serve" in job.error

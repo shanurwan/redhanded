@@ -19,6 +19,7 @@ import re
 import secrets
 import threading
 import time
+import urllib.error
 import urllib.parse
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -230,6 +231,9 @@ class Scanner:
             job.state = "done"
         except (InputError, ScanError) as e:
             job.state, job.error = "error", str(e)
+        except urllib.error.HTTPError as e:
+            job.state, job.error = "error", ("npm does not serve this version, or it was removed. If it was malware, the recorded attacks above may include it."
+                                             if e.code == 404 else f"the registry answered {e.code}, try again")
         except Exception as e:  # never let one bad job stop the worker
             job.state, job.error = "error", f"scan failed ({type(e).__name__})"
         finally:
