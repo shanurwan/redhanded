@@ -27,12 +27,13 @@ from pathlib import Path
 from typing import Callable
 
 from . import __version__, mcp_http
+from .usage import Usage
 from .agenttext import AgentTextCheck
 from .explain import Explainer
 from .memory import AttackMemory
 from .runner import ScanConfig, ScanError, _get, scan_local
 from .service import ADVICE, SCAN_ID, Cache, InputError, Service, validate
-from .skills import check_skill
+from .skills import check_skill, detonate_with_agent, scan_with_agent
 from .spend import GuardState, StateFile
 from .verdict import RULES_VERSION
 
@@ -333,6 +334,8 @@ def _tarball(body: dict) -> bytes:
 
 
 def make_handler(cfg: WebConfig, scanner: Scanner):
+    usage = Usage(cfg.data_dir)
+
     class Handler(BaseHTTPRequestHandler):
         server_version = f"redhanded/{__version__}"
         sys_version = ""
@@ -371,6 +374,13 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
                 name, ctype = STATIC[path]
                 body = resources.files("redhanded").joinpath("static", name).read_bytes()
                 return self.send(200, body, ctype, {"Cache-Control": "no-cache"})
+            if path == "/stats":
+                token = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("key", [None])[0]
+                if not usage.allowed(token):
+                    return self.json(404, {"error": "not found"})
+                usage.exclude(self.client())
+                return self.send(200, usage.page(cfg.host_label).encode(), "text/html; charset=utf-8",
+                                 {"Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"})
             if path == "/healthz":
                 return self.json(200, {"ok": True, "rules": RULES_VERSION, "scans_open": scanner.guard_allows()})
             if path == "/api/status":
@@ -381,6 +391,9 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
             if path == "/api/results":
                 results = Path(cfg.results)
                 return self.json(200, json.loads(results.read_text())) if results.is_file() else self.json(404, {"error": "no results"})
+            if path == "/api/watch":
+                watch = Path(cfg.data_dir) / "watch.json"
+                return self.json(200, json.loads(watch.read_text())) if watch.is_file() else self.json(404, {"error": "not watching"})
             if path == "/api/replays":
                 return self.json(200, list_replays(cfg.replays_dir))
             if path == "/mcp":
@@ -426,16 +439,29 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
         def do_POST(self):
             path = urllib.parse.urlsplit(self.path).path
             try:
-                if path not in ("/api/scan", "/api/lockfile", "/api/compare", "/api/repair", "/api/skill", "/mcp"):
+                if path not in ("/api/scan", "/api/lockfile", "/api/compare", "/api/repair", "/api/skill", "/mcp", "/api/hit"):
                     self.close_connection = True
                     raise Refused(404, "not found")
                 body = self.body()
+                agent = self.headers.get("User-Agent", "")
+                if path == "/api/hit":
+                    source = body.get("ref")
+                    usage.visit(self.client(), agent, source if isinstance(source, str) else None)
+                    return self.send(202, b"", "application/json")
                 if path == "/mcp":
+                    if body.get("method") == "tools/call":
+                        usage.used("mcp", self.client(), agent or "mcp-client")
                     reply = mcp_http.handle(body, scanner, self.client())
                     if reply is None:
                         return self.send(202, b"", "application/json")
                     return self.json(200, reply)
-                self.json(202, {"job": submit(scanner, path, body, self.client()).id})
+                job = submit(scanner, path, body, self.client())
+                repo = self.headers.get("X-RedHanded-Repo", "")
+                if repo:
+                    usage.used("action", self.client(), agent, repo[:32])
+                else:
+                    usage.used(path.rsplit("/", 1)[1], self.client(), agent)
+                self.json(202, {"job": job.id})
             except Refused as e:
                 self.json(e.status, {"error": str(e)})
 
@@ -475,7 +501,9 @@ def main(host: str = "127.0.0.1", port: int = 8080) -> None:
     cfg = WebConfig()
     Path(cfg.data_dir).mkdir(parents=True, exist_ok=True)
     scan_cfg = ScanConfig(text_reviewer=AgentTextCheck.from_env())
-    service = Service(Cache(os.environ.get("RH_CACHE", str(Path(cfg.data_dir) / "verdicts.sqlite3"))), scan_cfg)
+    deep = bool(os.environ.get("VULTR_INFERENCE_API_KEY"))
+    service = Service(Cache(os.environ.get("RH_CACHE", str(Path(cfg.data_dir) / "verdicts.sqlite3"))), scan_cfg,
+                      **({"scanner": scan_with_agent, "detonator": detonate_with_agent} if deep else {}))
     scanner = Scanner(cfg, service, Explainer.from_env())
     threading.Thread(target=scanner.serve_forever, name="scan-worker", daemon=True).start()
     server = ThreadingHTTPServer((host, port), make_handler(cfg, scanner))

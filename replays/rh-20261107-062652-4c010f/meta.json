@@ -1,0 +1,10 @@
+{
+ "title": "cline@2.3.0, the February 2026 hijack",
+ "summary": "One stolen npm token and one new line. The install puts another AI agent on the whole machine, with nothing else in the package changed.",
+ "order": 1.5,
+ "full_syscall_log": {
+  "sha256": "16e2962a7c2b4b6583bea7753f4f5ee7da0321a9ec067f4b16fd4522764666e7",
+  "lines": 91763,
+  "excerpt_lines": 333
+ }
+}

@@ -1,0 +1,179 @@
+{
+ "scan_id": "rh-20261107-062652-4c010f",
+ "package": "cline",
+ "version": "2.3.0",
+ "integrity": "sha512-ZYoMvFhYaxzCM2PzDAYkz6oDNCPjMwDBqY/2euFUxFxb3SCE1VnXJvj6iC50NdtgECY195zIXK2s2Wbx+quDHg==",
+ "verdict": "HIGH",
+ "reasons": [
+  "HIGH: installed another program on the whole machine (npm install -g openclaw@latest)"
+ ],
+ "container_aware": false,
+ "seconds": 10.65,
+ "evidence": {
+  "exfil_matches": [],
+  "machine_leaks": [],
+  "token_uses": [],
+  "bait_reads": [],
+  "connects": [
+   "registry.npmjs.org"
+  ],
+  "execs": [
+   [
+    [
+     "npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "rebuild",
+     "--foreground-scripts",
+     "--ignore-scripts=false"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "node install/check.js || npm run build"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "install/check.js"
+    ],
+    true
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "which brew >/dev/null 2>&1 && brew environment --plain | grep PKG_CONFIG_LIBDIR | cut -d\" \" -f2"
+    ],
+    false
+   ],
+   [
+    [
+     "which",
+     "brew"
+    ],
+    false
+   ],
+   [
+    [
+     "/bin/sh",
+     "-c",
+     "pkg-config --modversion vips-cpp"
+    ],
+    false
+   ],
+   [
+    [
+     "sh",
+     "-c",
+     "npm install -g openclaw@latest"
+    ],
+    true
+   ],
+   [
+    [
+     "npm",
+     "install",
+     "-g",
+     "openclaw@latest"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/usr/local/bin/npm",
+     "install",
+     "-g",
+     "openclaw@latest"
+    ],
+    true
+   ],
+   [
+    [
+     "node",
+     "/work/.rh/load.js",
+     "cline"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/.rh/exercise.js",
+     "cline"
+    ],
+    false
+   ],
+   [
+    [
+     "/usr/local/bin/node",
+     "/work/node_modules/cline/dist/cli.mjs",
+     "--help"
+    ],
+    false
+   ]
+  ],
+  "writes": [
+   "/work/node_modules/.bin/cline"
+  ],
+  "incomplete": [],
+  "deadline_killed": false,
+  "load_hang": false,
+  "probe_flags": [],
+  "ai_tool_calls": [],
+  "exfil_to": {},
+  "http_requests": [
+   "registry.npmjs.org GET /openclaw"
+  ],
+  "after_removal": [],
+  "skill_root": "",
+  "stats_count": 3942
+ },
+ "sandbox": {
+  "deadline_killed": false,
+  "exit_code": 0,
+  "errors": [],
+  "seconds": 6.08,
+  "syscall_lines": 44523,
+  "unparsed": 0,
+  "sinkhole_records": 4,
+  "dependencies": "13 dependencies fetched"
+ },
+ "microvm": null,
+ "manifest": {
+  "scripts": {
+   "postinstall": "npm install -g openclaw@latest"
+  },
+  "dependencies": [
+   "@agentclientprotocol/sdk",
+   "@vscode/ripgrep",
+   "aws4fetch",
+   "chalk",
+   "commander",
+   "ink",
+   "ink-picture",
+   "ink-spinner",
+   "nanoid",
+   "ora",
+   "pino",
+   "pino-roll",
+   "prompts",
+   "react"
+  ]
+ },
+ "agent": null
+}

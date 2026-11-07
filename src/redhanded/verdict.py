@@ -6,6 +6,8 @@ cannot talk its way to CLEAN.
 """
 from __future__ import annotations
 
+import re
+import ipaddress
 import posixpath
 from dataclasses import dataclass, field
 from enum import IntEnum
@@ -13,7 +15,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-06.8"
+RULES_VERSION = "2026-11-07.4"
 
 
 class Verdict(IntEnum):
@@ -70,6 +72,7 @@ class Evidence:
     ai_tool_calls: list[str] = field(default_factory=list)      # the machine's AI coding tools, as the code called them
     exfil_to: dict[str, list[str]] = field(default_factory=dict)  # honeytoken name -> hosts it was sent to
     http_requests: list[str] = field(default_factory=list)      # host and request line, for rules that need the path
+    after_removal: list[str] = field(default_factory=list)      # what a fresh agent did after the skill was deleted
     skill_root: str = ""                                        # where the skill under test lives, if it is a skill
 
 
@@ -117,6 +120,21 @@ def _suspicious_exec(argv: list[str], by_runner: bool) -> str | None:
     return None
 
 
+_GLOBAL_INSTALL = re.compile(r"\b(?:npm|pnpm)\s+(?:i|install|add)\b(?=[^;&|]*\s(?:-g|--global)\b)[^;&|]*|\byarn\s+global\s+add\b[^;&|]*")
+_CONNECTIVITY_CHECKS = frozenset({"1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9"})
+
+
+def bare_public_ip(host: str) -> bool:
+    """An address typed in place of a name. Reverse lookups of private addresses show up backwards, so those are out."""
+    address = host.rsplit(":", 1)[0]
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    backwards = ipaddress.ip_address(".".join(reversed(address.split(".")))) if ip.version == 4 else ip
+    return ip.is_global and backwards.is_global and address not in _CONNECTIVITY_CHECKS
+
+
 def decide(ev: Evidence) -> Decision:
     reasons: list[str] = []
     level = Verdict.CLEAN
@@ -142,6 +160,16 @@ def decide(ev: Evidence) -> Decision:
         hit(Verdict.HIGH, "sent this machine's name to an outside host")
     for name in sorted({c for c in map(_collector, ev.connects) if c}):
         hit(Verdict.HIGH, f"contacted a data-collection service ({name})")
+
+    # A package's install has no business putting another program on the whole machine. This is the
+    # entire attack in the Cline incident of February 2026: one postinstall line and a stolen token.
+    installs = sorted({m.group(0).strip()[:80] for argv, _ in ev.execs for m in [_GLOBAL_INSTALL.search(" ".join(map(str, argv)))] if m})
+    if installs:
+        hit(Verdict.HIGH, f"installed another program on the whole machine ({installs[0]})")
+
+    bare = sorted({c.rsplit(":", 1)[0] for c in ev.connects if bare_public_ip(c)})
+    if bare:
+        hit(Verdict.HIGH, f"reached a bare IP address instead of a name ({', '.join(bare)[:80]})")
 
     risky_connects = sorted({c for c in ev.connects if c not in BENIGN_HOSTS})
     if ev.bait_reads and (ev.connects or ev.exfil_matches):

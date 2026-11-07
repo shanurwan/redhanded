@@ -6,6 +6,7 @@ package vendored into the repo and linked from the lockfile has no bytes on the
 registry, so it is packed and uploaded. An answer that never arrives fails the check.
 """
 import base64
+import hashlib
 import io
 import json
 import os
@@ -27,7 +28,9 @@ def git(*args: str) -> str:
 
 def call(server: str, path: str, body: dict | None = None) -> dict:
     req = urllib.request.Request(server + path, data=json.dumps(body).encode() if body else None,
-                                 headers={"Content-Type": "application/json", "User-Agent": "redhanded-action"})
+                                 headers={"Content-Type": "application/json", "User-Agent": "redhanded-action",
+                                          # Lets the service count connected repos. A hash, so it never learns the name.
+                                          "X-RedHanded-Repo": hashlib.sha256(os.environ.get("GITHUB_REPOSITORY", "").encode()).hexdigest()[:32]})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
 

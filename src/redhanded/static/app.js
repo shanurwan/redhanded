@@ -26,6 +26,11 @@ const TOKEN_NAMES = { aws_access_key_id: "AWS access key", aws_secret_access_key
   ssh_private_key: "SSH key", wallet_private_key: "wallet key", metadata_access_key_id: "cloud metadata key", metadata_secret: "cloud metadata secret" };
 const isHarness = (argv) => { const s = argv.join(" "); return s.includes("/work/.rh/") || (/(^| )npm( |$)|\/usr\/local\/bin\/npm/.test(s) && argv.includes("rebuild")); };
 
+// A visit, and which link it came from. Link previews do not run this.
+try {
+  fetch("/api/hit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: new URLSearchParams(location.search).get("ref") }), keepalive: true }).catch(() => {});
+} catch { /* counting never matters more than the page */ }
+
 // ---------------------------------------------------------------- the attack, told from its own evidence
 
 function story(view) {
@@ -201,6 +206,23 @@ function renderResults(res) {
   }
   $("results").hidden = false;
 }
+function renderAbsorb(res) {
+  const a = res && res.absorbed;
+  if (!a) return;
+  $("ab-sub").textContent = a.note;
+  $("ab-grid").replaceChildren(...a.items.map((i) => {
+    const d = el("div", i.hot ? "hot" : "");
+    d.append(el("b", "", Number(i.value).toLocaleString()), el("span", "", i.label));
+    return d;
+  }));
+  $("absorb").hidden = false;
+}
+function renderWatch(w) {
+  if (!w || !w.watched) return;
+  const hours = Math.max(1, Math.round((w.updated - w.started) / 3600));
+  $("watch-text").textContent = `${w.watched.toLocaleString()} npm changes read in ${hours} ${hours === 1 ? "hour" : "hours"}. ${w.npm_ran.toLocaleString()} new or script-carrying releases and ${w.skills_ran.toLocaleString()} new agent skills run so far. ${w.blocked.toLocaleString()} blocked, each read by a person before anything is said about it.`;
+  $("watch").hidden = false;
+}
 function renderGate(res) {
   const s = res && res.showcase;
   if (!s) return;
@@ -319,7 +341,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     try { await navigator.clipboard.writeText(mcp); $("mcp-copy").textContent = "Copied"; } catch { $("mcp-copy").textContent = "Select and copy"; }
   });
 
-  api("/api/results").then((res) => { renderResults(res); renderGate(res); }).catch(() => {});
+  api("/api/results").then((res) => { renderResults(res); renderAbsorb(res); renderGate(res); }).catch(() => {});
+  api("/api/watch").then(renderWatch).catch(() => {});
   api("/api/status").then((s) => {
     $("samples").replaceChildren(...["left-pad@1.3.0", "is-odd@3.0.1"].map((p) => {
       const c = el("button", "chip", p); c.type = "button"; c.addEventListener("click", () => start({ package: p }, p)); return c;
