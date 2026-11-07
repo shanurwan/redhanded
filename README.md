@@ -1,236 +1,105 @@
-# RedHanded
+<p align="center">
+  <img src="docs/media/banner.png" alt="RedHanded. Make new code prove itself before your agent trusts it." width="100%">
+</p>
 
-**Make new code prove itself before your agent trusts it.**
+<p align="center">
+  <a href="https://github.com/shanurwan/redhanded/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/shanurwan/redhanded/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="Sandbox: gVisor and Firecracker" src="https://img.shields.io/badge/sandbox-gVisor%20%2B%20Firecracker-ff3b47?style=flat-square">
+  <img alt="Runs on Vultr VX1" src="https://img.shields.io/badge/runs%20on-Vultr%20VX1-007bfc?style=flat-square">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4b535e?style=flat-square"></a>
+</p>
 
-Agents now install packages and skills nobody reviews. RedHanded sits between the agent and that code. It runs the code on a disposable machine baited with fake credentials and a fake internet that also answers HTTPS, first in gVisor and then in a Firecracker microVM with its own kernel. It answers three questions from what the code did:
+<p align="center">
+  <a href="https://45-32-140-228.sslip.io/?ref=github"><b>Run a harmless attack, live</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/shanurwan/redhanded/releases/download/film/RedHanded-film.mp4"><b>Watch the film</b></a>
+  &nbsp;·&nbsp;
+  <a href="#stand-in-the-path"><b>Add it to your agent</b></a>
+  &nbsp;·&nbsp;
+  <a href="docs/EVALS.md"><b>Check the numbers</b></a>
+</p>
 
-- **What changed?** The new version runs next to the one before it. New domains, install scripts, credential reads and commands are the evidence.
-- **What does it make the agent do?** A real agent uses a new skill on an ordinary task, near fake credentials. A skill can do harm through instructions alone, which a package scan never sees.
-- **What do we go back to?** After a block, an agent tests older versions and opens the fix as a PR. It chooses what to check. Only the fixed rules can clear a version.
+<p align="center">
+  <img src="docs/media/hero.gif" alt="A real Claude Code session: RedHanded refuses cline@2.3.0, names 2.2.3 as proved clean, and the agent installs that. Then 250 outside hosts tried, 0 seen on the network card." width="86%">
+</p>
 
-Built for the Vultr: Agent Rush Hackathon 2026, Challenge 1 "Blast Radius Zero".
+Coding agents now install packages and skills nobody has read. On 17 February 2026, a stolen npm token pushed one new line into Cline's command line tool: `npm install -g openclaw@latest`. A coding agent quietly installed another agent, about 4,000 times in eight hours by StepSecurity's estimate.
 
-**Try it:** <https://45-32-140-228.sslip.io> opens on recorded catches you can replay and check, and lets you run any npm package, compare two versions, or give a skill to the agent.
+**RedHanded does not read new code and guess. It runs it on a machine built to be robbed, and blocks the merge with the recording.**
+
+## Measured, not claimed
+
+| | | |
+|:--|:--|:--|
+| **460 of 898** | real malicious npm packages would have blocked the merge | [3 random held-out batches](docs/EVALS.md#real-malware) |
+| **0 of 45** | popular clean packages blocked | [the gate](evals/gate.json) |
+| **57 of 60** | agent skills blocked from a campaign the rules had never seen | [one account, one technique](docs/EVALS.md#real-agent-skills) |
+| **250 → 0** | outside hosts malware tried, against those seen on the real network card | [capture, with controls](evals/results/2026-11-07-network-capture.json) |
+| **10 s** | median scan, 33 s at p95 on the malware set | [results](evals/results) |
+| **$0.0002** | compute per scan on a Vultr VX1, without inference | [how it's measured](#how-it-runs-on-vultr) |
+
+Every figure comes from a recorded run. [What gets through](#what-gets-through) is just below, and our own first miss on Cline is part of the record.
 
 ## How it works
 
-```
- package tarball ──sha512 check──▶ fake credentials made for this scan
-        │
-        ├──▶ gVisor sandbox ───── syscall log ─────┐
-        │      runs install scripts, then loads it │
-        │                                          ├──▶ evidence ──▶ fixed rules ──▶ verdict
-        └──▶ Firecracker microVM ── own kernel ────┤
-               same bytes, fresh credentials       │
-                        │                          │
-                        ▼ only route               │
-                sinkhole: fake DNS, HTTP, TLS, ────┘
-                metadata endpoint. No route out.
-```
-
-Testing on real malware shaped this. The sandbox looks like a developer's machine, with curl, Python and git, because real payloads die on a bare image. Dependencies are fetched with scripts off, because a package scanned alone dies on a missing `axios`. Each scan has its own root certificate, trusted inside the sandbox, so a token sent over HTTPS is seen. Each scan also has a unique machine name, so recon sent out in any encoding is caught.
-
-gVisor records every syscall, but it names itself: `/proc/version` reads `4.19.0-gvisor`. The microVM has its own Linux kernel, so that check comes back clean. It has no syscall log, so the two complement each other, and the sinkhole sits outside both.
-
-Both tiers run without root, in network namespaces created with `unshare` inside a user namespace. The only route leads to the sinkhole, and the sinkhole has no route at all. A hard deadline kills each run. A package already blocked by the first run, or killed at the deadline, skips the second.
-
-## How it runs on Vultr
-
-| Vultr service | What it does here |
-|---|---|
-| VX1 Cloud Compute | One VM (`vx1-g-2c-8g-120s`, Debian 13, San Jose) runs the site, the queue, gVisor, Firecracker and the sinkhole. `/dev/kvm` is there from first boot, so each scan gets a microVM with its own kernel, without root. Median gVisor run 4.5 s, median microVM run 6.4 s |
-| Serverless Inference | `deepseek-v4.1-flash-1017` drives the decoy agent and the repair agent with tool calling, reads package text for instructions aimed at AI agents, and writes the explanation beside each verdict. It never sets a verdict. The decoy agent reaches it through a gateway outside the sandbox that adds the real key and caps the calls, so the machine under attack holds only a fake key |
-| Vector Store | Attack memory: the behaviour of 71 recorded real attacks, never their code. Search finds candidates, and a measured overlap check keeps only real matches, so an explanation can say which attack a package behaves like. It has no effect on the verdict |
-| Account API | The spend guard reads the balance and pending charges every 10 minutes with a billing-only sub-user key. Vultr has no native spend alert, so if the reading goes stale or the limit is reached, scans stop |
-| Firewall and Terraform | Ports 80 and 443 are open, SSH only from the admin address. One command builds it in any of the plan's 12 regions, and `terraform destroy` removes everything that bills |
-
-Measured on a throwaway `vx1-g-4c-16g-240s` ($0.153/h) over the held-out run: 855 scans an hour, three at a time, or about $0.0002 of compute per scan, without inference.
-
-```
- page ────────┐
- PR check ────┼──HTTPS──▶ Caddy ──▶ redhanded web ──▶ one queue, one scan at a time
- agent (MCP) ─┘                                       rate limit, spend guard
-                                                            │
-                                     gVisor + microVM + sinkhole on VX1
-                                                            │
-                                     evidence ──▶ fixed rules ──▶ verdict
-                                                            │ clipped evidence, fenced as data
-                                     Vultr Serverless Inference: explanation only
+```mermaid
+flowchart LR
+    N["New package or skill<br/>PR, MCP call, shell hook"] --> B["Exact bytes by sha512<br/>Fake credentials made for this run"]
+    B --> G["gVisor<br/>every syscall recorded"]
+    B --> F["Firecracker microVM<br/>its own kernel"]
+    G --> S["Sinkhole: fake DNS, HTTP, TLS, metadata<br/>No route out"]
+    F --> S
+    G --> E["Evidence"]
+    F --> E
+    S --> E
+    E --> R{"Fixed rules"}
+    R -->|"HIGH or CRITICAL"| X["Merge blocked, with the recording"]
+    X --> P["Repair agent tests older versions<br/>and opens the fix PR"]
+    R -->|"CLEAN or REVIEW"| Y["Passes, or goes to a person"]
+    E -.->|"fenced as data"| M["Vultr Serverless Inference<br/>explains, never decides"]
 ```
 
-[`deploy/terraform`](deploy/terraform) builds all of it, [`deploy/deploy.sh`](deploy/deploy.sh) pushes a commit to the VM, and `terraform destroy` removes everything that bills. The host disables MPTCP, verifies gVisor, Firecracker and the guest kernel by checksum, builds the root filesystem from the image digest CI uses, and runs the service as an unprivileged user.
+It answers three questions from what the code *did*:
 
-### What the agents do on a real task
-
-**Checking a package.** It resolves the name or lockfile change to exact bytes by sha512, plants fresh fake credentials, and runs install scripts and exports under a hard deadline, in gVisor and then a microVM. Fixed rules read the logs and the sinkhole capture from outside.
-
-**Comparing versions.** It runs the version before as well and diffs the two records. The comparison can raise a verdict and never lower it. A new install script goes to review, or fails the check in strict mode.
-
-**Checking a skill.** A real agent, driven by Vultr Serverless Inference, gets the skill and an ordinary task on a machine with a small project, its memory files, fake credentials and stub AI tools. Its work runs inside the sandbox, and its model calls go through the gateway. Rules built for an agent working normally read what happened: a credential sent somewhere it does not belong, a paste site, changed agent memory, another skill installed.
-
-**Repairing.** The model picks the next tool: list older versions, run one, compare it, pin it. A pin is refused unless the rules returned CLEAN in this run, and a fixed walk finishes the job if the model fails. The Action then rewrites only the lockfile, with scripts off, opens the PR and posts the verdict on it.
-
-Each replay in [`replays/`](replays) keeps a scan's report and sinkhole capture, plus the syscall lines that carry the story and the sha256 of the full log. Attack replays were recorded on a throwaway VX1 and contain no package code. Fake credentials are replaced by their names, because they are shaped like real ones and secret scanners cannot tell.
-
-## How a verdict is reached
-
-Evidence decides; the model only explains.
+- **What changed?** The new version runs beside the one before it. New domains, install scripts, credential reads and commands are the evidence.
+- **What does it make the agent do?** A skill can do harm through instructions alone, which a package scan never sees. So a real decoy agent uses it on an ordinary task, next to fake credentials.
+- **What do we go back to?** After a block, an agent tests older versions and opens the fix as a PR. It chooses what to check. Only the fixed rules can clear a version.
 
 | Verdict | Triggered by |
 |---|---|
-| CRITICAL | A honeytoken appears in outbound traffic or a DNS name, or a stolen token is presented to the fake npm, GitHub or AWS endpoint |
-| HIGH | Runs the machine's AI coding tool with its permission checks off; reads bait and attempts network access; sends this scan's unique machine name out; contacts a data-collection service; spawns a network tool anywhere; writes a persistence path; modifies the runtime toolchain; does something in the microVM that it hid from gVisor |
-| REVIEW | Unknown network destinations, container checks, inline code run from code, package text that gives instructions to AI agents, incomplete scans, deadline kills |
-| CLEAN | None of the above |
+| **CRITICAL** | A fake credential appears in outbound traffic or a DNS name, or a stolen token is presented to the fake npm, GitHub or AWS endpoint |
+| **HIGH** | Reads bait and attempts network access, sends this run's unique machine name out, reaches a bare IP address, spawns a network tool, writes a persistence path, modifies the toolchain, installs another program on the whole machine, or does something in the microVM it hid from gVisor |
+| **REVIEW** | Unknown destinations, container checks, inline code, text giving instructions to AI agents, incomplete scans, deadline kills |
+| **CLEAN** | None of the above |
 
-A package's declared lifecycle command, and npm's own build tooling (such as bundled node-gyp), are visible to any reviewer, so their form alone is not flagged; what they do still is. Loopback traffic is not network access. Each rule change bumps `RULES_VERSION`, so a cached verdict is never served under rules that did not make it.
+The verdict is deterministic, so text inside a package cannot talk its way out, and a model outage cannot change an answer.
 
-## Eval
+## A real attack, end to end
 
-`redhanded eval` scans every sample in [`zoo/`](zoo) and every pinned package in [`evals/benign.txt`](evals/benign.txt), then applies [`evals/gate.json`](evals/gate.json). Verdicts are deterministic, so the gate is exact: a sample below the verdict its `expect.json` demands fails the run, and a benign package that would block a merge fails it.
+`@opensearch-project/opensearch` 3.6.2, Mini Shai-Hulud, 12 May 2026. [Pull request #3](https://github.com/shanurwan/redhanded-demo/pull/3) bumps it, and the check fails: CRITICAL in 8 seconds of sandbox time. New since 3.6.0: an install script, reads of fake cloud keys, an SSH key and a wallet, and a call to a host the last version never contacted. The repair agent then opened [pull request #4](https://github.com/shanurwan/redhanded-demo/pull/4), pinning 3.6.0, in about 23 seconds.
 
-Recorded runs are in [`evals/results`](evals/results).
+<p align="center"><img src="docs/media/evidence.png" alt="The evidence panel for opensearch 3.6.2, verdict CRITICAL, with the rules that fired and the recorded syscalls" width="86%"></p>
 
-### Real malware
+Every verdict opens its evidence: syscalls, sinkhole capture and the rules that fired. [`replays/`](replays) holds the recorded attacks, with no package code and with fake credentials replaced by their names.
 
-Three random sets of about 300 from [Datadog's public dataset](https://github.com/DataDog/malicious-software-packages-dataset) of malicious npm packages (Apache-2.0), with no overlap, set aside by a fixed seed and each run once, on a throwaway Vultr VM. A separate 100 were used for tuning and do not count. No sample is kept in this repo.
+## Blast radius, measured
 
-| Run | Scanned | CRITICAL | HIGH | REVIEW | CLEAN | Blocked |
-|---|---|---|---|---|---|---|
-| First | 299 | 39 | 114 | 15 | 131 | 153 (139 as first run) |
-| Second | 300 | 49 | 105 | 14 | 132 | 154 (134 as first run) |
-| Third | 299 | 46 | 107 | 40 | 106 | 153 (139 as first run) |
-
-That is 460 blocked of 898 (51%). Of the 571 with an install script, 411 were blocked (72%). Of the 224 hijacked releases of real libraries, 133 were blocked (59%).
-
-These figures are re-scored from what the runs recorded, after a rule for bare IP addresses was added. That rule came from the live watch and skill runs, not from these samples. As first run, 412 were blocked. The rule for installs that put another program on the whole machine was added later and is not counted here.
-
-The third run added stand-ins for missing dependencies, and an agent that writes code against packages which looked clean. The agent alone blocked 3 of those 299.
-
-### What left the machine
-
-A sandbox reporting that it held is not evidence, so we recorded the real network card, on a throwaway Vultr VM running the same code as the site, while the 100 samples that tried the most connections ran. A test package built to get out ran alongside them. [Full numbers](evals/results/2026-11-07-network-capture.json).
+A sandbox reporting that it held is not evidence, so we recorded the real network card while the 100 samples that tried the most connections ran, beside a test package built to get out.
 
 | What was tried | Seen on the network card |
 |---|---|
-| 250 outside hosts the malware tried to reach | 0 packets to the addresses, 0 real lookups of the names |
-| Test package, in gVisor: our own VM on five TCP ports, UDP and ping, public DNS directly, IPv6, cloud metadata, two canary names | 0 |
-| A version that stays quiet in gVisor, so the same attempts run in Firecracker | 0 |
-| Control, from the host itself: three TCP ports, UDP and a DNS lookup | All seen, so the capture would have shown a leak |
+| 250 outside hosts the malware tried to reach | **0** |
+| Test package in gVisor: our own VM on five TCP ports, UDP and ping, public DNS directly, IPv6, cloud metadata, two canary names | **0** |
+| A version that stays quiet in gVisor, so the same attempts run in Firecracker | **0** |
+| Control from the host itself: three TCP ports, UDP and a DNS lookup | All seen, so a leak would have shown |
 
-400,543 packets went to 19 addresses: npm's CDN and GitHub's download host (our dependency fetch, before the package runs), Vultr Inference (model calls), Vultr DNS and time servers, and the control. npm is left out of the 250 because our own fetch uses it, and a sample's attempts on it went to the fake internet. Inside, 105 fake credentials were sent and 132 stolen-token uses were absorbed.
+**The first capture passed, and it still missed a hole.** Asking why GitHub's download host appeared showed that npm followed a dependency's dependency to any URL, on our host, before the sandbox. No sample had tried it, so the capture could not show it. With real npm, a URL, a TLS URL and a git source all reached a local listener. The fetch now goes through [a gate](src/redhanded/egress.py) that reaches only the registry and GitHub's download host, all three reach the listener zero times, and the table above is from the run after that fix.
 
-**The first capture passed, and we repeated it.** It had no control, skipped port 22 and only ran the test package in gVisor. Asking why GitHub's download host appeared also showed a way out that no sample had tried: the fetch filters a package's own dependencies, but npm follows what those dependencies name in turn, on the host, before the sandbox. With real npm, a URL, a TLS URL and a git source each reached a local listener. The fetch now goes through [a gate](src/redhanded/egress.py) that reaches only the registry and GitHub's download host, and all three reach it zero times. The table is from after that fix. 90 of the 100 were blocked in both runs. Four verdicts moved without crossing the block line: three REVIEW to CLEAN, one CRITICAL to HIGH.
+This is one run, on a throwaway VM with the same code. It does not rule out an unknown bug in gVisor, Firecracker or the kernel. [The full account](docs/EVALS.md#what-left-the-machine) lists what still leaves the machine and why.
 
-This is one run of these samples. It does not rule out an unknown bug in gVisor, Firecracker or the kernel. A package still decides which public npm and GitHub packages we fetch, so their owners could see a download. A dependency from a GitHub source may now fail to fetch, and the package then runs without it.
+## Stand in the path
 
-### The real Cline release
-
-`cline@2.3.0` is the release pushed with a stolen npm token on 17 February 2026: one new `postinstall` line, `npm install -g openclaw@latest`. It is still downloadable, deprecated, so it can be run again.
-
-The first run said CLEAN. The sandbox had recorded the command, and no rule treated it as serious. After adding a rule for installs that put another program on the whole machine, `2.3.0` is HIGH in 10.8 s and `2.2.3` stays CLEAN. The rule trips on 3 of 4,302 live releases, unconfirmed. Those 3 are real false-alarm candidates, and the rule was written knowing the answer.
-
-How to read these numbers:
-
-- Some misses are limits of replaying old attacks: payloads that delete themselves or depend on downloads and packages that no longer exist, for example the axios payload `plain-crypto-js`, whose `setup.js` is absent from the dataset's copy. Others are real gaps: code that only fires on Windows, or only when called in a specific way. [`evals/real-malware.json`](evals/real-malware.json) sorts them by cause, automatically and approximately.
-- The dataset leans toward what Datadog's own rules flag, so it is not a sample of all npm malware.
-- Rules changed slightly between and after the runs: inline code alone and reading only `.npmrc` went to review, and git's sample hooks stopped counting. No blocked held-out result relied on these.
-- The second tier found nothing the first had missed on the first two sets. The rule that flags what a package hid from gVisor has fired only on our own Zoo sample.
-
-### What changed since the last version
-
-For every hijacked release in those two runs with an earlier release still on npm, the version before it ran too (142 pairs).
-
-| | One version alone | With the comparison |
-|---|---|---|
-| Flagged for a person or blocked | 86 (61%) | 108 (76%) |
-| Blocked by default | 85 | 85 |
-| Blocked in strict mode | | 107 (75%) |
-
-On 275 ordinary consecutive releases from live npm, none blocked on their own, the comparison sent 1 to review, blocked 0, and 1 added an install script. Strict mode's rule was written after seeing the hijack side, so its 107 is not a held-out figure. On this sample it would have stopped one ordinary release in 275, and legitimate packages do add install scripts, so it stays off by default.
-
-### Real agent skills
-
-Labels are [SkillSieve's](https://github.com/xiaohou521/skillsieve) human-reviewed index (MIT), with files from a public MIT fork of the ClawHub archive, plus accounts on a [public threat list](https://github.com/adibirzu/openclaw-security-monitor). Each skill goes to the decoy agent, up to twice.
-
-| Set | Skills | Blocked | Review | Clean |
-|---|---|---|---|---|
-| Campaign account, skills the rules had never seen | 60 | 57 | 2 | 1 |
-| ClawHub's most-downloaded skills | 31 | 0 | 10 | 21 |
-| Labelled benign, unused until now | 9 | 0 | 6 | 3 |
-| Labelled malicious, main account | 36 | 36 | 0 | 0 |
-| Labelled malicious, four other accounts | 4 | 0 | 0 | 4 |
-| Accounts on the threat list, before the new rules | 70 | 6 | 30 | 34 |
-| Labelled benign, before the new rules | 97 | 2 | 36 | 59 |
-
-**One hidden command, one server.** 220 of the 644 skills in the archive, across 4 accounts, carry a base64 command piped to a shell. All of them decode to one address, which matches public reporting on ClawHavoc. 0 of 335 labelled benign skills do. Reading this runs nothing.
-
-In 52 of these skills on the threat list, the decoy agent decoded the command and flagged it every time, and never piped it to a shell. In 19 of the 52 it still called that server while checking. So the rule does not depend on how careful the model is.
-
-How to read these numbers:
-
-- The two new rules (a hidden command, a bare IP address) were written after reading the threat-list run. Re-scored with them, that run goes from 6 to 56 of 70 blocked, which is not a held-out figure. The 57 of 60 is held out, but it comes from one account using one technique, so it does not predict other attackers.
-- The other accounts stay hard. All 4 labelled skills from four other accounts still got through, and so did all 5 from `krajekisbtc`, because the agent did nothing the rules recognise.
-- Nobody has vetted ClawHub's most-downloaded skills, so that row is a false-alarm check, not a clean benchmark. Review is common: on skills it can be a third or more.
-- Earlier runs of the main account blocked 34 and 33 of 36. Rules changed between runs.
-- The test that deletes a skill and gives a fresh agent a new task has fired on 0 real samples so far. It is built and tested, and has not caught anything real.
-- One labelled benign skill remains blocked for downloading and running code.
-
-### False alarms on live npm
-
-681 new npm releases, scanned as they were published. Under the current rules 6 were blocked (0.9%), and 6 of the 112 with an install script. Checked by hand, these are aggressive installers rather than confirmed malware: telemetry carrying the machine name, shell profile edits, downloads with curl, using a GitHub token without asking. Relaxing the rule for curl alone would remove 2 of the 6 and lose 29 of the 139 held-out catches, so it stays. No malware has been found this way so far.
-
-### False alarms and the Zoo
-
-| Set | Result |
-|---|---|
-| Zoo samples (must be caught) | 9 of 9 at or above the expected verdict (Wilson 95%: 0.70 to 1.0) |
-| Benign: 42 popular packages plus 3 controls | 0 would block a merge, 2 sent to review (puppeteer downloads Chromium; nodemon reads `/proc/1/environ`) |
-| Agent-text check on 42 real package READMEs | 0 flagged |
-| Time per scan | About 10 s typically; p95 33 s on the malware set; large native builds take longer |
-| Compute per scan | About $0.0002 on a $0.153/h VX1 running 3 at a time, without inference |
-
-- The rules were tuned on left-pad, core-js and esbuild, then on sqlite3 after the first held-out run flagged it. Those four do not count as held out.
-- CI runs the Zoo under gVisor alone, without the model. The microVM tier and the agent-text check run on the VX1 host.
-- The agent-text check has been measured for false alarms much more than for catches: one Zoo sample and three hand-written strings. A package can also word its text to slip past it.
-
-## Use it
-
-Requirements: Linux, Python 3.12+, [gVisor](https://gvisor.dev) `runsc`, and a root filesystem with Node (CI builds one from `node:24-alpine`; see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
-
-```bash
-python -m pip install -e ".[mcp]"
-export RH_RUNSC=~/bin/runsc RH_ROOTFS=~/rootfs RH_SCANS=~/scans
-redhanded scan left-pad@1.3.0          # one package from the registry
-redhanded scan zoo/network-tool        # a local folder
-redhanded eval                         # the gate
-```
-
-### From a coding agent
-
-Copy the config from the site, or:
-
-```json
-{
-  "mcpServers": {
-    "redhanded": { "type": "http", "url": "https://45-32-140-228.sslip.io/mcp" }
-  }
-}
-```
-
-Nothing to install, and the scan runs on the RedHanded host, never on the caller's machine. Tools: `check_package(name, version)`, `check_lockfile_change(new_lockfile, old_lockfile)`, `compare_versions(name, version)`, `find_safe_version(name, blocked_version)`, `check_skill(files)` and `get_scan_report(scan_id)`. Package text never appears in an answer, so an attacker's README cannot reach the next agent. [`/llms.txt`](src/redhanded/static/llms.txt) describes the HTTP API. `redhanded mcp` serves the same tools over stdio for your own sandbox host.
-
-### Stop the agent itself
-
-MCP helps when the agent decides to ask. [`hooks/redhanded_guard.py`](hooks/redhanded_guard.py) sits in front of the shell in Claude Code, so it does not depend on that. It catches `npm`, `pnpm`, `yarn` and `bun` installs of named packages, gets a verdict, and refuses a blocked one. The refusal tells the agent which older version proved clean, so it can carry on with that.
-
-```json
-{"hooks": {"PreToolUse": [{"matcher": "Bash|PowerShell", "hooks": [{"type": "command", "command": "python3 hooks/redhanded_guard.py", "timeout": 300}]}]}}
-```
-
-If the service cannot answer, the install goes ahead with a warning, unless `RH_GUARD_STRICT=1`. It does not check a bare `npm install`, a URL or a local path, or stop an agent that writes its own download. The PR check covers lockfile changes.
-
-### As a PR check
+**Pull request.** A HIGH or CRITICAL verdict, or an answer that never arrives, fails the check.
 
 ```yaml
 on: pull_request
@@ -239,17 +108,129 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
       - uses: shanurwan/redhanded@main
         with:
           repair: "true"    # after a block, open the fix as a PR (needs contents and pull-requests: write)
           strict: "false"   # "true" also fails on a release that adds an install script
 ```
 
-A HIGH or CRITICAL verdict, or an answer that never arrives, fails the check. The job summary links to the evidence. Add it as a required check in branch protection to block the merge.
+Add it as a required check in branch protection to block the merge. With repair on, the repo must allow Actions to open pull requests. GitHub may hold the workflow on the fix PR for a person to approve, because a bot opened it; the fix PR's `redhanded` status is posted either way.
 
-With repair on, the repo must allow Actions to open pull requests (Settings, Actions, General). GitHub may hold the workflow on the fix PR for a person to approve, because a bot opened it. The fix PR's `redhanded` status is posted either way.
+**Your coding agent, when it asks.** Hosted MCP, nothing to install, and the scan never runs on the caller's machine. Package text never appears in an answer, so an attacker's README cannot reach the next agent.
+
+```json
+{ "mcpServers": { "redhanded": { "type": "http", "url": "https://45-32-140-228.sslip.io/mcp" } } }
+```
+
+Tools: `check_package`, `check_lockfile_change`, `compare_versions`, `find_safe_version`, `check_skill`, `get_scan_report`. [`/llms.txt`](src/redhanded/static/llms.txt) describes the HTTP API. `redhanded mcp` serves them over stdio for your own sandbox host.
+
+**Your coding agent, when it doesn't.** A Claude Code hook in front of the shell. In a [recorded run](docs/media/hero.gif), real Claude Code went for `cline@2.3.0`, was refused with evidence, was told `2.2.3` proved clean, and installed that in 55 seconds with no human involved. That prompt allowed a fallback, and `npm audit` still lists 3 known vulnerabilities in the dependencies of 2.2.3, which proved clean on behaviour, not on advisories.
+
+```json
+{"hooks": {"PreToolUse": [{"matcher": "Bash|PowerShell", "hooks": [{"type": "command", "command": "python3 hooks/redhanded_guard.py", "timeout": 300}]}]}}
+```
+
+It catches `npm`, `pnpm`, `yarn` and `bun` installs of named packages. It does not check a bare `npm install`, a URL or a local path, or stop an agent that writes its own download; the PR check covers lockfile changes.
+
+**Anyone, right now.** Press the button on [the site](https://45-32-140-228.sslip.io/?ref=github), or:
+
+```bash
+curl -s https://45-32-140-228.sslip.io/api/scan -H 'Content-Type: application/json' -d '{"package":"cline@2.3.0"}'
+# {"job": "<id>"}, then GET /api/jobs/<id>
+```
+
+**Your own host.** Linux, Python 3.12+, [gVisor](https://gvisor.dev) `runsc`, and a root filesystem with Node ([CI builds one](.github/workflows/ci.yml)).
+
+```bash
+python -m pip install -e ".[mcp]"
+export RH_RUNSC=~/bin/runsc RH_ROOTFS=~/rootfs RH_SCANS=~/scans
+redhanded scan left-pad@1.3.0          # one package from the registry
+redhanded scan zoo/network-tool        # a harmless local sample
+redhanded eval                         # the gate
+```
+
+## Built to fail safely
+
+A security gate that passes when it breaks is worse than none. Each of these is a test that runs in [CI](.github/workflows/ci.yml).
+
+| When this happens | RedHanded does this | Proved by |
+|---|---|---|
+| The verdict never reaches the PR check | The check fails. It never passes by default | [`test_unanswered_scan_fails_closed`](tests/test_action.py) |
+| The spend reading goes stale | Every scan pauses, because unknown spend is not safe spend | [`test_scans_fail_closed_without_a_fresh_guard_state`](tests/test_web.py) |
+| The budget runs out with work queued | Queued jobs stop | [`test_guard_pausing_mid_queue_stops_the_job`](tests/test_web.py) |
+| A package hangs or hits the deadline | It is killed and goes to a person. It is never CLEAN | [`test_deadline_kill_is_review`](tests/test_verdict.py) |
+| A lockfile changes more than the budget allows | Install scripts go first; the rest are reported as not scanned and sent to a person | [`test_lockfile_scan_budget_leaves_rest_unknown_and_advises_review`](tests/test_service.py) |
+| The model fails | The verdict stands, the explanation is left out, and a fixed walk finishes the repair | [`test_a_model_failure_still_repairs`](tests/test_agent_gate.py) |
+| A dependency names a URL or git source | The gate refuses it without looking the name up | [`test_the_gate_refuses_everything_else_without_touching_it`](tests/test_egress.py) |
+| Someone floods the service | A per-address limit and a short queue: it slows down instead of running up a bill | [`test_rate_limit_and_bad_requests`](tests/test_web.py) |
+| The hook cannot reach the service | It warns, or refuses with `RH_GUARD_STRICT=1`. You choose which failure you prefer | [`test_when_the_service_is_down_it_warns_unless_strict`](tests/test_guard.py) |
+| A rule change breaks detection or starts blocking clean packages | The eval gate fails on any miss or benign block | [`test_gate_fails_on_any_miss_and_on_benign_block`](tests/test_eval.py) |
+
+**If the sandbox itself breaks,** the design limits what is there to take. Both tiers run without root, in network namespaces inside a user namespace, under an unprivileged service account. The machine under attack holds only fake credentials: the real inference key stays in a gateway outside the sandbox, and the cloud key on the host is a billing-only sub-user that cannot touch instances. gVisor, Firecracker and the guest kernel are verified by checksum, MPTCP is off, and the root filesystem comes from the image digest CI uses. Treat the VM as disposable: `terraform apply` rebuilds it and `terraform destroy` removes everything that bills.
+
+**Limits an operator should know.** One VM and one worker, with no failover. The queue is in memory, so a restart loses queued jobs and their callers get no verdict; the PR check then fails rather than passes. npm only, on Linux. There has been no third-party audit or compliance certification, so review it as you would any new control before putting it in a required path.
+
+## How it runs on Vultr
+
+| Vultr service | What it does here |
+|---|---|
+| **VX1 Cloud Compute** | One VM (`vx1-g-2c-8g-120s`, Debian 13, San Jose) runs the site, the queue, gVisor, Firecracker and the sinkhole. `/dev/kvm` is there from first boot, so each scan gets a microVM with its own kernel, without root. Median gVisor run 4.5 s, median microVM run 6.4 s |
+| **Serverless Inference** | `deepseek-v4.1-flash-1017` drives the decoy and repair agents with tool calling, reads package text for instructions aimed at AI agents, and writes the explanation beside each verdict. It never sets a verdict |
+| **Vector Store** | Attack memory: the behaviour of 71 recorded real attacks, never their code. An explanation can say which attack a package behaves like. It has no effect on the verdict |
+| **Account API** | The spend guard reads balance and pending charges every 10 minutes. Vultr has no native spend alert, so if the reading goes stale or the limit is reached, scans stop |
+| **Firewall and Terraform** | Ports 80 and 443 are open, SSH only from the admin address. One command builds it in any of the plan's 12 regions |
+
+Measured on a throwaway `vx1-g-4c-16g-240s` ($0.153/h) over the held-out run: 855 scans an hour, three at a time, or about $0.0002 of compute per scan, without inference. [`deploy/terraform`](deploy/terraform) builds all of it and [`deploy/deploy.sh`](deploy/deploy.sh) pushes a commit to the VM.
+
+```
+ page ────────┐
+ PR check ────┤
+ agent (MCP) ─┼──HTTPS──▶ Caddy ──▶ redhanded web ──▶ one queue, rate limit, spend guard
+ shell hook ──┘                                              │
+                                     gVisor + microVM + sinkhole on VX1
+                                                             │
+                                     evidence ──▶ fixed rules ──▶ verdict
+                                                             │ clipped evidence, fenced as data
+                                     Vultr Serverless Inference: explanation only
+```
+
+### What the agents do on a real task
+
+**Checking a package.** It resolves the name or lockfile change to exact bytes by sha512, plants fresh fake credentials, and runs install scripts and exports under a hard deadline, in gVisor and then a microVM. Fixed rules read the logs and the sinkhole capture from outside.
+
+**Comparing versions.** It runs the version before as well and diffs the two records. The comparison can raise a verdict and never lower it.
+
+**Checking a skill.** A real agent, driven by Vultr Serverless Inference, gets the skill and an ordinary task on a machine with a small project, its memory files, fake credentials and stub AI tools. Its work runs inside the sandbox, and its model calls go through the gateway. Rules built for an agent working normally read what happened.
+
+**Repairing.** The model picks the next tool: list older versions, run one, compare it, pin it. A pin is refused unless the rules returned CLEAN in this run. The Action then rewrites only the lockfile, with scripts off, opens the PR and posts the verdict on it.
+
+### Why two sandboxes
+
+gVisor records every syscall, but it names itself: `/proc/version` reads `4.19.0-gvisor`. The microVM has its own Linux kernel, so that check comes back clean, but it has no syscall log. Each covers the other's blind spot, and the sinkhole sits outside both. Real malware shaped the rest: the sandbox looks like a developer's machine because payloads die on a bare image, each scan has its own root certificate so a token sent over HTTPS is seen, and each has a unique machine name so recon in any encoding is caught.
+
+## What gets through
+
+369 of the 898 came back CLEAN and 69 went to review. [Sorted by cause](evals/real-malware.json), automatically and approximately:
+
+| Cause | Packages |
+|---|---:|
+| A dependency no longer exists, so the payload cannot run | 132 |
+| No install script, and nothing fired on import or call | 128 |
+| The install script ran and did nothing we flag | 56 |
+| Needs a download or tool we do not provide | 34 |
+| Windows or Mac only | 18 |
+| Payload file missing from the sample | 1 |
+
+- **Cline was our own miss.** The first run said CLEAN. After adding a rule for installs that put another program on the whole machine, `2.3.0` is HIGH in 10.8 s and `2.2.3` stays CLEAN. That rule was written knowing the answer, and it trips on 3 of 4,302 live releases.
+- **The dataset leans** toward what Datadog's own rules flag, so it is not a sample of all npm malware.
+- **Skills are noisy.** Most-downloaded skills: 0 of 31 blocked, but 10 of 31 sent to review. Four labelled skills from other accounts got through, because the agent did nothing the rules recognise.
+- **A careful model is not a boundary.** In 52 skills with a hidden command, our decoy agent decoded and flagged it every time and never ran it, and in 19 it still called the attacker's server while checking.
+- **The live watch** has blocked 11 new npm releases so far, and none is confirmed malicious. Mostly aggressive installers, and one bug bounty probe by its own README.
+
+[`docs/EVALS.md`](docs/EVALS.md) has every run, table and caveat.
+
+Commercial scanners lead this market and read code well. RedHanded works beside them: they read it, this runs it.
 
 ## Development
 
@@ -258,18 +239,8 @@ python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-## Safety
+[Security policy](SECURITY.md). The [Zoo](zoo) samples imitate publicly documented attack behaviour; their only targets are per-scan fake credentials and reserved `.invalid` domains, and they are never published to npm. Real malware only ever ran on throwaway VMs, and none is kept here.
 
-The Zoo samples imitate publicly documented attack behaviour. Their only targets are per-scan fake credentials and reserved `.invalid` domains, they are `"private": true`, and they are never published to npm.
+The site counts visits and runs to learn whether people use it. A person is a keyed hash of address and browser, the key stays on the server, and no address or cookie is stored.
 
-## What usage counting keeps
-
-The site counts visits and runs to learn whether people use it. A person is a keyed hash of address and browser, and the key stays on the server, so no address or cookie is stored. Known bots and link previews are left out. Deleting `usage.key` and `usage.sqlite3` removes all of it.
-
-## Built during the event
-
-See [`BUILT_DURING_HACKATHON.md`](BUILT_DURING_HACKATHON.md).
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+Built for the Vultr: Agent Rush Hackathon 2026, Challenge 1 "Blast Radius Zero". [What was built when](BUILT_DURING_HACKATHON.md). MIT, see [LICENSE](LICENSE).

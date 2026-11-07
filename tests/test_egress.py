@@ -92,3 +92,12 @@ def test_a_download_is_only_taken_from_the_registry_itself(monkeypatch):
     with pytest.raises(runner.ScanError):
         runner.fetch("a", "1.0.0", "https://registry.npmjs.org")
     assert calls == ["https://registry.npmjs.org/a/1.0.0"]
+
+
+def test_a_recorded_log_never_keeps_fake_key_text():
+    from redhanded.replay import redact
+    line = 'read(0xc /home/dev/.ssh/id_ed25519, 0x7f "-----BEGIN OPENSSH PRIVATE KEY-----\\nb3Blbg==\\n"..., 411)'
+    out = redact(line, {})
+    assert "BEGIN" not in out and "b3Blbg" not in out and "411" in out
+    for p in Path("replays").glob("*/syscalls-excerpt.txt"):
+        assert "PRIVATE KEY" not in p.read_text(errors="replace"), p

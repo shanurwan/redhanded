@@ -19,6 +19,7 @@ KEEP = re.compile(r" X (?:execve|execveat|connect|sendto|sendmsg)\(|"
                   r"/home/dev/|/\.dockerenv|/run/\.containerenv|/proc/1/|/proc/vz|/proc/xen")
 # The bait is fake, but it is shaped like real credentials on purpose, and secret
 # scanners cannot tell. Excerpts name the honeytoken instead of carrying it.
+PEM_KEY = re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----[^"]*')
 TOKEN_SHAPES = re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b|\bnpm_[A-Za-z0-9]{36}\b|\bgh[pousr]_[A-Za-z0-9]{36}\b")
 BAIT_ENV = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "NPM_TOKEN", "GITHUB_TOKEN")
 MAX_LINES = 600
@@ -36,7 +37,7 @@ def _bait_values(scan_dir: Path) -> dict[str, str]:
 def redact(line: str, bait: dict[str, str]) -> str:
     for value, name in bait.items():
         line = line.replace(value, f"<honeytoken:{name}>")
-    return TOKEN_SHAPES.sub("<honeytoken>", line)
+    return PEM_KEY.sub("<honeytoken>", TOKEN_SHAPES.sub("<honeytoken>", line))
 
 
 def _without_skill_text(raw: str) -> str:
