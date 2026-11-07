@@ -26,6 +26,11 @@ const TOKEN_NAMES = { aws_access_key_id: "AWS access key", aws_secret_access_key
   ssh_private_key: "SSH key", wallet_private_key: "wallet key", metadata_access_key_id: "cloud metadata key", metadata_secret: "cloud metadata secret" };
 const isHarness = (argv) => { const s = argv.join(" "); return s.includes("/work/.rh/") || (/(^| )npm( |$)|\/usr\/local\/bin\/npm/.test(s) && argv.includes("rebuild")); };
 
+// A visit, and which link it came from. Link previews do not run this.
+try {
+  fetch("/api/hit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: new URLSearchParams(location.search).get("ref") }), keepalive: true }).catch(() => {});
+} catch { /* counting never matters more than the page */ }
+
 // ---------------------------------------------------------------- the attack, told from its own evidence
 
 function story(view) {

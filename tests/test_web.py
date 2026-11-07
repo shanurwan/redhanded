@@ -334,3 +334,66 @@ def test_results_and_fonts_are_served(site, tmp_path):
     assert json.loads(get(base + "/api/results")[2]) == {"scanned": 3}
     status, headers, body = get(base + "/geist.woff2")
     assert status == 200 and headers["Content-Type"] == "font/woff2" and body[:4] == b"wOF2"
+
+
+def _hit(base, ref=None, agent="Mozilla/5.0 Firefox/130"):
+    req = urllib.request.Request(base + "/api/hit", data=json.dumps({"ref": ref}).encode(), headers={"Content-Type": "application/json", "User-Agent": agent}, method="POST")
+    with urllib.request.urlopen(req) as r:
+        return r.status
+
+
+def _numbers(cfg):
+    from redhanded.usage import Usage
+    return Usage(cfg.data_dir).numbers()
+
+
+def test_visits_count_people_once_and_keep_the_channel(site):
+    base, _, cfg, _ = site
+    assert _hit(base, "linkedin") == 202
+    _hit(base, "discord")                             # the same person again: first channel stands, same visit
+    _hit(base, "whatsapp", "Mozilla/5.0 Chrome/120")  # someone else
+    _hit(base, "<script>", "Mozilla/5.0 Safari/1")    # nonsense channel
+    n = _numbers(cfg)
+    assert n["visitors"] == 3 and n["visits"] == 3
+    assert {s[0] for s in n["sources"]} == {"linkedin", "whatsapp", "direct"}
+
+
+def test_link_previews_and_bots_do_not_count(site):
+    base, _, cfg, _ = site
+    for bot in ("WhatsApp/2.23", "Mozilla/5.0 (compatible; Discordbot/2.0)", "LinkedInBot/1.0", "curl/8", "facebookexternalhit/1.1"):
+        _hit(base, "linkedin", bot)
+    assert _numbers(cfg)["visitors"] == 0
+
+
+def test_usage_never_stores_an_address(site):
+    base, _, cfg, _ = site
+    _hit(base, "pm")
+    from pathlib import Path as P
+    assert b"127.0.0.1" not in (P(cfg.data_dir) / "usage.sqlite3").read_bytes()
+
+
+def test_stats_page_needs_the_key_and_leaves_its_owner_out(site):
+    from redhanded.usage import Usage
+    base, _, cfg, _ = site
+    assert get(base + "/stats")[0] == 404 and get(base + "/stats?key=wrong")[0] == 404
+    key = Usage(cfg.data_dir).token
+    status, headers, body = get(f"{base}/stats?key={key}")
+    assert status == 200 and b"unique users" in body and "script" not in headers["Content-Security-Policy"]
+    _hit(base, "pm")
+    assert _numbers(cfg)["visitors"] == 0
+
+
+def test_a_scan_counts_as_use_and_the_demo_repo_does_not(site):
+    from redhanded.usage import Usage, repo_id
+    base, _, cfg, _ = site
+    set_guard(cfg.guard_state)
+    req = urllib.request.Request(base + "/api/scan", data=json.dumps({"package": "a@1.0.0"}).encode(), headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 Firefox/130"}, method="POST")
+    with urllib.request.urlopen(req) as r:
+        assert r.status == 202
+    n = _numbers(cfg)
+    assert n["users"] == 1 and n["runs"] == 1
+    u = Usage(cfg.data_dir)
+    u.used("action", "1.2.3.4", "redhanded-action", repo_id("someone/app"))
+    u.used("action", "5.6.7.8", "redhanded-action", repo_id("someone/app"))
+    u.used("action", "1.2.3.4", "redhanded-action", repo_id("shanurwan/redhanded-demo"))
+    assert _numbers(cfg)["integrations"] == 1

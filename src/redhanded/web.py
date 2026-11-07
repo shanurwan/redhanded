@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import __version__, mcp_http
+from .usage import Usage
 from .agenttext import AgentTextCheck
 from .explain import Explainer
 from .memory import AttackMemory
@@ -333,6 +334,8 @@ def _tarball(body: dict) -> bytes:
 
 
 def make_handler(cfg: WebConfig, scanner: Scanner):
+    usage = Usage(cfg.data_dir)
+
     class Handler(BaseHTTPRequestHandler):
         server_version = f"redhanded/{__version__}"
         sys_version = ""
@@ -371,6 +374,13 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
                 name, ctype = STATIC[path]
                 body = resources.files("redhanded").joinpath("static", name).read_bytes()
                 return self.send(200, body, ctype, {"Cache-Control": "no-cache"})
+            if path == "/stats":
+                token = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("key", [None])[0]
+                if not usage.allowed(token):
+                    return self.json(404, {"error": "not found"})
+                usage.exclude(self.client())
+                return self.send(200, usage.page(cfg.host_label).encode(), "text/html; charset=utf-8",
+                                 {"Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"})
             if path == "/healthz":
                 return self.json(200, {"ok": True, "rules": RULES_VERSION, "scans_open": scanner.guard_allows()})
             if path == "/api/status":
@@ -429,16 +439,29 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
         def do_POST(self):
             path = urllib.parse.urlsplit(self.path).path
             try:
-                if path not in ("/api/scan", "/api/lockfile", "/api/compare", "/api/repair", "/api/skill", "/mcp"):
+                if path not in ("/api/scan", "/api/lockfile", "/api/compare", "/api/repair", "/api/skill", "/mcp", "/api/hit"):
                     self.close_connection = True
                     raise Refused(404, "not found")
                 body = self.body()
+                agent = self.headers.get("User-Agent", "")
+                if path == "/api/hit":
+                    source = body.get("ref")
+                    usage.visit(self.client(), agent, source if isinstance(source, str) else None)
+                    return self.send(202, b"", "application/json")
                 if path == "/mcp":
+                    if body.get("method") == "tools/call":
+                        usage.used("mcp", self.client(), agent or "mcp-client")
                     reply = mcp_http.handle(body, scanner, self.client())
                     if reply is None:
                         return self.send(202, b"", "application/json")
                     return self.json(200, reply)
-                self.json(202, {"job": submit(scanner, path, body, self.client()).id})
+                job = submit(scanner, path, body, self.client())
+                repo = self.headers.get("X-RedHanded-Repo", "")
+                if repo:
+                    usage.used("action", self.client(), agent, repo[:32])
+                else:
+                    usage.used(path.rsplit("/", 1)[1], self.client(), agent)
+                self.json(202, {"job": job.id})
             except Refused as e:
                 self.json(e.status, {"error": str(e)})
 
