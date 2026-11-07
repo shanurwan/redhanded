@@ -220,7 +220,7 @@ function renderAbsorb(res) {
 function renderWatch(w) {
   if (!w || !w.watched) return;
   const hours = Math.max(1, Math.round((w.updated - w.started) / 3600));
-  $("watch-text").textContent = `${w.watched.toLocaleString()} npm changes read in ${hours} ${hours === 1 ? "hour" : "hours"}. ${w.npm_ran.toLocaleString()} suspicious packages and ${w.skills_ran.toLocaleString()} new agent skills run so far. ${w.blocked.toLocaleString()} blocked, awaiting human review.`;
+  $("watch-text").textContent = `${w.watched.toLocaleString()} npm changes read in ${hours} ${hours === 1 ? "hour" : "hours"}. ${w.npm_ran.toLocaleString()} new or script-carrying releases and ${w.skills_ran.toLocaleString()} new agent skills run so far. ${w.blocked.toLocaleString()} blocked, each read by a person before anything is said about it.`;
   $("watch").hidden = false;
 }
 function renderGate(res) {

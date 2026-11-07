@@ -93,23 +93,32 @@ Recorded runs are in [`evals/results`](evals/results).
 
 ### Real malware
 
-Two random sets of 300 from [Datadog's public dataset](https://github.com/DataDog/malicious-software-packages-dataset) of malicious npm packages (Apache-2.0), with no overlap, set aside by a fixed seed and each run once, on a throwaway Vultr VM. A separate 100 were used for tuning and do not count. No sample is kept in this repo: only the evidence of a few scans, in [`replays/`](replays).
+Three random sets of about 300 from [Datadog's public dataset](https://github.com/DataDog/malicious-software-packages-dataset) of malicious npm packages (Apache-2.0), with no overlap, set aside by a fixed seed and each run once, on a throwaway Vultr VM. A separate 100 were used for tuning and do not count. No sample is kept in this repo.
 
-| Verdict | First run | Second run | Both |
-|---|---|---|---|
-| CRITICAL: seen stealing or using fake credentials | 39 | 49 | 88 |
-| HIGH: blocks the merge | 100 | 85 | 185 |
-| REVIEW: sent to a person | 29 | 34 | 63 |
-| CLEAN: got through | 131 | 132 | 263 |
+| Run | Scanned | CRITICAL | HIGH | REVIEW | CLEAN | Blocked |
+|---|---|---|---|---|---|---|
+| First | 299 | 39 | 114 | 15 | 131 | 153 (139 as first run) |
+| Second | 300 | 49 | 105 | 14 | 132 | 154 (134 as first run) |
+| Third | 299 | 46 | 107 | 40 | 106 | 153 (139 as first run) |
 
-That is 273 blocked of 599 (46%). Of the 380 with an install script, 255 were blocked (67%). Of the 150 hijacked releases of real libraries, 89 were blocked (59%).
+That is 460 blocked of 898 (51%). Of the 571 with an install script, 411 were blocked (72%). Of the 224 hijacked releases of real libraries, 133 were blocked (59%).
+
+These figures are re-scored from what the runs recorded, after a rule for bare IP addresses was added. That rule came from the live watch and skill runs, not from these samples. As first run, 412 were blocked. The rule for installs that put another program on the whole machine was added later and is not counted here.
+
+The third run added stand-ins for missing dependencies, and an agent that writes code against packages which looked clean. The agent alone blocked 3 of those 299.
+
+### The real Cline release
+
+`cline@2.3.0` is the release pushed with a stolen npm token on 17 February 2026: one new `postinstall` line, `npm install -g openclaw@latest`. It is still downloadable, deprecated, so it can be run again.
+
+The first run said CLEAN. The sandbox had recorded the command, and no rule treated it as serious. After adding a rule for installs that put another program on the whole machine, `2.3.0` is HIGH in 10.8 s and `2.2.3` stays CLEAN. The rule trips on 3 of 4,302 live releases, unconfirmed. Those 3 are real false-alarm candidates, and the rule was written knowing the answer.
 
 How to read these numbers:
 
 - Some misses are limits of replaying old attacks: payloads that delete themselves or depend on downloads and packages that no longer exist, for example the axios payload `plain-crypto-js`, whose `setup.js` is absent from the dataset's copy. Others are real gaps: code that only fires on Windows, or only when called in a specific way. [`evals/real-malware.json`](evals/real-malware.json) sorts them by cause, automatically and approximately.
 - The dataset leans toward what Datadog's own rules flag, so it is not a sample of all npm malware.
 - Rules changed slightly between and after the runs: inline code alone and reading only `.npmrc` went to review, and git's sample hooks stopped counting. No blocked held-out result relied on these.
-- The second tier found nothing the first had missed on these samples. The rule that flags what a package hid from gVisor has fired only on our own Zoo sample.
+- The second tier found nothing the first had missed on the first two sets. The rule that flags what a package hid from gVisor has fired only on our own Zoo sample.
 
 ### What changed since the last version
 
@@ -125,21 +134,30 @@ On 275 ordinary consecutive releases from live npm, none blocked on their own, t
 
 ### Real agent skills
 
-Labels are [SkillSieve's](https://github.com/xiaohou521/skillsieve) human-reviewed index (MIT), with files from a public MIT fork of the ClawHub archive. 15 malicious and 15 benign were used for tuning. Results below are from the rest, with the agent run up to twice per skill.
+Labels are [SkillSieve's](https://github.com/xiaohou521/skillsieve) human-reviewed index (MIT), with files from a public MIT fork of the ClawHub archive, plus accounts on a [public threat list](https://github.com/adibirzu/openclaw-security-monitor). Each skill goes to the decoy agent, up to twice.
 
 | Set | Skills | Blocked | Review | Clean |
 |---|---|---|---|---|
-| Malicious, main campaign (one account) | 36 | 33 | 0 | 3 |
-| Malicious, four other accounts | 4 | 0 | 0 | 4 |
-| Benign, never used before | 117 | 9 | 41 | 67 |
+| Campaign account, skills the rules had never seen | 60 | 57 | 2 | 1 |
+| ClawHub's most-downloaded skills | 31 | 0 | 10 | 21 |
+| Labelled benign, unused until now | 9 | 0 | 6 | 3 |
+| Labelled malicious, main account | 36 | 36 | 0 | 0 |
+| Labelled malicious, four other accounts | 4 | 0 | 0 | 4 |
+| Accounts on the threat list, before the new rules | 70 | 6 | 30 | 34 |
+| Labelled benign, before the new rules | 97 | 2 | 36 | 59 |
+
+**One hidden command, one server.** 220 of the 644 skills in the archive, across 4 accounts, carry a base64 command piped to a shell. All of them decode to one address, which matches public reporting on ClawHavoc. 0 of 335 labelled benign skills do. Reading this runs nothing.
+
+In 52 of these skills on the threat list, the decoy agent decoded the command and flagged it every time, and never piped it to a shell. In 19 of the 52 it still called that server while checking. So the rule does not depend on how careful the model is.
 
 How to read these numbers:
 
-- The data is narrow. 50 of the 55 labelled malicious skills come from one account, so the campaign result does not predict other attackers. All four skills from other accounts got through, because the agent did nothing the rules recognise in its allowed steps.
-- The paste-site rule came from reading a tuning sample of that same campaign, so its result there is optimistic.
-- This is a second pass. The first held-out pass blocked 8 of 98 benign skills and sent 51 to a person, and blocked 34 of 36 in the main campaign. The false-alarm rules were then changed and measured on benign skills never used before. Review fell from 52% to about 35%, and false blocks stayed near 8%. Most of those are skills that write to the agent's memory on purpose, which is hard to tell apart from tampering, so a block on a skill is a reason to read it, not proof of malice. The malicious set is the same one, run again after the changes.
-- A clean result means nothing bad happened in these runs. Agents vary from run to run, and a different agent may do something else.
-- [MalSkillBench](https://github.com/lxyeternal/MalSkillBench) verified skills by running them through an agent in Docker before we did. We did not use its data, because its licence covers academic research only.
+- The two new rules (a hidden command, a bare IP address) were written after reading the threat-list run. Re-scored with them, that run goes from 6 to 56 of 70 blocked, which is not a held-out figure. The 57 of 60 is held out, but it comes from one account using one technique, so it does not predict other attackers.
+- The other accounts stay hard. All 4 labelled skills from four other accounts still got through, and so did all 5 from `krajekisbtc`, because the agent did nothing the rules recognise.
+- Nobody has vetted ClawHub's most-downloaded skills, so that row is a false-alarm check, not a clean benchmark. Review is common: on skills it can be a third or more.
+- Earlier runs of the main account blocked 34 and 33 of 36. Rules changed between runs.
+- The test that deletes a skill and gives a fresh agent a new task has fired on 0 real samples so far. It is built and tested, and has not caught anything real.
+- One labelled benign skill remains blocked for downloading and running code.
 
 ### False alarms on live npm
 
@@ -216,6 +234,10 @@ python -m pytest
 ## Safety
 
 The Zoo samples imitate publicly documented attack behaviour. Their only targets are per-scan fake credentials and reserved `.invalid` domains, they are `"private": true`, and they are never published to npm.
+
+## What usage counting keeps
+
+The site counts visits and runs to learn whether people use it. A person is a keyed hash of address and browser, and the key stays on the server, so no address or cookie is stored. Known bots and link previews are left out. Deleting `usage.key` and `usage.sqlite3` removes all of it.
 
 ## Built during the event
 

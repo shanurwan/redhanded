@@ -1,0 +1,11 @@
+{
+ "title": "A skill with a hidden command",
+ "summary": "The setup step is encoded so nobody reading it sees it. It decodes to one server, shared by 220 skills across four accounts. The agent spotted it, and still called that server while checking.",
+ "order": 6.5,
+ "full_syscall_log": {
+  "sha256": "dc2f2e3d313380c873790dc48ba0c91bf236c4f9c0dd91c5d48efb10bbc4ff25",
+  "lines": 111184,
+  "excerpt_lines": 600
+ },
+ "kind": "skill"
+}
