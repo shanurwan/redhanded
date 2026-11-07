@@ -100,7 +100,7 @@ def main() -> int:
         event = json.load(sys.stdin)
     except ValueError:
         return 0
-    if event.get("tool_name") != "Bash":
+    if event.get("tool_name") not in ("Bash", "PowerShell"):
         return 0
     specs = packages((event.get("tool_input") or {}).get("command", ""))
     until = time.time() + WAIT_S

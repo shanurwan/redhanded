@@ -78,3 +78,9 @@ def test_when_the_service_is_down_it_warns_unless_strict(monkeypatch, capsys):
         raise OSError("unreachable")
     assert _run(monkeypatch, capsys, "npm install x", down)[0] == 0
     assert _run(monkeypatch, capsys, "npm install x", down, strict=True)[0] == 2
+
+
+def test_powershell_is_watched_too(monkeypatch, capsys):
+    monkeypatch.setattr(guard, "call", lambda p, b=None, timeout=30: _server("HIGH", "2.2.3")(p, b))
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"tool_name": "PowerShell", "tool_input": {"command": "npm install cline@2.3.0"}})))
+    assert guard.main() == 2
