@@ -125,7 +125,7 @@ pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-ra
 .rr-line { margin: 32px 0 20px; font-size: 20px; max-width: 42em; color: var(--text); }
 .rr-bar { display: flex; gap: 3px; border-radius: 8px; overflow: hidden; font-size: 14px; }
 .rr-bar span { padding: 14px 12px; min-width: 0; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rr-bar b { font-weight: 700; } .rr-a { background: #d92a38; } .rr-b { background: #a56a08; } .rr-c { background: #3a4254; }
+.rr-bar b { font-weight: 700; } .rr-a { background: #d92a38; flex: 460; } .rr-b { background: #a56a08; flex: 334; } .rr-c { background: #3a4254; flex: 104; }
 .rr-note { margin-top: 16px; max-width: 54em; }
 @media (max-width: 560px) { .rr-bar { flex-direction: column; } .rr-bar span { flex: none !important; } }
 .vgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; }
