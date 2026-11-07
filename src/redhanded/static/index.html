@@ -144,6 +144,23 @@
     </div>
   </section>
 
+  <section class="band band-alt" id="read-run">
+    <div class="wrap">
+      <h2>Reading against running</h2>
+      <p class="sub">If a model can read the code, why run it? We tested both on the same 898 real malicious packages.</p>
+      <div class="rr-head">
+        <div><b>776</b><span>flagged by a model that only reads. 86%, as an opinion.</span></div>
+        <div><b>460</b><span>blocked by running, with the fake key taken and the host called as proof. 51%.</span></div>
+        <div><b>1</b><span>package that running blocked and the model missed.</span></div>
+      </div>
+      <p class="rr-line">Reading catches far more here. Running gives the proof that makes it safe to block a merge automatically. So running decides, and reading can only ask for a person.</p>
+      <div class="rr-bar" role="img" aria-label="Of 898 packages: 460 blocked, 334 sent to a person, 104 clean">
+        <span class="rr-a" style="flex:460"><b>460</b> blocked</span><span class="rr-b" style="flex:334"><b>334</b> sent to a person</span><span class="rr-c" style="flex:104"><b>104</b> clean</span>
+      </div>
+      <p class="note rr-note">Clean falls from 369 to 104. A person was asked about 2 of 441 unseen packages. One sentence telling AI reviewers it was safe changed nothing: 198 of 198 stayed flagged. Datadog's dataset leans toward what static rules can see, which favours reading, so expect less on fresh attacks. <a href="https://github.com/shanurwan/redhanded/blob/main/docs/EVALS.md#reading-against-running">Method and caveats</a></p>
+    </div>
+  </section>
+
   <section class="band band-alt" id="scan">
     <div class="wrap narrow">
       <h2>Try it</h2>
@@ -206,13 +223,28 @@
       <p class="sub">A real kernel for every scan, cheap enough to run on every pull request, with the model next door.</p>
       <div class="vgrid">
         <div><b>VX1 Cloud Compute</b><span><code>/dev/kvm</code> is there from first boot, so one small VM runs gVisor and a Firecracker microVM per scan, without root.</span><em>Median microVM run: 6.4 s</em></div>
-        <div><b>Serverless Inference</b><span>Drives the decoy agent and the repair agent through a gateway outside the sandbox, so the machine under attack never holds a real key. It never sets a verdict.</span><em>Model: deepseek-v4.1-flash-1017</em></div>
+        <div><b>Serverless Inference</b><span>Drives the decoy agent and the repair agent through a gateway outside the sandbox, so the machine under attack never holds a real key. It can ask for a person. It can never clear or block.</span><em>Model: deepseek-v4.1-flash-1017</em></div>
         <div><b>Vector Store</b><span>Attack memory: the behaviour of recorded real attacks, never their code, so a reviewer sees which one a package resembles.</span><em>71 recorded attacks</em></div>
         <div><b>Account API</b><span>Vultr has no spend alert, so a guard reads the balance with a billing-only key. If the reading goes stale or the limit is reached, scans stop.</span><em>Fails closed</em></div>
         <div><b>Firewall and Terraform</b><span>Web ports open, SSH from one address. One command builds it in any of the plan's 12 regions, and one removes everything that bills.</span><em>Your packages, your account</em></div>
         <div><b>Measured cost</b><span>855 scans an hour, three at a time, on a $0.153 per hour VX1. Compute only, without inference.</span><em>About $0.0002 per scan</em></div>
       </div>
     </div>
+    </div>
+  </section>
+
+  <section class="band" id="business">
+    <div class="wrap">
+      <h2>What it is worth</h2>
+      <p class="sub">For the platform or security lead at a team that lets agents open pull requests. Agents started over 40% of GitHub pull requests in September.</p>
+      <div class="vgrid">
+        <div><b>The exposure</b><span>The real Cline release was live for about 8 hours and got about 4,000 downloads. RedHanded blocks it in 10.8 seconds.</span><em>Cline advisory, recorded run</em></div>
+        <div><b>The payback</b><span>IBM's 2026 report, as covered by others, says a supply chain compromise adds about $227,250 to a breach. At $6,000 a year, that is a 2.6% yearly chance.</span><em>Once in 38 years pays for it</em></div>
+        <div><b>The price</b><span>$500 per org per month, proposed. The same as 20 developers on Socket's listed $25 Team plan.</span><em>No customers yet</em></div>
+        <div><b>The cost to run</b><span>About $0.0002 of compute and 4,000 tokens of model reading per scan, measured on one Vultr VX1.</span><em>About $110 a month of Vultr per org</em></div>
+        <div><b>The human time</b><span>A person is asked about 2 of 441 unseen packages, and every question comes with a recording of what the package did.</span><em>Measured on real packages</em></div>
+        <div><b>The rollout</b><span>One workflow file, no real secrets in the scan. Findings go to GitHub code scanning as SARIF, with a public report for every verdict.</span><em>Audit trail included</em></div>
+      </div>
     </div>
   </section>
 </main>

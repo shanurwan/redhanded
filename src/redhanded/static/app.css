@@ -119,6 +119,15 @@ pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-ra
 .vultr { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 4px 16px; margin-top: 32px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; font-size: 14.5px; }
 .vultr span { grid-row: span 3; font-weight: 600; } .vultr b { font-weight: 550; } .vultr em { font-style: normal; color: var(--muted); }
 
+.rr-head { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 28px; }
+.rr-head b { display: block; font-size: 64px; line-height: 1; font-weight: 750; letter-spacing: -.03em; color: var(--text); }
+.rr-head span { display: block; margin-top: 10px; color: var(--muted); font-size: 15.5px; }
+.rr-line { margin: 32px 0 20px; font-size: 20px; max-width: 42em; color: var(--text); }
+.rr-bar { display: flex; gap: 3px; border-radius: 8px; overflow: hidden; font-size: 14px; }
+.rr-bar span { padding: 14px 12px; min-width: 0; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-bar b { font-weight: 700; } .rr-a { background: #d92a38; } .rr-b { background: #a56a08; } .rr-c { background: #3a4254; }
+.rr-note { margin-top: 16px; max-width: 54em; }
+@media (max-width: 560px) { .rr-bar { flex-direction: column; } .rr-bar span { flex: none !important; } }
 .vgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; }
 .vgrid > div { display: flex; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; min-width: 0; }
 .vgrid b { font-weight: 600; font-size: 16px; } .vgrid span { color: var(--muted); font-size: 14.5px; flex: 1; }

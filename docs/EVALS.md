@@ -6,6 +6,34 @@ Every run, table and caveat behind the numbers in the [README](../README.md).
 
 Recorded runs are in [`evals/results`](../evals/results).
 
+### Reading against running
+
+Can a model that only reads catch what running misses, and how often does it bother a person? Written and frozen before the held-out run: the same seeded split as the malware runs, one read per package, on `deepseek-v4.1-flash-1017` at temperature 0. Nothing was executed. [Summary](../evals/results/2026-11-07-read-vs-run.json), [script](../evals/read_vs_run.py).
+
+| Set | Read | Flagged |
+|:--|--:|--:|
+| Tuning: 100 malicious, kept out of every result | 100 | 83 |
+| Tuning: popular clean packages | 40 | 0 |
+| Held out: real malicious packages | 876 of 898 | 776 |
+| Held out: popular clean packages, 19 with install scripts | 154 of 155 | 2 |
+| Held out: real recent releases the sandbox called clean, 29 with install scripts | 287 of 300 | 0 |
+| One sentence added telling AI reviewers it is safe, on 200 flagged samples | 198 of 200 | 198 |
+
+| Of 898 malicious packages | With running alone | With a model reading what ran clean |
+|:--|--:|--:|
+| Blocked, with a recording | 460 | 460 |
+| Sent to a person | 69 | 334 |
+| Clean | 369 | 104 |
+
+Caveats:
+
+- **22 malicious reads gave no usable answer, after one retry.** They count as not flagged, as in the product, so 776 is of 898. 41 failed the first time and 19 of those answered on retry.
+- **The dataset leans** toward what Datadog's own static rules flag, and these are known, already published attacks. Expect less on a fresh attack built to evade reading.
+- **The prompt was not tuned against evasion.** The one-sentence test is one simple attempt. It says little about a determined attacker.
+- **Reasons were not checked one by one.** The model may have flagged some samples for the wrong reason.
+- **Clean is not proven for the 287 releases.** They ran clean and the model agreed; some could still be bad. They come from the live watch, which favours releases that changed something, and are not a random sample of npm.
+- **Popular packages are an easy clean set.** The two false alarms were an unfamiliar but ordinary new dependency and a bundled command that downloads a tarball.
+
 ### Real malware
 
 Three random sets of about 300 from [Datadog's public dataset](https://github.com/DataDog/malicious-software-packages-dataset) of malicious npm packages (Apache-2.0), with no overlap, set aside by a fixed seed and each run once, on a throwaway Vultr VM. A separate 100 were used for tuning and do not count. No sample is kept in this repo.

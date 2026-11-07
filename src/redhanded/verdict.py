@@ -15,7 +15,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-07.4"
+RULES_VERSION = "2026-11-07.5"
 
 
 class Verdict(IntEnum):
@@ -227,6 +227,13 @@ def flag_agent_text(decision: Decision) -> Decision:
     """The package's text addresses AI agents. Raises to REVIEW at most, and never quotes it."""
     return Decision(max(decision.verdict, Verdict.REVIEW),
                     decision.reasons + ("REVIEW: package text gives instructions to AI agents",),
+                    decision.container_aware)
+
+
+def flag_code_read(decision: Decision) -> Decision:
+    """A model read the code and asks for a person. Raises to REVIEW at most, and never quotes it."""
+    return Decision(max(decision.verdict, Verdict.REVIEW),
+                    decision.reasons + ("REVIEW: ran clean here, but a model reading the code asks for a person to look",),
                     decision.container_aware)
 
 

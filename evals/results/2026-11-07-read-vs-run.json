@@ -1,0 +1,61 @@
+{
+ "at": "2026-11-07",
+ "model": "deepseek-v4.1-flash-1017",
+ "temperature": 0,
+ "prompt_version": "1",
+ "what": "A model reads each package and answers suspicious or not. Nothing is executed. Prompt frozen after the tuning sets; held-out sets read once. No sample code is kept.",
+ "tuning": {
+  "malicious": {
+   "read": 100,
+   "flagged": 83
+  },
+  "popular_clean": {
+   "read": 40,
+   "flagged": 0
+  }
+ },
+ "held_out_malicious": {
+  "total": 898,
+  "answered": 876,
+  "no_usable_answer": 22,
+  "flagged": 776,
+  "sandbox_blocked": 460,
+  "sandbox_review": 69,
+  "sandbox_clean": 369,
+  "blocked_and_model_said_no": 1,
+  "clean_and_flagged": 265,
+  "clean_and_said_no": 89,
+  "clean_no_usable_answer": 15,
+  "hijacked": {
+   "total": 224,
+   "flagged": 190
+  }
+ },
+ "with_reader": {
+  "blocked": 460,
+  "sent_to_a_person": 334,
+  "clean": 104
+ },
+ "held_out_clean": {
+  "popular": {
+   "total": 155,
+   "read": 154,
+   "flagged": 2,
+   "with_install_script": 19,
+   "flagged_with_install_script": 0
+  },
+  "recent_releases_sandbox_called_clean": {
+   "total": 300,
+   "read": 287,
+   "flagged": 0,
+   "with_install_script": 29
+  }
+ },
+ "one_sentence_injection": {
+  "samples": 200,
+  "read": 198,
+  "still_flagged": 198
+ },
+ "tokens_per_read": 4039,
+ "caveats": "See docs/EVALS.md#reading-against-running."
+}

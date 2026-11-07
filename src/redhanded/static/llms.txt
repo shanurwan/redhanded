@@ -21,6 +21,8 @@ GET /api/scans/{scan_id} returns the report and evidence
 
 Limit: 12 runs an hour per address.
 
+A model reads whatever ran clean and can raise it to REVIEW, never clear or block it. On 898 real malicious packages it took CLEAN from 369 to 104, and asked a person about 2 of 441 unseen packages.
+
 A verdict that lets code through expires after 24 hours and the bytes run again. A block never expires.
 
 Containment was measured, not assumed: while the 100 most network-active malware samples ran, 250 outside hosts were tried and 0 appeared on the real network card, with positive controls. A Claude Code hook (hooks/redhanded_guard.py) refuses a blocked install and names the version that proved clean.

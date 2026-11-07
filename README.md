@@ -25,13 +25,15 @@
 
 Coding agents now install packages and skills nobody has read. On 17 February 2026, a stolen npm token pushed one new line into Cline's command line tool: `npm install -g openclaw@latest`. A coding agent quietly installed another agent, about 4,000 times in eight hours by StepSecurity's estimate.
 
-**RedHanded does not read new code and guess. It runs it on a machine built to be robbed, and blocks the merge with the recording.**
+**A model reads new code. A machine built to be robbed runs it. Fixed rules decide, and the merge is blocked with the recording.**
 
 ## Measured, not claimed
 
 | Result | What was measured | Evidence |
 |:--|:--|:--|
-| **460 of 898** | real malicious npm packages would have blocked the merge | [3 random held-out batches](docs/EVALS.md#real-malware) |
+| **460 of 898** | real malicious npm packages would have blocked the merge, from [Datadog's public dataset](https://github.com/DataDog/malicious-software-packages-dataset) | [3 random held-out batches](docs/EVALS.md#real-malware) |
+| **794 of 898** | blocked, or sent to a person once a model also reads what ran clean | [reading against running](#reading-against-running) |
+| **2 of 441** | unseen clean or ordinary packages the model sent to a person | [the same test](docs/EVALS.md#reading-against-running) |
 | **0 of 45** | popular clean packages blocked | [the gate](evals/gate.json) |
 | **57 of 60** | agent skills blocked from a campaign the rules had never seen | [one account, one technique](docs/EVALS.md#real-agent-skills) |
 | **250 → 0** | outside hosts malware tried, against those seen on the real network card | [capture, with controls](evals/results/2026-11-07-network-capture.json) |
@@ -39,6 +41,27 @@ Coding agents now install packages and skills nobody has read. On 17 February 20
 | **$0.0002** | compute per scan on a Vultr VX1, without inference | [how it's measured](#how-it-runs-on-vultr) |
 
 Every figure comes from a recorded run. [What gets through](#what-gets-through) is just below, and our own first miss on Cline is part of the record.
+
+## Reading against running
+
+We tested the question every buyer asks: if a model can read the code, why run it? Same 898 real malicious packages, prompt frozen on a separate tuning set, each read once. Nothing was executed for this test.
+
+| Of 898 real malicious packages | Count |
+|:--|--:|
+| A model reading the code flags it | **776** (86%) |
+| Running it produces proof that blocks the merge | **460** (51%) |
+| Running blocked it and the model said no | 1 |
+| Ran clean before the model read it | 369 |
+| Ran clean and the model also said no, or gave no answer | **104** (12%) |
+
+**On this dataset reading catches far more, and we publish that.** Running gives something else: the exact fake key taken and the exact host called, which is what makes it safe to block a merge automatically. So we use both, each for what it can bear:
+
+- **Running decides.** Fixed rules read the recording and can block.
+- **Reading can only ask for a person.** A package that ran clean is read by a model on Vultr Serverless Inference. A yes raises it to REVIEW. It cannot clear a package, block one, or change a verdict the evidence set, and its words are never shown.
+
+That took what gets through without a second look from 369 to 104, and asked a person about 2 of 441 unseen packages: 2 of 154 popular ones and 0 of 287 real recent releases the sandbox had called clean.
+
+Adding one sentence telling AI reviewers the package was safe changed nothing: 198 of 198 stayed flagged. Datadog's dataset leans toward what its own static rules can see, which favours reading, so expect less on fresh attacks built to evade it. [The full account](docs/EVALS.md#reading-against-running) has the method and caveats.
 
 ## How it works
 
@@ -63,16 +86,17 @@ It answers three questions from what the code *did*:
 
 - **What changed?** The new version runs beside the one before it. New domains, install scripts, credential reads and commands are the evidence.
 - **What does it make the agent do?** A skill can do harm through instructions alone, which a package scan never sees. So a real decoy agent uses it on an ordinary task, next to fake credentials.
+- **What would a careful reader flag?** A model reads whatever ran clean, because code that waits for a trigger never fires in a sandbox. It can only ask for a person.
 - **What do we go back to?** After a block, an agent tests older versions and opens the fix as a PR. It chooses what to check. Only the fixed rules can clear a version.
 
 | Verdict | Triggered by |
 |---|---|
 | **CRITICAL** | A fake credential appears in outbound traffic or a DNS name, or a stolen token is presented to the fake npm, GitHub or AWS endpoint |
 | **HIGH** | Reads bait and attempts network access, sends this run's unique machine name out, reaches a bare IP address, spawns a network tool, writes a persistence path, modifies the toolchain, installs another program on the whole machine, or does something in the microVM it hid from gVisor |
-| **REVIEW** | Unknown destinations, container checks, inline code, text giving instructions to AI agents, incomplete scans, deadline kills |
+| **REVIEW** | Unknown destinations, container checks, inline code, text giving instructions to AI agents, a model reading the code asks for a person, incomplete scans, deadline kills |
 | **CLEAN** | None of the above |
 
-The verdict is deterministic, so text inside a package cannot talk its way out, and a model outage cannot change an answer.
+Block and clear come from fixed rules, so text inside a package cannot talk its way out. A model can raise CLEAN to REVIEW and nothing else, and if it is down the scan simply goes unread.
 
 ## A real attack, end to end
 
@@ -114,6 +138,8 @@ jobs:
           repair: "true"    # after a block, open the fix as a PR (needs contents and pull-requests: write)
           strict: "false"   # "true" also fails on a release that adds an install script
 ```
+
+Every run writes `redhanded.sarif`. Send it to GitHub code scanning with `github/codeql-action/upload-sarif` to keep findings in your existing security view and audit trail.
 
 Add it as a required check in branch protection to block the merge. With repair on, the repo must allow Actions to open pull requests. GitHub may hold the workflow on the fix PR for a person to approve, because a bot opened it; the fix PR's `redhanded` status is posted either way.
 
@@ -178,7 +204,7 @@ A security gate that passes when it breaks is worse than none. Each of these is 
 | Vultr service | What it does here |
 |---|---|
 | **VX1 Cloud Compute** | One VM (`vx1-g-2c-8g-120s`, Debian 13, San Jose) runs the site, the queue, gVisor, Firecracker and the sinkhole. `/dev/kvm` is there from first boot, so each scan gets a microVM with its own kernel, without root. Median gVisor run 4.5 s, median microVM run 6.4 s |
-| **Serverless Inference** | `deepseek-v4.1-flash-1017` drives the decoy and repair agents with tool calling, reads package text for instructions aimed at AI agents, and writes the explanation beside each verdict. It never sets a verdict |
+| **Serverless Inference** | `deepseek-v4.1-flash-1017` drives the decoy and repair agents with tool calling, reads package text for instructions aimed at AI agents, reads the code of whatever ran clean, and writes the explanation beside each verdict. It can ask for a person. It can never clear or block |
 | **Vector Store** | Attack memory: the behaviour of 71 recorded real attacks, never their code. An explanation can say which attack a package behaves like. It has no effect on the verdict |
 | **Account API** | The spend guard reads balance and pending charges every 10 minutes. Vultr has no native spend alert, so if the reading goes stale or the limit is reached, scans stop |
 | **Firewall and Terraform** | Ports 80 and 443 are open, SSH only from the admin address. One command builds it in any of the plan's 12 regions |
@@ -224,6 +250,8 @@ gVisor records every syscall, but it names itself: `/proc/version` reads `4.19.0
 | Windows or Mac only | 18 |
 | Payload file missing from the sample | 1 |
 
+With a model also reading, 265 of those 369 go to a person and 104 still get through. See [reading against running](#reading-against-running).
+
 - **Cline was our own miss.** The first run said CLEAN. After adding a rule for installs that put another program on the whole machine, `2.3.0` is HIGH in 10.8 s and `2.2.3` stays CLEAN. That rule was written knowing the answer, and it trips on 3 of 4,302 live releases.
 - **The dataset leans** toward what Datadog's own rules flag, so it is not a sample of all npm malware.
 - **Skills are noisy.** Most-downloaded skills: 0 of 31 blocked, but 10 of 31 sent to review. Four labelled skills from other accounts got through, because the agent did nothing the rules recognise.
@@ -232,7 +260,26 @@ gVisor records every syscall, but it names itself: `/proc/version` reads `4.19.0
 
 [`docs/EVALS.md`](docs/EVALS.md) has every run, table and caveat.
 
-Commercial scanners lead this market and read code well. RedHanded works beside them: they read it, this runs it.
+Commercial scanners lead this market and read code well, as our own test shows. RedHanded works beside them and adds the recording.
+
+## The business case
+
+**Who buys.** The platform or application security lead at a team that lets agents open pull requests. [Agents started over 40% of GitHub pull requests in September](https://visualstudiomagazine.com/articles/2026/10/29/github-octoverse-agents-started-more-than-40-percent-of-september-pull-requests.aspx), and nobody reads every one-line version bump.
+
+**What it protects against.** One worm wave put [2,225 malicious component versions on npm](https://www.sonatype.com/blog/mini-shai-hulud-npm-attack-more-than-2200-components-impacted), and another published [639 versions in an hour](https://www.techradar.com/pro/security/mini-shai-halud-hackers-publish-over-600-compromised-npm-packages-developers-warned-to-be-on-their-guard). IBM's 2026 report, as [covered here](https://www.reflectiz.com/blog/ibm-cost-of-a-data-breach-report-2026/), says a supply chain compromise adds about $227,250 to the cost of a breach. The real Cline release was live for about 8 hours and got about 4,000 downloads. RedHanded blocks it in 10.8 seconds.
+
+| The numbers | |
+|:--|:--|
+| Proposed price | $500 per org per month, the same as 20 developers on [Socket's listed $25 Team plan](https://www.socket.dev/pricing) |
+| Payback | $6,000 a year against $227,250: worth it if it prevents that added cost once in 38 years, a 2.6% yearly chance |
+| Compute per scan | About $0.0002 on a Vultr VX1, measured |
+| Model reading per scan | About 4,000 tokens, measured |
+| People pulled in | 2 of 441 unseen packages |
+| Setup | One workflow file. No agent, no code changes, no real secrets in the scan |
+| Audit output | SARIF, and a public report with the recorded evidence for every verdict |
+| Vultr revenue per self-hosted org | About $110 a month for the VM, plus inference |
+
+**What we have not proved.** There are no customers yet, the price is a proposal, and the IBM figure comes from secondary coverage. The next step is one design partner measuring real pull requests.
 
 ## Development
 

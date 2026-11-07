@@ -65,6 +65,21 @@ def wait(server: str, job: str) -> dict:
     return {"state": "error", "error": "timed out waiting for a verdict"}
 
 
+def sarif(rows: list, server: str) -> dict:
+    """The verdicts as SARIF, so they can sit in GitHub code scanning and an audit trail. CLEAN is not a finding."""
+    level = {"CRITICAL": "error", "HIGH": "error", "REVIEW": "warning", "ERROR": "warning", "UNSCANNED": "warning"}
+    results = []
+    for package, verdict, why, link in rows:
+        if verdict in level:
+            text = f"{package} is {verdict}" + (f": {why}" if why else "") + (f" Evidence: {link}" if link else "")
+            results.append({"ruleId": f"redhanded/{verdict.lower()}", "level": level[verdict], "message": {"text": text},
+                            "locations": [{"physicalLocation": {"artifactLocation": {"uri": "package-lock.json"}}}]})
+    return {"$schema": "https://json.schemastore.org/sarif-2.1.0.json", "version": "2.1.0", "runs": [{
+        "tool": {"driver": {"name": "RedHanded", "informationUri": server,
+                            "rules": [{"id": f"redhanded/{k.lower()}", "shortDescription": {"text": f"RedHanded verdict: {k}"}} for k in level]}},
+        "results": results}]}
+
+
 def main() -> int:
     server = sys.argv[1].rstrip("/")
     base = os.environ.get("GITHUB_BASE_REF", "main")
@@ -103,6 +118,8 @@ def main() -> int:
             rows.append((f"{r['package']}@{r['version']}", verdict, "; ".join(r.get("reasons", [])) or r.get("note", ""), link))
             new_script = os.environ.get("REDHANDED_STRICT") == "true" and any(c.get("kind") == "install_script" for c in r.get("changes", []))
             failed |= verdict in BLOCK or new_script or verdict == "UNSCANNED"    # no current evidence, no pass
+            if verdict == "REVIEW":
+                print(f"::warning title=RedHanded asks for a person::{r['package']}@{r['version']}: {link or 'see the table'}")
             if verdict in BLOCK or new_script:
                 blocked.append({"name": r["package"], "version": r["version"], "integrity": r.get("integrity")})
 
@@ -115,6 +132,7 @@ def main() -> int:
     if unscanned:
         table += f"\n\n{unscanned} packages have no current evidence, so this check fails. Finished scans are kept, so running it again covers more of them."
     print(table)
+    Path(os.environ.get("REDHANDED_SARIF", "redhanded.sarif")).write_text(json.dumps(sarif(rows, server), indent=1))
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
             f.write(table + "\n")

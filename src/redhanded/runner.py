@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Callable
 
 from .agenttext import read_package_text
+from .codereader import read_if_clean
 from .evidence import build
 from .behaviour import manifest_summary
 from .honeytokens import AI_TOOL_DIR, HoneytokenSet, plant_ai_tools
@@ -162,6 +163,7 @@ class ScanConfig:
     fc_kernel: str = field(default_factory=lambda: _env_path("RH_FC_KERNEL", ""))
     fc_rootfs: str = field(default_factory=lambda: _env_path("RH_FC_ROOTFS", ""))
     text_reviewer: Callable[[str], bool] | None = None
+    code_reader: Callable[[str], bool] | None = None
 
     def microvm_ready(self) -> bool:
         return all(p and os.path.isfile(p) for p in (self.fc_bin, self.fc_kernel, self.fc_rootfs)) \
@@ -598,6 +600,8 @@ def detonate(name: str, version: str, tarball: bytes, integrity: str, cfg: ScanC
         microvm = second.summary()
     if cfg.text_reviewer and cfg.text_reviewer(read_package_text(scan_dir / "work" / "node_modules" / name)):
         decision = flag_agent_text(decision)
+    if not mode:
+        decision = read_if_clean(decision, cfg.code_reader, scan_dir / "work" / "node_modules" / name)
 
     report = Report(
         scan_id=scan_id, package=name, version=version, integrity=integrity,

@@ -54,3 +54,12 @@ def test_repair_does_nothing_without_a_token(monkeypatch, tmp_path):
     monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
     monkeypatch.setattr("sys.argv", ["repair.py", "https://rh"])
     assert repair_action.main() == 0
+
+
+def test_sarif_lists_findings_and_leaves_out_clean():
+    out = check.sarif([("a@1.0.0", "CRITICAL", "stole keys", "http://rh/#x"), ("b@1.0.0", "CLEAN", "", ""), ("c@1.0.0", "UNSCANNED", "no evidence", "")], "http://rh")
+    results = out["runs"][0]["results"]
+    assert out["version"] == "2.1.0" and [r["ruleId"] for r in results] == ["redhanded/critical", "redhanded/unscanned"]
+    assert results[0]["level"] == "error" and "http://rh/#x" in results[0]["message"]["text"]
+    ids = {r["id"] for r in out["runs"][0]["tool"]["driver"]["rules"]}
+    assert {r["ruleId"] for r in results} <= ids
