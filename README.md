@@ -29,7 +29,7 @@ Coding agents now install packages and skills nobody has read. On 17 February 20
 
 ## Measured, not claimed
 
-| | | |
+| Result | What was measured | Evidence |
 |:--|:--|:--|
 | **460 of 898** | real malicious npm packages would have blocked the merge | [3 random held-out batches](docs/EVALS.md#real-malware) |
 | **0 of 45** | popular clean packages blocked | [the gate](evals/gate.json) |
