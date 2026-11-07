@@ -6,6 +6,7 @@ cannot talk its way to CLEAN.
 """
 from __future__ import annotations
 
+import ipaddress
 import posixpath
 from dataclasses import dataclass, field
 from enum import IntEnum
@@ -13,7 +14,7 @@ from enum import IntEnum
 
 # Bump whenever a rule changes: cached verdicts are keyed by it, so an old
 # verdict is never served under new rules.
-RULES_VERSION = "2026-11-07.2"
+RULES_VERSION = "2026-11-07.3"
 
 
 class Verdict(IntEnum):
@@ -118,6 +119,20 @@ def _suspicious_exec(argv: list[str], by_runner: bool) -> str | None:
     return None
 
 
+_CONNECTIVITY_CHECKS = frozenset({"1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9"})
+
+
+def bare_public_ip(host: str) -> bool:
+    """An address typed in place of a name. Reverse lookups of private addresses show up backwards, so those are out."""
+    address = host.rsplit(":", 1)[0]
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    backwards = ipaddress.ip_address(".".join(reversed(address.split(".")))) if ip.version == 4 else ip
+    return ip.is_global and backwards.is_global and address not in _CONNECTIVITY_CHECKS
+
+
 def decide(ev: Evidence) -> Decision:
     reasons: list[str] = []
     level = Verdict.CLEAN
@@ -143,6 +158,10 @@ def decide(ev: Evidence) -> Decision:
         hit(Verdict.HIGH, "sent this machine's name to an outside host")
     for name in sorted({c for c in map(_collector, ev.connects) if c}):
         hit(Verdict.HIGH, f"contacted a data-collection service ({name})")
+
+    bare = sorted({c.rsplit(":", 1)[0] for c in ev.connects if bare_public_ip(c)})
+    if bare:
+        hit(Verdict.HIGH, f"reached a bare IP address instead of a name ({', '.join(bare)[:80]})")
 
     risky_connects = sorted({c for c in ev.connects if c not in BENIGN_HOSTS})
     if ev.bait_reads and (ev.connects or ev.exfil_matches):

@@ -12,7 +12,6 @@ import base64
 import dataclasses
 import hashlib
 import io
-import ipaddress
 import json
 import os
 import posixpath
@@ -283,7 +282,6 @@ _ENCODED_SHELL = re.compile(r"base64\s+(?:-d|-D|--decode)[^\n|]{0,40}\|\s*(?:sud
 _ENCODED_TEXT = re.compile(r"[A-Za-z0-9+/]{24,}={0,2}")
 _IP_IN_TEXT = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 _URL_HOST = re.compile(r"https?://([\w.-]+)")
-_CONNECTIVITY_CHECKS = frozenset({"1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9"})
 
 
 def hidden_commands(files: dict[str, str]) -> tuple[str, ...]:
@@ -304,17 +302,6 @@ def hidden_commands(files: dict[str, str]) -> tuple[str, ...]:
                     continue
                 found.update(h.lower() for h in _URL_HOST.findall(decoded))
     return tuple(sorted(found - {""})) or (("",) if found else ())
-
-
-def _bare_public_ip(host: str) -> bool:
-    """An address typed in place of a name. Reverse lookups of private addresses show up backwards, so those are out."""
-    address = host.rsplit(":", 1)[0]
-    try:
-        ip = ipaddress.ip_address(address)
-    except ValueError:
-        return False
-    backwards = ipaddress.ip_address(".".join(reversed(address.split(".")))) if ip.version == 4 else ip
-    return ip.is_global and backwards.is_global and address not in _CONNECTIVITY_CHECKS
 
 
 def _named_by_skill(host: str, declared: frozenset[str]) -> bool:
@@ -364,9 +351,6 @@ def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None
     if hidden:
         where = ", ".join(h for h in hidden if h)
         hit(Verdict.HIGH, "hid a command in encoded text and piped it to a shell" + (f" (it decodes to {where[:120]})" if where else ""))
-    bare = sorted({c.rsplit(":", 1)[0] for c in ev.connects if _bare_public_ip(c) and c.rsplit(":", 1)[0] not in declared})
-    if bare:
-        hit(Verdict.HIGH, f"sent the agent to a bare IP address its files never name ({', '.join(bare)[:80]})")
     drops = sorted({h for c in ev.connects for h in DROP_HOSTS if c == h or c.endswith("." + h)})
     if drops:
         hit(Verdict.HIGH, f"sent the agent to a file-drop or paste site ({', '.join(drops)})")

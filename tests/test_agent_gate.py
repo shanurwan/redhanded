@@ -507,3 +507,11 @@ def test_a_well_known_installer_piped_to_a_shell_is_not_blocked():
     ran = [(["sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"], 0)]
     assert skills.decide_skill(agent_ev(connects=["astral.sh"], execs=ran), [], declared=frozenset({"astral.sh"})).verdict == Verdict.REVIEW
     assert skills.decide_skill(agent_ev(connects=["evil.dev"], execs=ran), [], declared=frozenset({"evil.dev"})).verdict == Verdict.HIGH
+
+
+def test_a_package_reaching_a_bare_public_ip_blocks():
+    from redhanded.verdict import decide
+    d = decide(agent_ev(connects=["13.140.137.222"]))
+    assert d.verdict == Verdict.HIGH and any("bare IP" in r for r in d.reasons)
+    assert decide(agent_ev(connects=["1.1.1.1"])).verdict < Verdict.HIGH
+    assert decide(agent_ev(connects=["1.0.0.127"])).verdict < Verdict.HIGH
