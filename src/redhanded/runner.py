@@ -34,6 +34,7 @@ from .behaviour import manifest_summary
 from .honeytokens import AI_TOOL_DIR, HoneytokenSet, plant_ai_tools
 from .sinkhole import Capture, NamePool, Record, make_ca
 from .trace import parse
+from .egress import EgressGate
 from .verdict import Verdict, combine_microvm, decide, flag_agent_text
 
 SANDBOX_IP = "172.31.255.2"
@@ -223,6 +224,8 @@ def fetch(name: str, version: str, registry: str, want_integrity: str | None = N
     integrity = dist.get("integrity", "")
     if want_integrity and want_integrity != integrity:
         raise ScanError("registry integrity differs from the lockfile")
+    if urllib.parse.urlsplit(str(dist.get("tarball"))).hostname != urllib.parse.urlsplit(registry).hostname:
+        raise ScanError("the registry points this download at another host")
     data = _get(dist["tarball"], MAX_TARBALL)
     check_integrity(data, integrity)
     return meta, data
@@ -281,7 +284,9 @@ def fetch_deps(tarball: bytes, into: Path, rootfs: str, registry: str, timeout: 
     """The package's registry dependencies, fetched outside the sandbox with scripts off.
 
     Scanned alone, real malware dies on `Cannot find module 'axios'` before it does anything.
-    Only plain version ranges are kept: no git, URL, file or alias specs. Returns a short note.
+    Only plain version ranges are kept: no git, URL, file or alias specs. npm follows what those
+    dependencies name in turn, so everything goes through a gate that reaches the registry and
+    GitHub's download host and nothing else. Returns a short note.
     """
     node = Path(rootfs) / "usr/local/bin/node"
     cli = Path(rootfs) / "usr/local/lib/node_modules/npm/bin/npm-cli.js"
@@ -299,8 +304,28 @@ def fetch_deps(tarball: bytes, into: Path, rootfs: str, registry: str, timeout: 
         return "no dependencies"
     into.mkdir(parents=True, exist_ok=True)
     (into / "package.json").write_text(json.dumps({"name": "rh-deps", "version": "0.0.0", "private": True, "dependencies": wanted}))
-    env = {"PATH": "/usr/bin:/bin", "HOME": str(into), "npm_config_cache": str(into / ".npm"), "npm_config_registry": registry,
-           "npm_config_ignore_scripts": "true", "npm_config_update_notifier": "false"}
+    with EgressGate(_fetch_hosts(registry)) as gate:
+        env = fetch_env(into, registry, gate.url)
+        note = _install_deps(node, cli, into, env, wanted, timeout)
+    if gate.refused:
+        note += "; refused " + ", ".join(sorted(gate.refused)[:3])
+    return note
+
+
+def _fetch_hosts(registry: str) -> set[str]:
+    return {urllib.parse.urlsplit(registry).hostname or "registry.npmjs.org", "codeload.github.com"}
+
+
+def fetch_env(into: Path, registry: str, gate_url: str) -> dict[str, str]:
+    """No scripts, no git binary, and the gate as the only route. Exposed so a test can run real npm with it."""
+    return {"PATH": "/usr/bin:/bin", "HOME": str(into), "npm_config_cache": str(into / ".npm"), "npm_config_registry": registry,
+            "npm_config_ignore_scripts": "true", "npm_config_update_notifier": "false",
+            "npm_config_proxy": gate_url, "npm_config_https_proxy": gate_url, "npm_config_noproxy": "",
+            "HTTP_PROXY": gate_url, "HTTPS_PROXY": gate_url, "http_proxy": gate_url, "https_proxy": gate_url,
+            "npm_config_git": "/bin/false", "npm_config_fetch_retries": "1", "npm_config_fetch_retry_mintimeout": "1000"}
+
+
+def _install_deps(node: Path, cli: Path, into: Path, env: dict, wanted: dict, timeout: float) -> str:
     try:
         p = subprocess.run([str(node), str(cli), "install", "--ignore-scripts", "--omit=dev", "--omit=optional", "--omit=peer", "--no-audit",
                             "--no-fund", "--no-package-lock", "--loglevel=error"],
