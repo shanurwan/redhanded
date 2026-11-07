@@ -223,9 +223,9 @@ function renderAbsorb(res) {
   }
 }
 function renderWatch(w) {
-  if (!w || !w.watched) return;
+  if (!w || !w.npm_ran) return;
   const hours = Math.max(1, Math.round((w.updated - w.started) / 3600));
-  $("watch-text").textContent = `${w.watched.toLocaleString()} npm changes read in ${hours} ${hours === 1 ? "hour" : "hours"}. ${w.npm_ran.toLocaleString()} new or script-carrying releases and ${w.skills_ran.toLocaleString()} new agent skills run so far. ${w.blocked.toLocaleString()} blocked, each read by a person before anything is said about it.`;
+  $("watch-text").textContent = `${w.npm_ran.toLocaleString()} new or script-carrying npm releases and ${w.skills_ran.toLocaleString()} new agent skills run in ${hours} ${hours === 1 ? "hour" : "hours"}. ${w.blocked.toLocaleString()} blocked, each read by a person before anything is said about it.`;
   $("watch").hidden = false;
 }
 function renderGate(res) {

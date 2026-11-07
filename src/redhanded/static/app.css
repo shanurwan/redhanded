@@ -185,3 +185,4 @@ pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-ra
 .capture { display: grid; gap: 6px; margin-top: 24px; padding: 20px 22px; border: 1px solid var(--line-2); border-left: 3px solid var(--red); border-radius: 8px; }
 .capture b { font-size: 22px; font-weight: 600; }
 .capture span { color: var(--muted); font-size: 15px; max-width: 62em; }
+.tabs .tab-panel:nth-child(3) { grid-column: 1 / -1; }
