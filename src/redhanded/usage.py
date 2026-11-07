@@ -105,7 +105,7 @@ class Usage:
         return bool(token) and secrets.compare_digest(token.encode(), self.token.encode())
 
     def exclude(self, ip: str) -> None:
-        """Whoever opens the private page is the owner: that address stops counting, and its past stops counting too."""
+        """Whoever opens the private page is the owner: that address stops counting from then on."""
         try:
             with self._lock, self._connect() as c:
                 c.execute("insert or ignore into mine values(?)", (self._hash(ip),))

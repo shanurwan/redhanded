@@ -397,3 +397,12 @@ def test_a_scan_counts_as_use_and_the_demo_repo_does_not(site):
     u.used("action", "5.6.7.8", "redhanded-action", repo_id("someone/app"))
     u.used("action", "1.2.3.4", "redhanded-action", repo_id("shanurwan/redhanded-demo"))
     assert _numbers(cfg)["integrations"] == 1
+
+
+def test_a_recorded_verdict_answers_from_its_replay(site):
+    import types
+    _, scanner, cfg, _ = site
+    sid = next(p.name for p in __import__("pathlib").Path(cfg.replays_dir).iterdir() if p.is_dir())
+    job = types.SimpleNamespace(result=None, scan_id=None, verdict=None, cached=False)
+    scanner._finish_scan(job, sid, True)
+    assert job.scan_id == sid and job.cached and job.result["scan_id"] == sid

@@ -190,8 +190,9 @@ class Scanner:
             del self.jobs[jid]
 
     def _finish_scan(self, job: Job, scan_id: str, cached: bool) -> None:
-        scan_dir = Path(self.service.cfg.scans_dir) / scan_id
-        if self.explainer:
+        # A verdict recorded earlier keeps its evidence with the replays, which are read-only here.
+        scan_dir = find_scan(scan_id, self.roots) or Path(self.service.cfg.scans_dir) / scan_id
+        if self.explainer and scan_dir.parent == Path(self.service.cfg.scans_dir):
             write_explanation(scan_dir, self.explainer, AttackMemory.from_env())
         job.result = answer(scan_dir, cached)
         job.scan_id, job.verdict, job.cached = scan_id, job.result["verdict"], cached
