@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://45-32-140-228.sslip.io/?ref=github"><b>Run a harmless attack, live</b></a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/shanurwan/redhanded/releases/download/film/RedHanded-film.mp4"><b>Watch the film</b></a>
+  <a href="https://youtu.be/cdaulNCw-A0"><b>Watch the film</b></a>
   &nbsp;·&nbsp;
   <a href="#stand-in-the-path"><b>Add it to your agent</b></a>
   &nbsp;·&nbsp;

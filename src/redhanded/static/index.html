@@ -175,7 +175,7 @@
       <div class="tabs">
         <div class="tab-panel">
           <h3>Pull request check</h3>
-          <p>A HIGH or CRITICAL verdict fails the check. Turn on repair and the fix arrives as a PR. The action becomes available when the source opens at submission.</p>
+          <p>A HIGH or CRITICAL verdict fails the check. Turn on repair and the fix arrives as a PR.</p>
 <pre><code>- uses: actions/checkout@v4
   with: { fetch-depth: 0 }
 - uses: shanurwan/redhanded@main
@@ -189,7 +189,7 @@
         </div>
         <div class="tab-panel">
           <h3>Stop the agent itself</h3>
-          <p>A Claude Code hook in front of the shell, so the agent does not have to ask. Real run: it refused cline@2.3.0, named 2.2.3 as proved clean, and the agent installed that. The hook becomes available when the source opens at submission.</p>
+          <p>A Claude Code hook in front of the shell, so the agent does not have to ask. Real run: it refused cline@2.3.0, named 2.2.3 as proved clean, and the agent installed that.</p>
 <pre><code>{"hooks": {"PreToolUse": [{
   "matcher": "Bash|PowerShell",
   "hooks": [{"type": "command",
@@ -219,7 +219,7 @@
 
 <footer class="foot wrap">
   <span>RedHanded. MIT licensed. Built for Vultr Agent Rush 2026. Usage is counted with a one-way hash; no cookies, no addresses stored.</span>
-  <span>Source opens at submission.</span>
+  <a href="https://github.com/shanurwan/redhanded">Source and eval results</a>
 </footer>
 
 <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="s-pkg">
