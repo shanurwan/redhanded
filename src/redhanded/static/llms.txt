@@ -19,3 +19,5 @@ GET /api/jobs/{id} returns state, verdict and result
 GET /api/scans/{scan_id} returns the report and evidence
 
 Limit: 12 runs an hour per address.
+
+Containment was measured, not assumed: while the 100 most network-active malware samples ran, 250 outside hosts were tried and 0 appeared on the real network card, with positive controls. A Claude Code hook (hooks/redhanded_guard.py) refuses a blocked install and names the version that proved clean.

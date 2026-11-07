@@ -216,6 +216,11 @@ function renderAbsorb(res) {
     return d;
   }));
   $("absorb").hidden = false;
+  if (res.capture) {
+    $("cap-title").textContent = res.capture.title;
+    $("cap-text").textContent = res.capture.text;
+    $("capture").hidden = false;
+  }
 }
 function renderWatch(w) {
   if (!w || !w.watched) return;
@@ -259,6 +264,7 @@ function renderIncidents(list) {
   }));
 }
 function job(text, err) {
+  if (heroRunning) { $("hero-note").textContent = text; $("hero-note").classList.toggle("err", !!err); }
   const j = $("job");
   j.hidden = false;
   j.className = err ? "job err" : "job";
@@ -279,6 +285,13 @@ function showCompare(r) {
   const box = [head, r.changes && r.changes.length ? list : el("p", "note", r.note || "Nothing new compared with the version before.")];
   if (r.scan_id) { const a = el("a", "", "See the evidence"); a.href = `#${r.scan_id}`; box.push(a); }
   j.replaceChildren(...box);
+}
+let heroRunning = false;
+async function runHeroAttack() {
+  const b = $("hero-attack");
+  heroRunning = true;
+  b.disabled = true;
+  try { await start({ zoo: "hides-from-sandbox" }, "Harmless attack"); } finally { heroRunning = false; b.disabled = false; }
 }
 async function start(body, label, path = "/api/scan") {
   const btn = document.querySelector("#scan-form button");
@@ -331,6 +344,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       $("pkg").placeholder = mode === "compare" ? "left-pad@1.3.0" : "left-pad or left-pad@1.3.0";
     });
   }
+  $("hero-attack").addEventListener("click", runHeroAttack);
   $("s-close").addEventListener("click", closeSheet);
   $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
   addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });

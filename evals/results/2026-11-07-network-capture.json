@@ -1,0 +1,74 @@
+{
+  "at": "2026-11-07",
+  "where": "throwaway Vultr VM, same code as the site",
+  "interface": "enp1s0",
+  "excluded": "only the operator's own SSH session",
+  "samples": 100,
+  "reports": 110,
+  "controls_seen": {
+    "tcp9": 4,
+    "tcp22": 3,
+    "tcp443": 2,
+    "dns": 4
+  },
+  "hosts_tried_by_samples": 251,
+  "of_which_also_our_fetch": [
+    "registry.npmjs.org"
+  ],
+  "outside_hosts_tried": 250,
+  "tried_and_left_the_card": 0,
+  "tried_and_looked_up": 0,
+  "packets": 400543,
+  "destinations": 19,
+  "destinations_are": {
+    "npm CDN": 12,
+    "GitHub download host": 1,
+    "Vultr Inference": 1,
+    "Vultr DNS": 1,
+    "Vultr time servers": 3,
+    "control": 1
+  },
+  "escape_test": {
+    "targets": [
+      "our own VM on TCP 9, 22, 80, 443, 8787, UDP 9, ping",
+      "8.8.8.8 and 1.1.1.1 directly",
+      "IPv6 2001:4860:4860::8888",
+      "169.254.169.254",
+      "two canary names"
+    ],
+    "stages": [
+      "gVisor",
+      "a version that stays quiet in gVisor, so it runs in Firecracker"
+    ],
+    "packets_seen": 0,
+    "canaries_looked_up": 0
+  },
+  "fake_credentials_sent": 105,
+  "stolen_token_uses": 132,
+  "first_capture": {
+    "packets": 341163,
+    "destinations": 18,
+    "tried_and_left_the_card": 0,
+    "why_repeated": "No positive control, port 22 excluded, escape test ran in gVisor only, and the transitive dependency fetch was open."
+  },
+  "gap_found": {
+    "what": "npm followed a dependency's dependency to any URL or git source, on the host, before the sandbox.",
+    "before": {
+      "url": 1,
+      "tls_url": 1,
+      "git": 1
+    },
+    "after": {
+      "url": 0,
+      "tls_url": 0,
+      "git": 0
+    },
+    "fix": "src/redhanded/egress.py"
+  },
+  "verdicts": {
+    "blocked_first": 90,
+    "blocked_second": 90,
+    "changed": 4,
+    "changes": "3 REVIEW to CLEAN, 1 CRITICAL to HIGH, none across the block line"
+  }
+}

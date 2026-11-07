@@ -32,9 +32,10 @@
       <h1>Make new code prove itself before your agent trusts it.</h1>
       <p class="lede">Agents install packages and skills nobody reviews. RedHanded runs them on a baited machine, shows what changed, blocks the merge and opens the fix.</p>
       <div class="cta">
-        <a class="btn" href="#scan">Try it</a>
+        <button class="btn" id="hero-attack" type="button">Run a harmless attack</button>
         <a class="btn btn-ghost" href="#install">Add to your agent</a>
       </div>
+      <p class="hero-note" id="hero-note">A sample we wrote, on a real sandbox, now. It only touches fake data. About 20 seconds.</p>
     </div>
     <figure class="replay" id="replay" aria-label="Replay of a real attack">
       <figcaption class="replay-head">
@@ -60,6 +61,10 @@
       <h2>What the sandbox absorbed</h2>
       <p class="sub" id="ab-sub"></p>
       <div class="absorb" id="ab-grid"></div>
+      <div class="capture" id="capture" hidden>
+        <b id="cap-title"></b>
+        <span id="cap-text"></span>
+      </div>
       <div class="watch" id="watch" hidden>
         <span class="live-dot" aria-hidden="true"></span>
         <div><b>Watching live right now</b><span id="watch-text"></span></div>
@@ -180,6 +185,15 @@
           <p>Six tools: check a package, a lockfile or a skill, compare versions, find a safe version, read the evidence.</p>
 <pre><code id="mcp-code"></code></pre>
           <button class="copy" id="mcp-copy" type="button">Copy</button>
+        </div>
+        <div class="tab-panel">
+          <h3>Stop the agent itself</h3>
+          <p>A Claude Code hook in front of the shell, so the agent does not have to ask. Real run: it refused cline@2.3.0, named 2.2.3 as proved clean, and the agent installed that. The hook becomes available when the source opens at submission.</p>
+<pre><code>{"hooks": {"PreToolUse": [{
+  "matcher": "Bash|PowerShell",
+  "hooks": [{"type": "command",
+    "command": "python3 hooks/redhanded_guard.py",
+    "timeout": 300}]}]}}</code></pre>
         </div>
       </div>
     </div>

