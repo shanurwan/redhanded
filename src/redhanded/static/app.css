@@ -11,6 +11,7 @@
 html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
+[hidden] { display: none !important; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .wrap { max-width: 1140px; margin-inline: auto; padding-inline: max(20px, env(safe-area-inset-left, 0px)); }
 .narrow { max-width: 720px; }
