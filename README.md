@@ -203,6 +203,16 @@ Copy the config from the site, or:
 
 Nothing to install, and the scan runs on the RedHanded host, never on the caller's machine. Tools: `check_package(name, version)`, `check_lockfile_change(new_lockfile, old_lockfile)`, `compare_versions(name, version)`, `find_safe_version(name, blocked_version)`, `check_skill(files)` and `get_scan_report(scan_id)`. Package text never appears in an answer, so an attacker's README cannot reach the next agent. [`/llms.txt`](src/redhanded/static/llms.txt) describes the HTTP API. `redhanded mcp` serves the same tools over stdio for your own sandbox host.
 
+### Stop the agent itself
+
+MCP helps when the agent decides to ask. [`hooks/redhanded_guard.py`](hooks/redhanded_guard.py) sits in front of the shell in Claude Code, so it does not depend on that. It catches `npm`, `pnpm`, `yarn` and `bun` installs of named packages, gets a verdict, and refuses a blocked one. The refusal tells the agent which older version proved clean, so it can carry on with that.
+
+```json
+{"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 hooks/redhanded_guard.py", "timeout": 300}]}]}}
+```
+
+If the service cannot answer, the install goes ahead with a warning, unless `RH_GUARD_STRICT=1`. It does not check a bare `npm install`, a URL or a local path, or stop an agent that writes its own download. The PR check covers lockfile changes.
+
 ### As a PR check
 
 ```yaml
