@@ -12,6 +12,7 @@ import base64
 import dataclasses
 import hashlib
 import io
+import ipaddress
 import json
 import os
 import posixpath
@@ -37,11 +38,13 @@ DEADLINE_S = 240.0
 PROBE_DEADLINE_S = 120.0
 _NAME = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 _SAFE_PATH = re.compile(r"^(?!/)(?!.*(?:^|/)\.\.(?:/|$))[\w@+.,/ -]{1,200}$")
-_RAN_DOWNLOAD = re.compile(r"(?:curl|wget)\b[^|;&\n]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh\b|base64\s+(?:-d|--decode)[^|;&\n]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh\b")
+_RAN_DOWNLOAD = re.compile(r"(?:curl|wget)\b[^|;&\n]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh\b|base64\s+(?:-d|-D|--decode)[^|;&\n]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh\b")
 # Where working software comes from. A skill's agent reaching these says nothing.
 PACKAGE_HOSTS = frozenset({"registry.npmjs.org", "registry.yarnpkg.com", "pypi.org", "files.pythonhosted.org", "bootstrap.pypa.io", "deb.debian.org",
                            "security.debian.org", "github.com", "api.github.com", "codeload.github.com", "raw.githubusercontent.com", "objects.githubusercontent.com",
                            "nodejs.org", "pypi.tuna.tsinghua.edu.cn", "mirrors.aliyun.com", "conda.anaconda.org", "archive.ubuntu.com", "crates.io", "static.crates.io", "proxy.golang.org", "rubygems.org", "dl-cdn.alpinelinux.org", "example.com"})
+# Installers that people really do pipe to a shell, from the projects that make the tool.
+INSTALLER_HOSTS = frozenset({"astral.sh", "bun.sh", "deno.land", "deno.com", "sh.rustup.rs", "rustup.rs", "get.docker.com", "brew.sh", "go.dev", "get.pnpm.io"})
 # Places to put a file or a snippet for someone else to fetch. Nobody ships a dependency this way.
 DROP_HOSTS = ("glot.io", "pastebin.com", "paste.ee", "rentry.co", "rentry.org", "hastebin.com", "ghostbin.co", "dpaste.org", "dpaste.com", "controlc.com", "justpaste.it",
               "transfer.sh", "temp.sh", "file.io", "0x0.st", "catbox.moe", "gofile.io", "anonfiles.com", "mega.nz", "mediafire.com", "filebin.net", "bashupload.com")
@@ -273,7 +276,45 @@ _HOST_IN_TEXT = re.compile(r"\b((?:[a-z0-9-]+\.)+[a-z]{2,})\b", re.I)
 
 def declared_hosts(files: dict[str, str]) -> frozenset[str]:
     """Hosts the skill's own files name. Using a service it says it uses is the skill working."""
-    return frozenset(m.lower() for text in files.values() for m in _HOST_IN_TEXT.findall(text))
+    return frozenset(m.lower() for text in files.values() for found in (_HOST_IN_TEXT.findall(text), _IP_IN_TEXT.findall(text)) for m in found)
+
+
+_ENCODED_SHELL = re.compile(r"base64\s+(?:-d|-D|--decode)[^\n|]{0,40}\|\s*(?:sudo\s+)?(?:(?:ba|z|da)?sh|python3?|perl|node)\b", re.I)
+_ENCODED_TEXT = re.compile(r"[A-Za-z0-9+/]{24,}={0,2}")
+_IP_IN_TEXT = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+_URL_HOST = re.compile(r"https?://([\w.-]+)")
+_CONNECTIVITY_CHECKS = frozenset({"1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9"})
+
+
+def hidden_commands(files: dict[str, str]) -> tuple[str, ...]:
+    """Commands a skill keeps encoded and pipes to a shell, as the hosts they decode to. Nothing is run.
+
+    A skill is text an agent reads. The one reason to encode a command in it is so that nobody reading it sees it.
+    An entry of "" means a command is hidden but no host could be read from it.
+    """
+    found: set[str] = set()
+    for text in files.values():
+        for match in _ENCODED_SHELL.finditer(text):
+            found.add("")
+            line = text[text.rfind("\n", 0, match.start()) + 1:match.end()]
+            for blob in _ENCODED_TEXT.findall(line):
+                try:
+                    decoded = base64.b64decode(blob + "=" * (-len(blob) % 4)).decode("utf-8", "ignore")
+                except ValueError:
+                    continue
+                found.update(h.lower() for h in _URL_HOST.findall(decoded))
+    return tuple(sorted(found - {""})) or (("",) if found else ())
+
+
+def _bare_public_ip(host: str) -> bool:
+    """An address typed in place of a name. Reverse lookups of private addresses show up backwards, so those are out."""
+    address = host.rsplit(":", 1)[0]
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    backwards = ipaddress.ip_address(".".join(reversed(address.split(".")))) if ip.version == 4 else ip
+    return ip.is_global and backwards.is_global and address not in _CONNECTIVITY_CHECKS
 
 
 def _named_by_skill(host: str, declared: frozenset[str]) -> bool:
@@ -281,7 +322,7 @@ def _named_by_skill(host: str, declared: frozenset[str]) -> bool:
     return any(".".join(parts[i:]) in declared for i in range(len(parts) - 1))
 
 
-def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None, declared: frozenset[str] = frozenset()) -> Decision:
+def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None, declared: frozenset[str] = frozenset(), hidden: tuple[str, ...] = ()) -> Decision:
     """The package rules, without the ones an agent trips by working normally."""
     # An unattended agent told to set a skill up goes looking for the API key it needs, and reading
     # .env is the first place it looks, so that says nothing. Other credential files go to a person.
@@ -319,7 +360,13 @@ def decide_skill(ev: Evidence, transcript: list[dict], canary: str | None = None
     named = [p for p in reads if any(posixpath.basename(p) in c.get("arguments", "") for t in transcript for c in t.get("calls", []))]
     if named or (reads and unnamed_hosts):
         hit(Verdict.REVIEW, f"the agent read credentials while using this skill ({', '.join(named or reads)[:160]})")
-    outside = outside_hosts
+    outside = [c for c in outside_hosts if c.split(":", 1)[0] not in INSTALLER_HOSTS]
+    if hidden:
+        where = ", ".join(h for h in hidden if h)
+        hit(Verdict.HIGH, "hid a command in encoded text and piped it to a shell" + (f" (it decodes to {where[:120]})" if where else ""))
+    bare = sorted({c.rsplit(":", 1)[0] for c in ev.connects if _bare_public_ip(c) and c.rsplit(":", 1)[0] not in declared})
+    if bare:
+        hit(Verdict.HIGH, f"sent the agent to a bare IP address its files never name ({', '.join(bare)[:80]})")
     drops = sorted({h for c in ev.connects for h in DROP_HOSTS if c == h or c.endswith("." + h)})
     if drops:
         hit(Verdict.HIGH, f"sent the agent to a file-drop or paste site ({', '.join(drops)})")
@@ -338,9 +385,9 @@ class DecoyAgent:
     """Everything a package scan does differently when the thing under test is a skill."""
 
     def __init__(self, name: str, description: str, api_key: str, base_url: str = DEFAULT_BASE_URL, model: str = DEFAULT_MODEL, post: Post = _post,
-                 declared: frozenset[str] = frozenset()):
+                 declared: frozenset[str] = frozenset(), hidden: tuple[str, ...] = ()):
         self.name, self.description, self.api_key, self.base_url, self.model, self._post = name, description, api_key, base_url, model, post
-        self.declared = declared
+        self.declared, self.hidden = declared, hidden
         self.canaries: dict[str, str] = {}
         self._second_at: dict[str, float | None] = {}
         self._gateways: dict[str, ModelGateway] = {}
@@ -390,7 +437,7 @@ class DecoyAgent:
             ev.after_removal = after_removal(scan, gateway_at)
 
     def decide(self, ev: Evidence, scan: Path) -> Decision:
-        return decide_skill(ev, read_transcript(scan / "agent.jsonl"), self.canaries.get(str(scan)), self.declared)
+        return decide_skill(ev, read_transcript(scan / "agent.jsonl"), self.canaries.get(str(scan)), self.declared, self.hidden)
 
     def combine(self, first: Decision, sandbox: Evidence, second: Decision, microvm: Evidence) -> Decision:
         """Two independent runs of an agent. They may differ with no one hiding anything."""
@@ -468,7 +515,7 @@ def check_skill(files: dict[str, str], cfg: ScanConfig, cache=None, api_key: str
     if hit:
         return hit | {"cached": True}
     version = "skill-" + hashlib.sha256(integrity.encode()).hexdigest()[:12]
-    mode = DecoyAgent(name, description, key, os.environ.get("VULTR_INFERENCE_BASE_URL", DEFAULT_BASE_URL), os.environ.get("VULTR_INFERENCE_MODEL", DEFAULT_MODEL), post, declared_hosts(files))
+    mode = DecoyAgent(name, description, key, os.environ.get("VULTR_INFERENCE_BASE_URL", DEFAULT_BASE_URL), os.environ.get("VULTR_INFERENCE_MODEL", DEFAULT_MODEL), post, declared_hosts(files), hidden_commands(files))
     report = detonate(name, version, tarball, integrity, dataclasses.replace(cfg, deadline_s=DEADLINE_S, text_reviewer=None), mode=mode)
     if cache:
         cache.put(report)
