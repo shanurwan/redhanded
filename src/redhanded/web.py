@@ -1,6 +1,6 @@
 """The site and its API: one queue behind the page, the PR check and hosted MCP.
 
-One process, standard library only. Scans run one at a time on a single worker
+One process, standard library plus one signing library. Scans run one at a time on a single worker
 thread, behind a short queue, a per-address rate limit and the spend guard, so
 a busy demo slows down instead of running up a bill. Every page is built from
 the files a scan writes, and those files can be downloaded.
@@ -35,6 +35,7 @@ from .explain import Explainer
 from .memory import AttackMemory
 from .runner import ScanConfig, ScanError, _get, scan_local
 from .service import ADVICE, SCAN_ID, Cache, InputError, Service, validate
+from .signing import Signer
 from .skills import check_skill, detonate_with_agent, scan_with_agent
 from .spend import GuardState, StateFile
 from .verdict import RULES_VERSION
@@ -142,8 +143,8 @@ class Scanner:
 
     def __init__(self, cfg: WebConfig, service: Service, explainer: Explainer | None = None,
                  limiter: RateLimit | None = None, local_scan: Callable = scan_local,
-                 clock: Callable[[], float] = time.time):
-        self.cfg, self.service, self.explainer = cfg, service, explainer
+                 clock: Callable[[], float] = time.time, signer: Signer | None = None):
+        self.cfg, self.service, self.explainer, self.signer = cfg, service, explainer, signer
         self.limiter = limiter or RateLimit(cfg.scans_per_hour)
         self._local_scan, self._clock = local_scan, clock
         self.jobs: dict[str, Job] = {}
@@ -199,6 +200,17 @@ class Scanner:
         job.result = answer(scan_dir, cached)
         job.scan_id, job.verdict, job.cached = scan_id, job.result["verdict"], cached
 
+    def _sign(self, job: Job) -> None:
+        """Every verdict on known bytes leaves signed, so it can be checked later without asking us."""
+        if not self.signer or job.kind == "repair" or not isinstance(job.result, dict):
+            return
+        for r in job.result.get("packages") or [] if job.kind == "lockfile" else [job.result]:
+            if isinstance(r, dict) and r.get("verdict"):
+                r.setdefault("rules", RULES_VERSION)
+                signed = self.signer.sign(r)
+                if signed:
+                    r["signed"] = signed
+
     def run_one(self, job: Job) -> None:
         job.state = "running"
         try:
@@ -229,6 +241,7 @@ class Scanner:
                 name, version = resolve_spec(job.target, self.service.cfg.registry)
                 out = self.service.check(name, version)
                 self._finish_scan(job, out["scan_id"], out["cached"])
+            self._sign(job)
             job.state = "done"
         except (InputError, ScanError) as e:
             job.state, job.error = "error", str(e)
@@ -400,6 +413,10 @@ def make_handler(cfg: WebConfig, scanner: Scanner):
             if path == "/api/watch":
                 watch = Path(cfg.data_dir) / "watch.json"
                 return self.json(200, json.loads(watch.read_text())) if watch.is_file() else self.json(404, {"error": "not watching"})
+            if path == "/api/key":
+                if not scanner.signer:
+                    return self.json(404, {"error": "this server does not sign verdicts"})
+                return self.send(200, json.dumps(scanner.signer.public()).encode(), "application/json", {"Cache-Control": "max-age=300"})
             if path == "/api/replays":
                 return self.json(200, list_replays(cfg.replays_dir))
             if path == "/mcp":
@@ -510,7 +527,8 @@ def main(host: str = "127.0.0.1", port: int = 8080) -> None:
     deep = bool(os.environ.get("VULTR_INFERENCE_API_KEY"))
     service = Service(Cache(os.environ.get("RH_CACHE", str(Path(cfg.data_dir) / "verdicts.sqlite3"))), scan_cfg,
                       **({"scanner": scan_with_agent, "detonator": detonate_with_agent} if deep else {}))
-    scanner = Scanner(cfg, service, Explainer.from_env())
+    scanner = Scanner(cfg, service, Explainer.from_env(),
+                      signer=Signer.at(os.environ.get("RH_SIGNING_KEY", str(Path(cfg.data_dir) / "signing.key"))))
     threading.Thread(target=scanner.serve_forever, name="scan-worker", daemon=True).start()
     server = ThreadingHTTPServer((host, port), make_handler(cfg, scanner))
     print(f"redhanded web on http://{host}:{port} (microVM tier: {'on' if scan_cfg.microvm_ready() else 'off'})", flush=True)

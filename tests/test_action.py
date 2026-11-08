@@ -27,6 +27,8 @@ def test_no_current_evidence_fails_the_check(monkeypatch, tmp_path):
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
     monkeypatch.setattr("sys.argv", ["check.py", "http://rh"])
     monkeypatch.setattr(check, "git", lambda *a: "")
+    monkeypatch.setattr(check, "server_key", lambda s: {"key_id": "k"})    # signatures have their own tests
+    monkeypatch.setattr(check, "check_signature", lambda k, r: "")
     packages = [{"package": "a", "version": "1.0.0", "verdict": None, "note": "evidence expired, it must run again"}]
     monkeypatch.setattr(check, "call", lambda s, p, b=None: {"job": "j"} if b else {"state": "done", "result": {"packages": packages}})
     assert check.main() == 1

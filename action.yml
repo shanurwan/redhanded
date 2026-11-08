@@ -13,12 +13,17 @@ inputs:
   token:
     description: Token used to open the fix
     default: ${{ github.token }}
+  key-id:
+    description: Fail unless the server signs with this key (see /api/key). Empty trusts the key the server shows.
+    default: ""
+
 runs:
   using: composite
   steps:
     - shell: bash
       env:
         REDHANDED_STRICT: ${{ inputs.strict }}
+        REDHANDED_KEY_ID: ${{ inputs.key-id }}
       run: python3 "$GITHUB_ACTION_PATH/action/check.py" "${{ inputs.server }}"
     - if: failure() && inputs.repair == 'true'
       shell: bash

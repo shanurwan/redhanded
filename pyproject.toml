@@ -9,7 +9,7 @@ description = "Detonate dependency updates in baited Vultr sandboxes before they
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["cryptography>=42"]
 
 [project.scripts]
 redhanded = "redhanded.cli:main"

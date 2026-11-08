@@ -141,6 +141,17 @@ jobs:
 
 Every run writes `redhanded.sarif`. Send it to GitHub code scanning with `github/codeql-action/upload-sarif` to keep findings in your existing security view and audit trail.
 
+**Signed verdicts.** Every verdict comes back signed with the server's Ed25519 key, over the package, version, sha512 of the exact bytes, verdict, rules version, scan id and time. The check verifies each one with `openssl` and fails on a signature that does not hold or says something other than the answer. Set `key-id` to the value at [`/api/key`](https://45-32-140-228.sslip.io/api/key) to also fail if the server key ever changes. The signed statements go into the SARIF, so an auditor can check them later without asking us:
+
+```bash
+curl -s https://45-32-140-228.sslip.io/api/key | jq -r .pem > key.pem
+jq -r .result.signed.payload job.json | base64 -d > statement.json
+jq -r .result.signed.signature job.json | base64 -d > statement.sig
+openssl pkeyutl -verify -pubin -inkey key.pem -rawin -in statement.json -sigfile statement.sig
+```
+
+A signature proves which server said it and that nothing changed since. It does not make a verdict truer than the evidence behind it, and a CLEAN statement is current for 24 hours, like the evidence.
+
 Add it as a required check in branch protection to block the merge. With repair on, the repo must allow Actions to open pull requests. GitHub may hold the workflow on the fix PR for a person to approve, because a bot opened it; the fix PR's `redhanded` status is posted either way.
 
 **Your coding agent, when it asks.** Hosted MCP, nothing to install, and the scan never runs on the caller's machine. Package text never appears in an answer, so an attacker's README cannot reach the next agent.
@@ -185,6 +196,7 @@ A security gate that passes when it breaks is worse than none. Each of these is 
 | The verdict never reaches the PR check | The check fails. It never passes by default | [`test_unanswered_scan_fails_closed`](tests/test_action.py) |
 | A clean verdict is over 24 hours old | It is not served, because code that waits can pass today and fire tomorrow. The same bytes run again first. A block never expires | [`test_expired_evidence_runs_again_before_anything_gets_through`](tests/test_service.py) |
 | Evidence is stale and a new run is not possible | No verdict, so the PR check fails | [`test_no_current_evidence_fails_the_check`](tests/test_action.py) |
+| A verdict is altered, unsigned, or signed by another key | The check fails | [`test_pr_check_fails_on_unsigned_or_unpinned_and_keeps_statements`](tests/test_signing.py) |
 | The spend reading goes stale | Every scan pauses, because unknown spend is not safe spend | [`test_scans_fail_closed_without_a_fresh_guard_state`](tests/test_web.py) |
 | The budget runs out with work queued | Queued jobs stop | [`test_guard_pausing_mid_queue_stops_the_job`](tests/test_web.py) |
 | A package hangs or hits the deadline | It is killed and goes to a person. It is never CLEAN | [`test_deadline_kill_is_review`](tests/test_verdict.py) |
@@ -276,7 +288,7 @@ Commercial scanners lead this market and read code well, as our own test shows. 
 | Model reading per scan | About 4,000 tokens, measured |
 | People pulled in | 2 of 441 unseen packages |
 | Setup | One workflow file. No agent, no code changes, no real secrets in the scan |
-| Audit output | SARIF, and a public report with the recorded evidence for every verdict |
+| Audit output | SARIF with a signed statement per verdict, and a public report with the recorded evidence for every verdict |
 | Vultr revenue per self-hosted org | About $110 a month for the VM, plus inference |
 
 **What we have not proved.** There are no customers yet, the price is a proposal, and the IBM figure comes from secondary coverage. The next step is one design partner measuring real pull requests.
