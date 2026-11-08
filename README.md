@@ -61,6 +61,16 @@ We tested the question every buyer asks: if a model can read the code, why run i
 
 That took what gets through without a second look from 369 to 104, and asked a person about 2 of 441 unseen packages: 2 of 154 popular ones and 0 of 287 real recent releases the sandbox had called clean.
 
+**Against a static scanner.** We ran GuardDog, Datadog's open-source scanner, on the same packages:
+
+| Same packages | Malicious flagged, of 898 | Hijacked releases, of 224 | Clean packages flagged |
+|:--|--:|--:|--:|
+| GuardDog 3.2, threat rules | 692 (77%) | **206** | 93 of 448 (21%) |
+| A model reading the code | **776** (86%) | 190 | **2** of 441 |
+| Running it, with proof | 460 (51%) | 133 | 0 of 45, a separate set |
+
+GuardDog wins on hijacked releases. The model reader catches more overall, and GuardDog would put about 1 in 5 clean packages in front of a person. [Method and caveats](docs/EVALS.md#a-static-scanner-on-the-same-packages).
+
 Adding one sentence telling AI reviewers the package was safe changed nothing: 198 of 198 stayed flagged. Datadog's dataset leans toward what its own static rules can see, which favours reading, so expect less on fresh attacks built to evade it. [The full account](docs/EVALS.md#reading-against-running) has the method and caveats.
 
 ## How it works

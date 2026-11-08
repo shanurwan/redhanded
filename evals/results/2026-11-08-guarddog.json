@@ -1,0 +1,52 @@
+{
+ "at": "2026-11-08",
+ "tool": "GuardDog 3.2.0 (Datadog, open source), `guarddog npm scan <folder> --output-format json`",
+ "what": "The same packages the reader and the sandbox were measured on, scanned statically. Nothing is executed. Flagged means any threat-* rule matched. capability-* rules describe what code can do and are counted separately.",
+ "held_out_malicious": {
+  "total": 898,
+  "scanned": 898,
+  "flagged_threat_rules": 692,
+  "flagged_any_rule": 769,
+  "hijacked": {
+   "total": 224,
+   "flagged_threat_rules": 206
+  },
+  "sandbox_clean": {
+   "total": 369,
+   "guarddog_flagged": 250,
+   "reader_flagged": 265,
+   "either_flagged": 305,
+   "neither": 64
+  },
+  "guarddog_not_reader": 55,
+  "reader_not_guarddog": 139
+ },
+ "held_out_clean": {
+  "popular": {
+   "total": 155,
+   "scanned": 155,
+   "flagged_threat_rules": 41,
+   "flagged_any_rule": 129
+  },
+  "recent_releases_sandbox_called_clean": {
+   "total": 300,
+   "scanned": 293,
+   "flagged_threat_rules": 52,
+   "flagged_any_rule": 168
+  }
+ },
+ "compare": {
+  "reader": {
+   "malicious_flagged": 776,
+   "hijacked_flagged": 190,
+   "clean_flagged": "2 of 441"
+  },
+  "guarddog": {
+   "malicious_flagged": 692,
+   "hijacked_flagged": 206,
+   "clean_flagged": "93 of 448"
+  },
+  "sandbox_blocked_with_proof": 460
+ },
+ "caveats": "See docs/EVALS.md#a-static-scanner-on-the-same-packages."
+}

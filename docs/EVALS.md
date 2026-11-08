@@ -34,6 +34,27 @@ Caveats:
 - **Clean is not proven for the 287 releases.** They ran clean and the model agreed; some could still be bad. They come from the live watch, which favours releases that changed something, and are not a random sample of npm.
 - **Popular packages are an easy clean set.** The two false alarms were an unfamiliar but ordinary new dependency and a bundled command that downloads a tarball.
 
+### A static scanner on the same packages
+
+How does an established scanner do on exactly these packages? GuardDog 3.2.0, Datadog's open-source scanner, ran `guarddog npm scan` on each unpacked package. Nothing was executed. A package counts as flagged when any `threat-*` rule matches. The `capability-*` rules only describe what code can do, so they are counted separately. [Summary](../evals/results/2026-11-08-guarddog.json), [script](../evals/guarddog_baseline.py).
+
+| Set | GuardDog, threat rules | GuardDog, any rule | Model reader |
+|:--|--:|--:|--:|
+| Real malicious packages, 898 | 692 | 769 | 776 |
+| Hijacked releases among them, 224 | 206 | | 190 |
+| Ran clean in the sandbox, 369 | 250 | | 265 |
+| Popular clean packages | 41 of 155 | 129 of 155 | 2 of 154 |
+| Real recent releases the sandbox called clean | 52 of 293 | 168 of 293 | 0 of 287 |
+
+They catch different things: 55 malicious packages only GuardDog flagged, and 139 only the reader flagged. Of the 369 that ran clean, 64 were flagged by neither.
+
+Caveats:
+
+- **GuardDog is built to flag for review**, not to block on its own, and its rules are tuned to Datadog's own triage. Counting any `threat-*` match is our choice.
+- **The dataset comes from Datadog's own detection**, which may favour GuardDog on the malicious side.
+- **7 recent releases could not be downloaded again** for GuardDog, so its clean set is 293 of 300.
+- **The clean sets are the ones the reader was measured on**, including releases from the live watch that the sandbox had called clean.
+
 ### Real malware
 
 Three random sets of about 300 from [Datadog's public dataset](https://github.com/DataDog/malicious-software-packages-dataset) of malicious npm packages (Apache-2.0), with no overlap, set aside by a fixed seed and each run once, on a throwaway Vultr VM. A separate 100 were used for tuning and do not count. No sample is kept in this repo.
